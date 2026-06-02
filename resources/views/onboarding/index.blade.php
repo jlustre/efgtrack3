@@ -1,0 +1,242 @@
+<x-app-layout>
+    <section class="space-y-6">
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+            <div class="border-b border-slate-100 bg-[#0B1F3A] px-6 py-6 text-white">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">My Onboarding</p>
+                        <h1 class="mt-2 text-2xl font-semibold">Start strong with a clear path forward</h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-200">
+                            Track your setup, sponsor alignment, licensing readiness, training start, and first field milestones.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                        <div class="rounded-md bg-white/10 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wide text-slate-300">Sponsor</div>
+                            <div class="mt-1 font-semibold">{{ $user->sponsor?->name ?? 'Not assigned' }}</div>
+                        </div>
+                        <div class="rounded-md bg-white/10 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wide text-slate-300">CFM</div>
+                            <div class="mt-1 font-semibold">{{ $user->mentor?->name ?? 'Pending' }}</div>
+                        </div>
+                        <div class="rounded-md bg-white/10 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wide text-slate-300">Country</div>
+                            <div class="mt-1 font-semibold">{{ $user->profile?->country ?? 'Global' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid gap-4 p-6 xl:grid-cols-5">
+                <div class="grid gap-4 md:grid-cols-2 xl:col-span-3 xl:grid-cols-3">
+                    <div class="rounded-lg border border-[#C8A24A]/25 bg-[#FFF9EA] p-5 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-semibold text-slate-600">Overall Progress</p>
+                            <span class="rounded-full bg-[#C8A24A]/15 px-2.5 py-1 text-xs font-bold text-[#8A6A1F]">{{ $stats['percent'] }}%</span>
+                        </div>
+                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['completed'] }}/{{ $stats['total'] }}</div>
+                        <p class="mt-1 text-sm text-slate-500">Items completed</p>
+                    </div>
+
+                    <div class="rounded-lg border border-slate-200 bg-white/90 p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-slate-600">Required Items</p>
+                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['requiredCompleted'] }}/{{ $stats['requiredTotal'] }}</div>
+                        <p class="mt-1 text-sm text-slate-500">{{ $stats['requiredPercent'] }}% of required items complete</p>
+                    </div>
+
+                    <div class="rounded-lg border border-slate-200 bg-[#F8FAFC] p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-slate-600">Optional Items</p>
+                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['optionalCompleted'] }}/{{ $stats['optionalTotal'] }}</div>
+                        <p class="mt-1 text-sm text-slate-500">Growth and enrichment items</p>
+                    </div>
+
+                    <div class="rounded-lg border border-amber-100 bg-amber-50/70 p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-slate-600">Pending</p>
+                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['pending'] }}</div>
+                        <p class="mt-1 text-sm text-slate-500">Awaiting confirmation</p>
+                    </div>
+
+                    <div class="rounded-lg border border-purple-100 bg-purple-50/60 p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-slate-600">Need Confirmation</p>
+                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['needsConfirmation'] }}</div>
+                        <p class="mt-1 text-sm text-slate-500">Items waiting on you</p>
+                    </div>
+
+                    <div class="rounded-lg border border-slate-200 bg-slate-50/90 p-5 shadow-sm">
+                        <p class="text-sm font-semibold text-slate-600">Remaining</p>
+                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['remaining'] }}</div>
+                        <p class="mt-1 text-sm text-slate-500">Next steps to finish onboarding</p>
+                    </div>
+                </div>
+
+                <div class="xl:col-span-2">
+                    <div class="h-full rounded-lg border border-slate-200 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-6 shadow-sm">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <h2 class="text-lg font-semibold text-[#0B1F3A]">Progress Graph</h2>
+                                <p class="mt-1 text-sm text-slate-600">A quick view of completed, remaining, and required progress.</p>
+                            </div>
+                            <div class="text-sm font-semibold text-slate-600">{{ $stats['completed'] }} completed, {{ $stats['pending'] }} pending, {{ $stats['remaining'] }} remaining</div>
+                        </div>
+
+                        <div class="mt-5 space-y-4">
+                            <div>
+                                <div class="mb-2 flex items-center justify-between text-sm">
+                                    <span class="font-semibold text-slate-700">Overall onboarding</span>
+                                    <span class="font-semibold text-[#0B1F3A]">{{ $stats['percent'] }}%</span>
+                                </div>
+                                <div class="h-4 overflow-hidden rounded-full bg-slate-100">
+                                    <div class="h-full rounded-full bg-[#C8A24A] transition-all" style="width: {{ $stats['percent'] }}%"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="mb-2 flex items-center justify-between text-sm">
+                                    <span class="font-semibold text-slate-700">Required completion</span>
+                                    <span class="font-semibold text-[#0B1F3A]">{{ $stats['requiredPercent'] }}%</span>
+                                </div>
+                                <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+                                    <div class="h-full rounded-full bg-[#0B1F3A] transition-all" style="width: {{ $stats['requiredPercent'] }}%"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="mb-2 flex items-center justify-between text-sm">
+                                    <span class="font-semibold text-slate-700">Pending confirmation</span>
+                                    <span class="font-semibold text-[#0B1F3A]">{{ $stats['pending'] }}</span>
+                                </div>
+                                <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+                                    <div class="h-full rounded-full bg-amber-400 transition-all" style="width: {{ $stats['total'] > 0 ? (int) round(($stats['pending'] / $stats['total']) * 100) : 0 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (session('status'))
+            <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                {{ str(session('status'))->replace('-', ' ')->title() }}
+            </div>
+        @endif
+
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+            <div class="flex flex-col gap-2 border-b border-slate-200 bg-white/70 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-[#0B1F3A]">Onboarding Checklist</h2>
+                    <p class="mt-1 text-sm text-slate-600">Check items off as you complete them. Country-specific items appear only when they apply to your profile.</p>
+                </div>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $steps->count() }} applicable items</span>
+            </div>
+
+            <div class="divide-y divide-slate-100">
+                @forelse ($steps as $step)
+                    <div x-data="{ expanded: false }" class="grid gap-4 px-6 py-5 transition hover:bg-white/65 lg:grid-cols-[auto_1fr_auto] lg:items-start">
+                        <form method="POST" action="{{ route('onboarding.update', $step) }}" class="pt-1">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="completed" value="0">
+                            <input
+                                type="checkbox"
+                                name="completed"
+                                value="1"
+                                class="h-5 w-5 rounded border-2 border-slate-500 text-[#C8A24A] focus:ring-[#C8A24A] checked:border-[#C8A24A]"
+                                @checked($step->is_completed || $step->is_pending)
+                                @disabled($step->is_completed)
+                                onchange="this.form.submit()"
+                                aria-label="Submit {{ $step->title }} for confirmation"
+                            >
+                        </form>
+
+                        <div class="min-w-0">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="font-semibold {{ $step->is_completed ? 'text-slate-500 line-through' : 'text-[#0B1F3A]' }}">{{ $step->title }}</h3>
+                                        @if ($step->is_pending)
+                                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700">Pending Confirmation</span>
+                                        @endif
+                                        @if ($step->is_rejected)
+                                            <span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700">Rejected</span>
+                                        @endif
+                                        @if ($step->is_required)
+                                            <span class="rounded-full bg-[#C8A24A]/15 px-2 py-0.5 text-xs font-bold text-[#8A6A1F]">Required</span>
+                                        @else
+                                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600">Optional</span>
+                                        @endif
+                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{{ $step->country ?: 'Global' }}</span>
+                                    </div>
+                                    @if ($step->description)
+                                        <p x-show="! expanded" class="mt-1 line-clamp-1 text-sm leading-6 text-slate-600">{{ $step->description }}</p>
+                                    @endif
+                                </div>
+
+                                <button
+                                    type="button"
+                                    x-on:click="expanded = ! expanded"
+                                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                    :aria-expanded="expanded.toString()"
+                                    aria-label="Toggle item details"
+                                    title="Toggle details"
+                                >
+                                    <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div x-show="expanded" x-transition class="mt-3">
+                                @if ($step->description)
+                                    <p class="max-w-4xl text-sm leading-6 text-slate-600">{{ $step->description }}</p>
+                                @endif
+
+                                @if ($step->progress?->review_comments)
+                                    <div class="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                                        <span class="font-semibold text-[#0B1F3A]">Review comments:</span>
+                                        {{ $step->progress->review_comments }}
+                                    </div>
+                                @endif
+
+                                <div class="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Responsible: {{ $step->responsible_parties ?: 'Self' }}</span>
+                                    @if ($step->notified_parties)
+                                        <span class="rounded-full bg-purple-50 px-2.5 py-1 text-purple-700">Notify: {{ $step->notified_parties }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lg:text-right">
+                            <div x-show="expanded" x-transition>
+                                @if ($step->is_completed)
+                                    <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Completed</span>
+                                    @if ($step->progress?->completed_at)
+                                        <div class="mt-2 text-xs text-slate-500">{{ \Carbon\Carbon::parse($step->progress->completed_at)->format('M j, Y') }}</div>
+                                    @endif
+                                @elseif ($step->is_pending)
+                                    <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">Pending</span>
+                                    @if ($step->progress?->submitted_at)
+                                        <div class="mt-2 text-xs text-slate-500">Submitted {{ \Carbon\Carbon::parse($step->progress->submitted_at)->format('M j, Y') }}</div>
+                                    @endif
+                                @elseif ($step->is_rejected)
+                                    <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700">Rejected</span>
+                                    @if ($step->progress?->reviewed_at)
+                                        <div class="mt-2 text-xs text-slate-500">{{ \Carbon\Carbon::parse($step->progress->reviewed_at)->format('M j, Y') }}</div>
+                                    @endif
+                                @else
+                                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Not Started</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="px-6 py-12 text-center">
+                        <h3 class="text-lg font-semibold text-[#0B1F3A]">No onboarding items available</h3>
+                        <p class="mt-2 text-sm text-slate-600">Your checklist will appear when active onboarding items are assigned to your country or marked global.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </section>
+</x-app-layout>

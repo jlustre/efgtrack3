@@ -1,0 +1,23 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class TeamSeeder extends Seeder
+{
+    public function run(): void
+    {
+        DB::table('teams')->updateOrInsert(
+            ['name' => 'Elite Financial Growth Team'],
+            [
+                'description' => 'Default team for local development and seeded demo users.',
+                'is_active' => true,
+                'deleted_at' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+    }
+}

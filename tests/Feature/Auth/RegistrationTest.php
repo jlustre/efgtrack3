@@ -1,0 +1,159 @@
+<?php
+
+namespace Tests\Feature\Auth;
+
+use App\Models\RegistrationInvitation;
+use App\Models\Rank;
+use App\Models\Team;
+use App\Models\User;
+use Database\Seeders\RankSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class RegistrationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_open_registration_screen_is_blocked_without_invitation(): void
+    {
+        $response = $this->get('/register');
+
+        $response->assertForbidden();
+    }
+
+    public function test_registration_screen_can_be_rendered_with_valid_invitation(): void
+    {
+        $invitation = RegistrationInvitation::factory()->create();
+
+        $response = $this->get(route('register.invitation', $invitation->code));
+
+        $response
+            ->assertStatus(200)
+            ->assertSee($invitation->code)
+            ->assertSee($invitation->sponsor->name);
+    }
+
+    public function test_registration_screen_shows_unavailable_message_for_unknown_invitation(): void
+    {
+        $response = $this->get(route('register.invitation', 'UNKNOWNCODE'));
+
+        $response->assertForbidden();
+    }
+
+    public function test_new_users_can_register_with_valid_invitation(): void
+    {
+        $this->seed([
+            RankSeeder::class,
+            RolePermissionSeeder::class,
+        ]);
+
+        $sponsor = User::factory()->create();
+        $team = Team::create([
+            'owner_id' => $sponsor->id,
+            'leader_id' => $sponsor->id,
+            'name' => 'West Coast Builders',
+            'is_active' => true,
+        ]);
+        $sponsor->forceFill(['team_id' => $team->id])->save();
+
+        $invitation = RegistrationInvitation::factory()->for($sponsor, 'sponsor')->create([
+            'code' => 'ABC123EFG',
+        ]);
+
+        $response = $this->post('/register', [
+            'registration_code' => $invitation->code,
+            'first_name' => 'Test',
+            'last_name' => 'User',
+            'email' => 'test@example.com',
+            'efg_associate_id' => 'EFG-1001',
+            'city' => 'Vancouver',
+            'country' => 'Canada',
+            'timezone' => 'Canada Pacific Time',
+            'sponsor_confirmed' => '1',
+            'active_associate_confirmed' => '1',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+
+        $newUser = User::where('email', 'test@example.com')->firstOrFail();
+
+        $this->assertSame($sponsor->id, $newUser->sponsor_id);
+        $this->assertSame($team->id, $newUser->team_id);
+        $this->assertSame(Rank::where('code', 'FA')->firstOrFail()->id, $newUser->rank_id);
+        $this->assertSame('Test User', $newUser->name);
+        $this->assertTrue($newUser->hasRole('member'));
+        $this->assertNotNull($newUser->joined_at);
+        $this->assertNotNull($newUser->last_login_at);
+        $this->assertSame('127.0.0.1', $newUser->last_login_ip);
+        $this->assertTrue($newUser->is_online);
+        $this->assertSame('EFG-1001', $newUser->profile->efg_associate_id);
+        $this->assertSame('Vancouver', $newUser->profile->city);
+        $this->assertSame('Canada', $newUser->profile->country);
+        $this->assertSame('Canada Pacific Time', $newUser->profile->timezone);
+        $this->assertTrue($newUser->profile->is_efg_active_associate);
+        $this->assertDatabaseHas('registration_invitations', [
+            'id' => $invitation->id,
+            'accepted_by' => $newUser->id,
+            'uses_count' => 1,
+        ]);
+        $this->assertNotNull($invitation->refresh()->revoked_at);
+
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_registration_requires_sponsor_and_active_associate_confirmation(): void
+    {
+        $invitation = RegistrationInvitation::factory()->create();
+
+        $response = $this->post('/register', [
+            'registration_code' => $invitation->code,
+            'first_name' => 'Test',
+            'last_name' => 'User',
+            'email' => 'test@example.com',
+            'efg_associate_id' => 'EFG-1002',
+            'city' => 'Vancouver',
+            'country' => 'Canada',
+            'timezone' => 'Canada Pacific Time',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertSessionHasErrors([
+            'sponsor_confirmed',
+            'active_associate_confirmed',
+        ]);
+
+        $this->assertGuest();
+    }
+
+    public function test_invitation_code_cannot_be_reused_after_acceptance(): void
+    {
+        $invitation = RegistrationInvitation::factory()->create([
+            'uses_count' => 1,
+            'max_uses' => 1,
+        ]);
+
+        $response = $this->post('/register', [
+            'registration_code' => $invitation->code,
+            'first_name' => 'Test',
+            'last_name' => 'User',
+            'email' => 'test@example.com',
+            'efg_associate_id' => 'EFG-1003',
+            'city' => 'Vancouver',
+            'country' => 'Canada',
+            'timezone' => 'Canada Pacific Time',
+            'sponsor_confirmed' => '1',
+            'active_associate_confirmed' => '1',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response
+            ->assertSessionHasErrors('registration_code');
+
+        $this->assertGuest();
+    }
+}

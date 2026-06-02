@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        color-scheme: light;
+    }
+}
+
+@layer components {
+    .efg-card {
+        @apply rounded-lg border border-slate-400 bg-gradient-to-br from-white via-slate-50 to-[#FFF9EA] shadow-sm;
+    }
+
+    .efg-button-primary {
+        @apply inline-flex items-center justify-center rounded-md bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#132F55];
+    }
+
+    .efg-button-gold {
+        @apply inline-flex items-center justify-center rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm transition hover:bg-[#D5B765];
+    }
+}
+
+main :where(.rounded-lg.border.shadow-sm:not(.text-white)) {
+    border-color: #94a3b8;
+    background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 52%, #fff9ea 100%);
+}
+
+main :where(.overflow-hidden.rounded-lg.border.shadow-sm:not(.text-white)) {
+    border-color: #94a3b8;
+    background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 52%, #fff9ea 100%);
+}
+
+main :where(a.rounded-lg.border.shadow-sm:not(.text-white), button.rounded-lg.border.shadow-sm:not(.text-white)) {
+    border-color: #94a3b8;
+    background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 52%, #fff9ea 100%);
+}
+
+main :where(a.rounded-lg.border.shadow-sm:not(.text-white):hover, button.rounded-lg.border.shadow-sm:not(.text-white):hover) {
+    border-color: #c8a24a;
+    background-image: linear-gradient(135deg, #fffef8 0%, #f8fafc 45%, #fff4d8 100%);
+}
+
+main :where(.rounded-lg.border-red-100, .rounded-lg.border-red-200) {
+    border-color: #fca5a5;
+}
+
+main :where(.rounded-lg.border-amber-100, .rounded-lg.border-amber-200) {
+    border-color: #f3c969;
+}
+
+main :where(.rounded-lg.border-purple-100, .rounded-lg.border-indigo-100, .rounded-lg.border-sky-100, .rounded-lg.border-emerald-100) {
+    border-color: #a8b5c7;
+}
