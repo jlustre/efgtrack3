@@ -62,6 +62,40 @@ class TaskScenarioSeeder extends Seeder
         $fapMember = $this->member('maya.fap@example.com', 'Maya Chen', $teamId, $agencyOwner->id, $cfm->id);
         $cfmCandidate = $this->member('owen.cfm@example.com', 'Owen Patel', $teamId, $agencyOwner->id, null, $ranks['SFA'] ?? null);
         $needsMentor = $this->member('sofia.needsmentor@example.com', 'Sofia Reyes', $teamId, $agencyOwner->id, null);
+        $usProspect = $this->member('aaron.us@example.com', 'Aaron Brooks', $teamId, $agencyOwner->id, null);
+
+        $this->profile($cfm, [
+            'city' => 'Toronto',
+            'province' => 'Ontario',
+            'timezone' => 'Canada Eastern Time',
+            'phone' => '555-0140',
+        ]);
+        $this->profile($fapMember, [
+            'city' => 'Vancouver',
+            'province' => 'British Columbia',
+            'timezone' => 'Canada Pacific Time',
+        ]);
+        $this->profile($onboardingMember, [
+            'city' => 'Toronto',
+            'province' => 'Ontario',
+            'timezone' => 'Canada Eastern Time',
+        ]);
+        $this->profile($licensingMember, [
+            'city' => 'Calgary',
+            'province' => 'Alberta',
+            'timezone' => 'Canada Mountain Time',
+        ]);
+        $this->profile($needsMentor, [
+            'city' => 'Montreal',
+            'province' => 'Quebec',
+            'timezone' => 'Canada Eastern Time',
+        ]);
+        $this->profile($usProspect, [
+            'city' => 'Chicago',
+            'province' => 'Illinois',
+            'country' => 'United States',
+            'timezone' => 'CST',
+        ]);
 
         $this->pendingChecklist(
             'user_onboarding_progress',
@@ -163,20 +197,20 @@ class TaskScenarioSeeder extends Seeder
         ]);
     }
 
-    private function profile(User $user): void
+    private function profile(User $user, array $overrides = []): void
     {
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-            [
+            array_merge([
                 'phone' => '555-0100',
                 'city' => 'Vancouver',
-                'province' => 'BC',
+                'province' => 'British Columbia',
                 'country' => 'Canada',
-                'timezone' => 'America/Vancouver',
+                'timezone' => 'Canada Pacific Time',
                 'efg_associate_id' => 'EFG-DEMO-'.$user->id,
                 'is_efg_active_associate' => true,
                 'recruited_at' => now()->subDays(6)->toDateString(),
-            ]
+            ], $overrides)
         );
     }
 

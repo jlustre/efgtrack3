@@ -1,22 +1,91 @@
-<section>
-    <header>
-        <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Profile Details</p>
-        <h2 class="mt-1 text-xl font-semibold text-[#0B1F3A]">
-            {{ __('Member Information') }}
-        </h2>
+@php
+    $readonly = $profileContext['readonly'];
+    $locationOptions = $profileContext['locationOptions'];
+    $contactTimes = $locationOptions['contactTimes'];
+    $timezoneOptions = $locationOptions['timezones'];
+    $currentCountry = old('country', $user->profile?->country ?? '');
+    $currentProvince = old('province', $user->profile?->province ?? '');
+    $currentTimezone = old('timezone', $user->profile?->timezone ?? '');
+    $currentContactTime = old('best_contact_time', $user->profile?->best_contact_time ?? '');
+    $provinceOptions = $locationOptions['provincesByCountry'][$currentCountry] ?? [];
+    $provinceIsLegacy = filled($currentProvince) && ! array_key_exists($currentProvince, $provinceOptions) && ! in_array($currentProvince, $provinceOptions, true);
+    $timezoneIsLegacy = filled($currentTimezone) && ! array_key_exists($currentTimezone, $timezoneOptions);
+    $contactTimeIsLegacy = filled($currentContactTime) && ! array_key_exists($currentContactTime, $contactTimes);
+@endphp
 
-        <p class="mt-2 text-sm text-slate-600">
-            Keep your contact, licensing, and short member bio current for your sponsor, mentor, and leadership team.
-        </p>
-    </header>
+<section>
+    <p class="text-sm text-slate-600">
+        Update your editable contact and licensing details. Team and login information below is managed by the system.
+    </p>
+
+    <dl class="mt-5 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">Sponsor</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['sponsor'] }}</dd>
+        </div>
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">Agency Owner</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['agencyOwner'] }}</dd>
+        </div>
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">CFM / Mentor</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['mentor'] }}</dd>
+        </div>
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">Team</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['team'] }}</dd>
+        </div>
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">Rank</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['rank'] }}</dd>
+        </div>
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">Role</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['role'] }}</dd>
+        </div>
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">Joined</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['joinedAt'] }}</dd>
+        </div>
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">Last Login</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['lastLoginAt'] }}</dd>
+        </div>
+        <div>
+            <dt class="text-xs font-semibold uppercase text-slate-500">Last IP</dt>
+            <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['lastLoginIp'] }}</dd>
+        </div>
+    </dl>
 
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+    @php
+        $profileFeedback = session('profile_feedback');
+    @endphp
+
+    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6" @submit="submitProfileForm()">
         @csrf
         @method('patch')
+
+        @if ($profileFeedback && ($profileFeedback['type'] ?? '') === 'error')
+            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                <p class="font-semibold text-red-900">Could not save profile</p>
+                <p class="mt-1">{{ $profileFeedback['message'] }}</p>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                <p class="font-semibold text-red-900">Please fix the following</p>
+                <ul class="mt-2 list-disc list-inside space-y-1">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <div class="grid gap-5 md:grid-cols-2">
             <div>
@@ -38,6 +107,20 @@
             </div>
 
             <div>
+                <x-input-label for="best_contact_time" value="Best Contact Time" />
+                <select id="best_contact_time" name="best_contact_time" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                    <option value="">Select best time to reach you</option>
+                    @if ($contactTimeIsLegacy)
+                        <option value="{{ $currentContactTime }}" selected>{{ $currentContactTime }}</option>
+                    @endif
+                    @foreach ($contactTimes as $value => $label)
+                        <option value="{{ $value }}" @selected($currentContactTime === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <x-input-error class="mt-2" :messages="$errors->get('best_contact_time')" />
+            </div>
+
+            <div>
                 <x-input-label for="license_number" :value="__('License Number')" />
                 <x-text-input id="license_number" name="license_number" type="text" class="mt-1 block w-full" :value="old('license_number', $user->profile?->license_number)" />
                 <x-input-error class="mt-2" :messages="$errors->get('license_number')" />
@@ -56,9 +139,53 @@
             </div>
 
             <div>
+                <x-input-label for="country" :value="__('Country')" />
+                <select
+                    id="country"
+                    name="country"
+                    x-model="editCountry"
+                    @change="onCountryChange()"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+                >
+                    <option value="">Select country</option>
+                    @foreach ($locationOptions['countries'] as $country)
+                        <option value="{{ $country }}" @selected($currentCountry === $country)>{{ $country }}</option>
+                    @endforeach
+                </select>
+                <x-input-error class="mt-2" :messages="$errors->get('country')" />
+            </div>
+
+            <div>
                 <x-input-label for="province" :value="__('Province / State')" />
-                <x-text-input id="province" name="province" type="text" class="mt-1 block w-full" :value="old('province', $user->profile?->province)" />
+                <select
+                    id="province"
+                    name="province"
+                    x-model="editProvince"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+                >
+                    <option value="">Select province / state</option>
+                    @if ($provinceIsLegacy)
+                        <option value="{{ $currentProvince }}" selected>{{ $currentProvince }}</option>
+                    @endif
+                    <template x-for="(label, value) in editProvinceOptions" :key="value">
+                        <option :value="value" x-text="label"></option>
+                    </template>
+                </select>
                 <x-input-error class="mt-2" :messages="$errors->get('province')" />
+            </div>
+
+            <div>
+                <x-input-label for="timezone" :value="__('Timezone')" />
+                <select id="timezone" name="timezone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                    <option value="">Select timezone</option>
+                    @if ($timezoneIsLegacy)
+                        <option value="{{ $currentTimezone }}" selected>{{ $currentTimezone }}</option>
+                    @endif
+                    @foreach ($timezoneOptions as $timezoneValue => $timezoneLabel)
+                        <option value="{{ $timezoneValue }}" @selected($currentTimezone === $timezoneValue)>{{ $timezoneLabel }}</option>
+                    @endforeach
+                </select>
+                <x-input-error class="mt-2" :messages="$errors->get('timezone')" />
             </div>
         </div>
 
@@ -92,18 +219,15 @@
             </div>
         @endif
 
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save Profile') }}</x-primary-button>
-
-            @if (session('status') === 'profile-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
-            @endif
+        <div class="flex flex-wrap items-center gap-4">
+            <button
+                type="submit"
+                class="inline-flex items-center rounded-md border border-transparent bg-[#0B1F3A] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-[#132F55] focus:bg-[#132F55] focus:outline-none focus:ring-2 focus:ring-[#C8A24A] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="profileSaving"
+            >
+                <span x-show="! profileSaving">Save Profile</span>
+                <span x-show="profileSaving" x-cloak>Saving…</span>
+            </button>
         </div>
     </form>
 </section>

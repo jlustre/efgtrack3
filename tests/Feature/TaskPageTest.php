@@ -63,7 +63,7 @@ class TaskPageTest extends TestCase
         $this->actingAs($agencyOwner)
             ->get(route('tasks.index'))
             ->assertOk()
-            ->assertSee('My Tasks')
+            ->assertSee('Organize team priorities')
             ->assertSee('Complete Member Profile')
             ->assertSee('Add confirmation notes')
             ->assertSee('Reject')

@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
             ProspectLookupSeeder::class,
             UsersSeeder::class,
             TaskScenarioSeeder::class,
+            TaskManagementSeeder::class,
+            CfmManagementSeeder::class,
             ProspectDemoSeeder::class,
             DownlineManagementSeeder::class,
             CalendarModuleSeeder::class,

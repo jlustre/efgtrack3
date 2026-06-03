@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
+use App\Support\MemberDisplayName;
 use Database\Seeders\DownlineManagementSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -30,6 +31,9 @@ class DownlineManagementModuleTest extends TestCase
         $this->actingAs($owner)
             ->get(route('team.index'))
             ->assertOk()
+            ->assertSee('efg-page-loading', false)
+            ->assertSee('efg-go-to-top', false)
+            ->assertSee('efg-go-to-top__icon', false)
             ->assertSee('Team Command Center')
             ->assertSee('Rank Distribution');
 
@@ -40,9 +44,54 @@ class DownlineManagementModuleTest extends TestCase
             ->assertSee($member->name);
 
         $this->actingAs($owner)
+            ->get(route('team.hierarchy'))
+            ->assertOk()
+            ->assertSee('Sponsor Hierarchy', false)
+            ->assertSee('downlineHierarchyTable', false)
+            ->assertSee('memberSearch', false)
+            ->assertSee('searchMembers', false)
+            ->assertSee('Search your full hierarchy', false)
+            ->assertDontSee('Apply Filters', false)
+            ->assertDontSee('All Ranks', false)
+            ->assertSee('Expand All', false)
+            ->assertSee('profileModalOpen', false)
+            ->assertSee('View Full Member Profile', false)
+            ->assertSee($owner->name, false)
+            ->assertSee($member->name, false);
+
+        $directLeader = User::where('sponsor_id', $owner->id)->firstOrFail();
+
+        $siblingLeader = User::where('sponsor_id', $owner->id)
+            ->where('id', '!=', $directLeader->id)
+            ->first();
+
+        $this->actingAs($owner)
+            ->get(route('team.member.hierarchy', $directLeader))
+            ->assertOk()
+            ->assertSee('Branch rooted at', false)
+            ->assertSee($directLeader->name, false)
+            ->assertSee('Make this member the topmost', false)
+            ->assertSee('Make direct upline the topmost', false)
+            ->assertSee(route('team.hierarchy'), false);
+
+        if ($siblingLeader) {
+            $this->actingAs($owner)
+                ->get(route('team.member.hierarchy', $directLeader))
+                ->assertSee(MemberDisplayName::for($siblingLeader), false);
+        }
+
+        $this->actingAs($owner)
             ->get(route('team.org-chart'))
             ->assertOk()
-            ->assertSee('Executive Team Structure');
+            ->assertSee('Executive Team Structure')
+            ->assertSee('Expand All', false)
+            ->assertSee('Collapse All', false)
+            ->assertSee('Clear filters', false)
+            ->assertSee('Search by name, email, rank, role, country', false)
+            ->assertSee('orgChartBoard', false)
+            ->assertSee('View Profile', false)
+            ->assertSee('profileModalOpen', false)
+            ->assertSee($member->name, false);
 
         $this->actingAs($owner)
             ->get(route('team.table', ['search' => $member->name]))
@@ -122,7 +171,7 @@ class DownlineManagementModuleTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
 
-        $member = User::where('email', 'farah.singh@efgtrack.com')->firstOrFail();
+        $member = User::where('email', 'genealogy.leaf.dana.01@efgtrack.com')->firstOrFail();
 
         $this->actingAs($member)
             ->get(route('team.export'))

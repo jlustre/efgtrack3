@@ -4,9 +4,7 @@
             <div class="bg-gradient-to-br from-[#05070B] via-[#111827] to-[#2A2110] px-6 py-7 text-white">
                 <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div class="flex items-start gap-4">
-                        <div class="flex h-16 w-16 items-center justify-center rounded-full border border-[#C8A24A] bg-[#FFF4CF] text-lg font-bold text-[#0B1F3A]">
-                            {{ str($member->name)->explode(' ')->map(fn ($part) => str($part)->substr(0, 1))->take(2)->implode('') }}
-                        </div>
+                        <x-user-avatar :user="$member" size="lg" class="border-[#C8A24A] bg-[#FFF4CF] [&_span]:text-[#0B1F3A]" />
                         <div>
                             <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Member Profile</p>
                             <h1 class="mt-2 text-2xl font-semibold">{{ $member->name }}</h1>
@@ -15,6 +13,7 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <a href="{{ route('team.member.tree', $member) }}" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Genealogy</a>
+                        <a href="{{ route('team.member.hierarchy', $member) }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Hierarchy</a>
                         <a href="{{ route('team.member.org-chart', $member) }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Org Branch</a>
                         <a href="{{ route('team.table') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Back To Table</a>
                     </div>

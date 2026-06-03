@@ -9,6 +9,7 @@ use Database\Seeders\LicensingStepSeeder;
 use Database\Seeders\OnboardingStepSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\TaskManagementSeeder;
 use Database\Seeders\TaskScenarioSeeder;
 use Database\Seeders\TeamSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,6 +31,7 @@ class TaskScenarioSeederTest extends TestCase
             FieldApprenticeshipProgramSeeder::class,
             CfmTrainingModuleSeeder::class,
             TaskScenarioSeeder::class,
+            TaskManagementSeeder::class,
         ]);
 
         $agencyOwner = User::where('email', 'agency-owner@efgtrack.com')->firstOrFail();

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Support\UserAvatar;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -181,5 +182,43 @@ class User extends Authenticatable
     public function traineeBookings(): HasMany
     {
         return $this->hasMany(Booking::class, 'trainee_id');
+    }
+
+    public function cfmMentorProfile(): HasOne
+    {
+        return $this->hasOne(CfmMentorProfile::class);
+    }
+
+    public function apprentices(): HasMany
+    {
+        return $this->hasMany(User::class, 'mentor_id');
+    }
+
+    public function canAccessCfmManagement(): bool
+    {
+        if ($this->hasAnyRole(['super-admin', 'admin', 'agency-owner'])) {
+            return true;
+        }
+
+        return $this->rank?->code === 'ED';
+    }
+
+    public function canAccessCfmPortal(): bool
+    {
+        if ($this->hasAnyRole(['super-admin', 'admin'])) {
+            return true;
+        }
+
+        return $this->hasRole('certified-field-mentor');
+    }
+
+    public function initials(): string
+    {
+        return UserAvatar::initials($this->name);
+    }
+
+    public function profilePhotoUrl(): ?string
+    {
+        return UserAvatar::urlForUser($this);
     }
 }

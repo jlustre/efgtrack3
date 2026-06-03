@@ -103,6 +103,8 @@ This document defines the operating rules and primary workflows for EFGTrack.com
 - Cross-agency CFM visibility is limited to CFM profile information needed for assignment decisions and does not grant general access to another agency's downline.
 - An agency owner's own CFM pool has first priority for mentor assignment before considering CFMs from other agencies.
 - Only agency owners may assign a CFM to a new member under their sponsorship hierarchy.
+- A CFM may only be assigned to an apprentice or associate when the CFM is licensed in the associate's province or state (country + province/state on the associate profile must match an entry on the CFM's licensed jurisdictions list).
+- CFM assignment UIs must filter the selectable CFM list to licensed matches as soon as the associate is chosen; the server rejects assignments that violate this rule.
 
 ## Core Permissions
 
@@ -227,14 +229,15 @@ This document defines the operating rules and primary workflows for EFGTrack.com
 ## Certified Field Mentor Assignment Workflow
 
 1. A New Recruit or Associate is identified as needing a mentor.
-2. The agency owner responsible for the new member's sponsorship hierarchy selects an active Certified Field Mentor.
-3. The agency owner's own CFM pool should be considered first.
-4. If needed, the agency owner may review CFM profile information from other agencies for assignment planning.
-5. A mentor assignment is created with apprentice, mentor, assigner, start date, and status.
-6. Apprentice dashboard shows the assigned mentor.
-7. Mentor dashboard shows assigned apprentices.
-8. Mentor may create notes, track sessions, and update apprenticeship progress.
-9. Assignment can be ended or replaced by the responsible agency owner or higher authorized administrator.
+2. The associate's country and province/state must be on file; assignment cannot proceed without them.
+3. The agency owner selects an active Certified Field Mentor who is licensed in that jurisdiction; the assignment UI lists only matching CFMs once the associate is chosen.
+4. The agency owner's own CFM pool should be considered first among licensed matches.
+5. If needed, the agency owner may review CFM profile information from other agencies for assignment planning.
+6. A mentor assignment is created with apprentice, mentor, assigner, start date, and status.
+7. Apprentice dashboard shows the assigned mentor.
+8. Mentor dashboard shows assigned apprentices.
+9. Mentor may create notes, track sessions, and update apprenticeship progress.
+10. Assignment can be ended or replaced by the responsible agency owner or higher authorized administrator.
 
 ## Field Apprenticeship Workflow
 

@@ -12,8 +12,9 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <a href="{{ route('team.tree') }}" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Tree View</a>
+                        <a href="{{ route('team.hierarchy') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Hierarchy Table</a>
                         <a href="{{ route('team.org-chart') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Org Chart</a>
-                        <a href="{{ route('team.table') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Table View</a>
+                        <a href="{{ route('team.table') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Flat Table</a>
                     </div>
                 </div>
             </div>

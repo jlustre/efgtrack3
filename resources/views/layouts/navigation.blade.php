@@ -24,6 +24,10 @@
             return false;
         }
 
+        if (isset($item['access']) && ! auth()->user()->{$item['access']}()) {
+            return false;
+        }
+
         return true;
     };
 
@@ -49,6 +53,8 @@
 
     $topItems = [
         ['label' => 'Dashboard', 'route' => 'dashboard'],
+        ['label' => 'CFM Management', 'route' => 'team.cfms', 'access' => 'canAccessCfmManagement'],
+        ['label' => 'CFM Portal', 'route' => 'cfm.portal', 'access' => 'canAccessCfmPortal'],
     ];
 
     $groups = [
@@ -69,11 +75,11 @@
             'items' => [
                 ['label' => 'Downline Dashboard', 'route' => 'team.index', 'permissions' => ['view own team']],
                 ['label' => 'Genealogy Tree', 'route' => 'team.tree', 'permissions' => ['view team tree']],
+                ['label' => 'Hierarchy Table', 'route' => 'team.hierarchy', 'permissions' => ['view team tree']],
                 ['label' => 'Org Chart', 'route' => 'team.org-chart', 'permissions' => ['view org chart']],
                 ['label' => 'Team Table', 'route' => 'team.table', 'permissions' => ['view team table']],
                 ['label' => 'My Directs', 'route' => 'team.directs', 'permissions' => ['view team']],
                 ['label' => 'My Trainees', 'route' => 'team.trainees', 'permissions' => ['view team']],
-                ['label' => 'My CFMs', 'route' => 'team.cfms', 'permissions' => ['view team']],
                 ['label' => 'All Downlines', 'route' => 'team.downlines', 'permissions' => ['view team']],
                 ['label' => 'Prospect Management', 'route' => 'team.prospects', 'permissions' => ['manage prospects']],
             ],

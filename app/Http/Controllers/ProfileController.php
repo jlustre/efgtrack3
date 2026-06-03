@@ -3,9 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Http\Requests\UpdateProfilePhotoRequest;
 use App\Mail\InvitationLinkMail;
 use App\Models\EmailTemplate;
 use App\Models\RegistrationInvitation;
+use App\Models\User;
+use App\Services\MemberProfileTabsService;
+use App\Services\MemberUplineService;
+use App\Services\ProfilePhotoService;
+use App\Support\LocationOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -15,16 +21,34 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private readonly MemberProfileTabsService $memberProfileTabs,
+        private readonly MemberUplineService $memberUpline,
+        private readonly ProfilePhotoService $profilePhotos,
+    ) {}
+
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request): View|RedirectResponse
     {
-        $user = $request->user()->load([
+        if ($request->query('tab') === 'direct-recruits') {
+            return Redirect::route('profile.edit', array_merge(
+                $request->except('tab'),
+                ['tab' => 'recruits']
+            ));
+        }
+
+        $user = $request->user();
+        $user->unsetRelation('profile');
+
+        $user->load([
             'profile',
             'rank',
+            'team.owner',
             'team',
             'sponsor',
+            'mentor',
             'registrationInvitations' => fn ($query) => $query->active()->latest()->limit(5),
         ]);
 
@@ -41,6 +65,11 @@ class ProfileController extends Controller
             'recentInvitations' => $user->registrationInvitations,
             'invitationTemplate' => $invitationTemplate,
             'invitationEmails' => $invitationEmails,
+            'memberTabs' => $this->memberProfileTabs->forUser($user),
+            'profileContext' => [
+                'readonly' => $this->memberUpline->contextFor($user),
+                'locationOptions' => LocationOptions::forPortal(),
+            ],
         ]);
     }
 
@@ -67,15 +96,49 @@ class ProfileController extends Controller
             ['user_id' => $user->id],
             [
                 'phone' => $validated['phone'] ?? null,
-                'province' => $validated['province'] ?? null,
                 'city' => $validated['city'] ?? null,
+                'province' => $validated['province'] ?? null,
+                'country' => $validated['country'] ?? null,
+                'timezone' => $validated['timezone'] ?? null,
+                'best_contact_time' => $validated['best_contact_time'] ?? null,
                 'license_number' => $validated['license_number'] ?? null,
                 'efg_associate_id' => $validated['efg_associate_id'] ?? null,
                 'bio' => $validated['bio'] ?? null,
             ]
         );
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return Redirect::route('profile.edit', ['tab' => 'profile'])->with('profile_feedback', [
+            'type' => 'success',
+            'message' => 'Your profile was updated successfully.',
+        ]);
+    }
+
+    public function updatePhoto(UpdateProfilePhotoRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $profile = $this->profilePhotos->update($user, $request->file('photo'));
+
+        $user->unsetRelation('profile');
+        $user->setRelation('profile', $profile);
+
+        return Redirect::route('profile.edit', ['tab' => 'profile'])->with('profile_feedback', [
+            'type' => 'success',
+            'message' => 'Your profile photo was updated.',
+        ]);
+    }
+
+    public function destroyPhoto(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $this->profilePhotos->delete($user);
+
+        $user->unsetRelation('profile');
+        $user->load('profile');
+
+        return Redirect::route('profile.edit', ['tab' => 'profile'])->with('profile_feedback', [
+            'type' => 'success',
+            'message' => 'Your profile photo was removed.',
+        ]);
     }
 
     public function createInvitation(Request $request): RedirectResponse
@@ -153,7 +216,7 @@ class ProfileController extends Controller
             return;
         }
 
-        if (\App\Models\User::where('email', $email)->exists()) {
+        if (User::where('email', $email)->exists()) {
             throw ValidationException::withMessages([
                 $currentInvitation ? 'recipient_email' : 'email' => 'This email is already registered as an EFGTrack member.',
             ]);
@@ -191,5 +254,4 @@ class ProfileController extends Controller
             'body' => $template?->renderBody($tokens) ?? $invitation->invitationUrl(),
         ];
     }
-
 }

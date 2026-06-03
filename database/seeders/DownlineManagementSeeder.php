@@ -7,88 +7,294 @@ use App\Models\Rank;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
+use Faker\Generator;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * Seeds a sponsorship genealogy for tree / hierarchy testing (Faker names, stable emails).
+ *
+ * Login: downline-owner@efgtrack.com / Password123
+ *
+ * Minimum depth from root: 4 levels (root → leader → … → member).
+ * Branches: wide (Avery), deep chain (Bianca), mixed legs (Caleb), captains + leaves (Dana).
+ *
+ * Stable test emails:
+ * - genealogy.leaf.dana.01@efgtrack.com (leaf, no downline)
+ * - genealogy.deep.bianca.l8@efgtrack.com (deepest chain node)
+ * - genealogy.wide.avery.01@efgtrack.com (wide branch entry)
+ */
 class DownlineManagementSeeder extends Seeder
 {
+    private const FAKER_SEED = 4242;
+
+    private const MIN_SPONSORSHIP_DEPTH = 4;
+
+    private Generator $faker;
+
+    private Team $team;
+
+    private User $root;
+
+    private User $defaultMentor;
+
+    /** @var array<string, int> */
+    private array $rankIds = [];
+
+    private int $memberSequence = 0;
+
     public function run(): void
     {
-        $team = Team::firstOrCreate(
+        $this->faker = \Faker\Factory::create();
+        $this->faker->seed(self::FAKER_SEED);
+
+        $this->team = Team::firstOrCreate(
             ['name' => 'Elite Financial Growth Team'],
             ['description' => 'Default downline team for EFGTrack demo hierarchy.', 'is_active' => true]
         );
 
-        $root = User::firstOrCreate(
-            ['email' => 'downline-owner@efgtrack.com'],
-            [
-                'name' => 'Morgan Executive',
-                'password' => Hash::make('Password123'),
-                'rank_id' => Rank::where('code', 'ED')->value('id'),
-                'team_id' => $team->id,
-                'is_active' => true,
-                'joined_at' => now()->subYears(3),
-            ]
+        $this->rankIds = Rank::query()->pluck('id', 'code')->all();
+
+        $this->root = $this->seedUser(
+            email: 'downline-owner@efgtrack.com',
+            name: 'Morgan Executive',
+            rankCode: 'ED',
+            role: 'agency-owner',
+            sponsor: null,
+            joinedMonthsAgo: 36,
         );
-        $root->assignRole('agency-owner');
 
         $leaders = [
-            ['name' => 'Avery Stone', 'email' => 'avery.stone@efgtrack.com', 'rank' => 'SM', 'role' => 'team-leader'],
-            ['name' => 'Bianca Reyes', 'email' => 'bianca.reyes@efgtrack.com', 'rank' => 'SFA', 'role' => 'certified-field-mentor'],
-            ['name' => 'Caleb Morgan', 'email' => 'caleb.morgan@efgtrack.com', 'rank' => 'SM', 'role' => 'team-leader'],
-            ['name' => 'Dana Chen', 'email' => 'dana.chen@efgtrack.com', 'rank' => 'SFA', 'role' => 'trainer'],
+            $this->seedUser('avery.stone@efgtrack.com', 'Avery Stone', 'SM', 'team-leader', $this->root, 28),
+            $this->seedUser('bianca.reyes@efgtrack.com', 'Bianca Reyes', 'SFA', 'certified-field-mentor', $this->root, 26),
+            $this->seedUser('caleb.morgan@efgtrack.com', 'Caleb Morgan', 'SM', 'team-leader', $this->root, 24),
+            $this->seedUser('dana.chen@efgtrack.com', 'Dana Chen', 'SFA', 'trainer', $this->root, 22),
         ];
 
-        $createdLeaders = collect($leaders)->map(function (array $leader) use ($root, $team): User {
-            $user = User::updateOrCreate(
-                ['email' => $leader['email']],
-                [
-                    'name' => $leader['name'],
-                    'password' => Hash::make('Password123'),
-                    'rank_id' => Rank::where('code', $leader['rank'])->value('id'),
-                    'team_id' => $team->id,
-                    'sponsor_id' => $root->id,
-                    'is_active' => true,
-                    'joined_at' => now()->subMonths(rand(14, 30)),
-                    'last_login_at' => now()->subDays(rand(1, 12)),
-                ]
+        $this->defaultMentor = $leaders[1];
+
+        $this->seedWideBranch($leaders[0], prefix: 'avery');
+        $this->seedDeepChain($leaders[1], prefix: 'bianca', levels: 8);
+        $this->seedMixedBranch($leaders[2], prefix: 'caleb');
+        $this->seedCaptainBranch($leaders[3], prefix: 'dana');
+
+        $this->seedProfiles();
+
+        app(DownlineHierarchyService::class)->rebuild();
+    }
+
+    private function seedWideBranch(User $leader, string $prefix): void
+    {
+        for ($i = 1; $i <= 14; $i++) {
+            $email = $i === 1
+                ? "genealogy.wide.{$prefix}.01@efgtrack.com"
+                : $this->nextEmail("wide.{$prefix}");
+
+            $direct = $this->seedUser(
+                email: $email,
+                name: $this->fakerName(),
+                rankCode: $i % 3 === 0 ? 'SFA' : 'FA',
+                role: 'member',
+                sponsor: $leader,
+                joinedMonthsAgo: 20 - ($i % 12),
+                mentor: $this->defaultMentor,
             );
-            $user->assignRole($leader['role']);
 
-            return $user;
-        });
+            if ($i <= 9) {
+                $this->seedSubtree(
+                    sponsor: $direct,
+                    emailPrefix: "wide.{$prefix}.{$i}",
+                    levelsBelow: self::MIN_SPONSORSHIP_DEPTH - 2,
+                    minChildren: 2,
+                    maxChildren: 4,
+                );
+            }
+        }
+    }
 
-        $names = [
-            'Elliot Carter', 'Farah Singh', 'Gabriel Cruz', 'Harper Lee', 'Iris Patel',
-            'Jonas Wright', 'Kara Brooks', 'Luis Rivera', 'Mina Santos', 'Noah Evans',
-            'Olivia Grant', 'Priya Thomas', 'Quinn Walker', 'Rafael Young', 'Sofia Kim',
-            'Theo Bennett', 'Uma Flores', 'Victor Hall', 'Wendy Scott', 'Xavier Price',
-            'Yara Nelson', 'Zane Cooper', 'Amelia Foster', 'Brandon King', 'Celeste Ross',
-            'Dominic Gray', 'Elena Ward', 'Felix Hughes', 'Gia Coleman', 'Hugo Bell',
-        ];
+    private function seedDeepChain(User $leader, string $prefix, int $levels): void
+    {
+        $sponsor = $leader;
 
-        $mentor = $createdLeaders->firstWhere('email', 'bianca.reyes@efgtrack.com') ?? $createdLeaders->first();
+        for ($level = 1; $level <= $levels; $level++) {
+            $email = match (true) {
+                $level === 1 => "genealogy.deep.{$prefix}.l1@efgtrack.com",
+                $level === $levels => "genealogy.deep.{$prefix}.l{$level}@efgtrack.com",
+                default => $this->nextEmail("deep.{$prefix}.mid"),
+            };
 
-        foreach ($names as $index => $name) {
-            $leader = $createdLeaders[$index % $createdLeaders->count()];
-            $rankCode = $index % 5 === 0 ? 'SFA' : 'FA';
-            $user = User::updateOrCreate(
-                ['email' => str($name)->lower()->replace(' ', '.').'@efgtrack.com'],
-                [
-                    'name' => $name,
-                    'password' => Hash::make('Password123'),
-                    'rank_id' => Rank::where('code', $rankCode)->value('id'),
-                    'team_id' => $team->id,
-                    'sponsor_id' => $leader->id,
-                    'mentor_id' => $mentor->id,
-                    'is_active' => $index % 9 !== 0,
-                    'joined_at' => now()->subDays(20 + ($index * 5)),
-                    'last_login_at' => now()->subDays($index % 15),
-                ]
+            $sponsor = $this->seedUser(
+                email: $email,
+                name: $this->fakerName(),
+                rankCode: $level <= 2 ? 'SFA' : 'FA',
+                role: 'member',
+                sponsor: $sponsor,
+                joinedMonthsAgo: 22 - $level,
+                mentor: $this->defaultMentor,
             );
-            $user->assignRole('member');
+        }
+    }
+
+    private function seedMixedBranch(User $leader, string $prefix): void
+    {
+        for ($i = 1; $i <= 8; $i++) {
+            $this->seedUser(
+                email: $this->nextEmail("mixed.{$prefix}.leaf"),
+                name: $this->fakerName(),
+                rankCode: 'FA',
+                role: 'member',
+                sponsor: $leader,
+                joinedMonthsAgo: 16 - ($i % 10),
+                mentor: $this->defaultMentor,
+                isActive: $i % 6 !== 0,
+            );
         }
 
+        for ($leg = 1; $leg <= 3; $leg++) {
+            $legRoot = $this->seedUser(
+                email: $leg === 1
+                    ? "genealogy.mixed.{$prefix}.leg-root@efgtrack.com"
+                    : $this->nextEmail("mixed.{$prefix}.leg"),
+                name: $this->fakerName(),
+                rankCode: 'FA',
+                role: 'member',
+                sponsor: $leader,
+                joinedMonthsAgo: 14,
+                mentor: $this->defaultMentor,
+            );
+
+            $this->seedSubtree(
+                sponsor: $legRoot,
+                emailPrefix: "mixed.{$prefix}.leg{$leg}",
+                levelsBelow: self::MIN_SPONSORSHIP_DEPTH - 1,
+                minChildren: 1,
+                maxChildren: 3,
+            );
+        }
+    }
+
+    private function seedCaptainBranch(User $leader, string $prefix): void
+    {
+        for ($captain = 1; $captain <= 5; $captain++) {
+            $captainUser = $this->seedUser(
+                email: $this->nextEmail("captain.{$prefix}"),
+                name: $this->fakerName(),
+                rankCode: $captain % 2 === 0 ? 'SFA' : 'FA',
+                role: 'member',
+                sponsor: $leader,
+                joinedMonthsAgo: 15 - $captain,
+                mentor: $this->defaultMentor,
+            );
+
+            for ($leaf = 1; $leaf <= 6; $leaf++) {
+                $email = ($captain === 1 && $leaf === 1)
+                    ? "genealogy.leaf.{$prefix}.01@efgtrack.com"
+                    : $this->nextEmail("leaf.{$prefix}");
+
+                $this->seedUser(
+                    email: $email,
+                    name: $this->fakerName(),
+                    rankCode: 'FA',
+                    role: 'member',
+                    sponsor: $captainUser,
+                    joinedMonthsAgo: 12 - ($leaf % 8),
+                    mentor: $this->defaultMentor,
+                    isActive: ($captain + $leaf) % 7 !== 0,
+                );
+            }
+        }
+    }
+
+    /**
+     * @return list<User>
+     */
+    private function seedSubtree(
+        User $sponsor,
+        string $emailPrefix,
+        int $levelsBelow,
+        int $minChildren,
+        int $maxChildren,
+    ): array {
+        if ($levelsBelow < 1) {
+            return [];
+        }
+
+        $created = [];
+        $childCount = $this->faker->numberBetween($minChildren, $maxChildren);
+
+        for ($index = 1; $index <= $childCount; $index++) {
+            $child = $this->seedUser(
+                email: $this->nextEmail($emailPrefix),
+                name: $this->fakerName(),
+                rankCode: $index % 4 === 0 ? 'SFA' : 'FA',
+                role: 'member',
+                sponsor: $sponsor,
+                joinedMonthsAgo: $this->faker->numberBetween(3, 18),
+                mentor: $this->defaultMentor,
+            );
+
+            $created[] = $child;
+
+            if ($levelsBelow > 1) {
+                $this->seedSubtree(
+                    sponsor: $child,
+                    emailPrefix: "{$emailPrefix}.{$index}",
+                    levelsBelow: $levelsBelow - 1,
+                    minChildren: $minChildren,
+                    maxChildren: $maxChildren,
+                );
+            }
+        }
+
+        return $created;
+    }
+
+    private function fakerName(): string
+    {
+        return $this->faker->name();
+    }
+
+    private function nextEmail(string $branch): string
+    {
+        $this->memberSequence++;
+
+        return sprintf('genealogy.%s.%05d@efgtrack.com', $branch, $this->memberSequence);
+    }
+
+    private function seedUser(
+        string $email,
+        string $name,
+        string $rankCode,
+        string $role,
+        ?User $sponsor,
+        int $joinedMonthsAgo,
+        ?User $mentor = null,
+        bool $isActive = true,
+    ): User {
+        $user = User::updateOrCreate(
+            ['email' => $email],
+            [
+                'name' => $name,
+                'password' => Hash::make('Password123'),
+                'rank_id' => $this->rankIds[$rankCode] ?? $this->rankIds['FA'],
+                'team_id' => $this->team->id,
+                'sponsor_id' => $sponsor?->id,
+                'mentor_id' => $mentor?->id,
+                'is_active' => $isActive,
+                'joined_at' => now()->subMonths($joinedMonthsAgo),
+                'last_login_at' => now()->subDays(max(1, $joinedMonthsAgo % 14)),
+            ],
+        );
+
+        if (! $user->hasRole($role)) {
+            $user->assignRole($role);
+        }
+
+        return $user;
+    }
+
+    private function seedProfiles(): void
+    {
         $countries = [
             ['Canada', 'Vancouver', 'America/Vancouver'],
             ['United States', 'Phoenix', 'America/Phoenix'],
@@ -96,24 +302,26 @@ class DownlineManagementSeeder extends Seeder
             ['United States', 'Dallas', 'America/Chicago'],
         ];
 
-        User::query()->orderBy('id')->get()->each(function (User $user, int $index) use ($countries): void {
-            [$country, $city, $timezone] = $countries[$index % count($countries)];
+        User::query()
+            ->where('team_id', $this->team->id)
+            ->orderBy('id')
+            ->get()
+            ->each(function (User $user, int $index) use ($countries): void {
+                [$country, $city, $timezone] = $countries[$index % count($countries)];
 
-            Profile::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'phone' => '555-010'.($index % 10),
-                    'city' => $city,
-                    'country' => $country,
-                    'timezone' => $timezone,
-                    'license_number' => $index % 3 === 0 ? 'LIC-'.$user->id.'-EFG' : null,
-                    'efg_associate_id' => 'EFG-'.$user->id,
-                    'is_efg_active_associate' => true,
-                    'recruited_at' => $user->joined_at,
-                ]
-            );
-        });
-
-        app(DownlineHierarchyService::class)->rebuild();
+                Profile::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'phone' => '555-01'.str_pad((string) ($index % 100), 2, '0', STR_PAD_LEFT),
+                        'city' => $city,
+                        'country' => $country,
+                        'timezone' => $timezone,
+                        'license_number' => $index % 3 === 0 ? 'LIC-'.$user->id.'-EFG' : null,
+                        'efg_associate_id' => 'EFG-'.$user->id,
+                        'is_efg_active_associate' => true,
+                        'recruited_at' => $user->joined_at,
+                    ]
+                );
+            });
     }
 }

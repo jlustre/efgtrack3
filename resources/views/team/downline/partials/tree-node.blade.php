@@ -1,20 +1,17 @@
 <div class="relative w-56 rounded-lg border {{ $isRoot ? 'border-[#C8A24A]' : 'border-slate-700' }} bg-[#07111F] p-3 text-white shadow-lg">
     <div class="group relative flex items-center gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#C8A24A] bg-[#FFF4CF] text-sm font-bold text-[#0B1F3A]">
-            {{ $node['avatar'] }}
-        </div>
+        <x-user-avatar
+            :photo-url="$node['profile_photo_url'] ?? null"
+            :name="$node['name']"
+            size="md"
+            class="border-[#C8A24A] bg-[#FFF4CF] [&_span]:text-[#0B1F3A]"
+        />
         <div class="min-w-0 flex-1">
             <div>
-                <a href="{{ route('team.member', $node['id']) }}" class="truncate text-sm font-semibold text-white hover:text-[#C8A24A]">{{ $node['name'] }}</a>
+                <a href="{{ route('team.member', $node['id']) }}" class="block text-sm font-semibold leading-snug text-white hover:text-[#C8A24A]">{{ $node['name'] }}</a>
             </div>
             <div class="mt-1 flex items-center gap-2">
                 @include('team.downline.partials.member-badge', ['member' => $node])
-                <span
-                    class="inline-flex h-6 min-w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 px-2 text-[10px] font-bold uppercase tracking-wide text-white"
-                    title="{{ $node['country'] }}"
-                >
-                    {{ $node['country_flag'] }}
-                </span>
                 @if (! $isRoot)
                     <a
                         href="{{ route('team.member.tree', $node['id']) }}"

@@ -60,9 +60,7 @@
                         $unreadNotifications = $user?->unreadNotifications()->count() ?? 0;
                         $recentNotifications = $user?->notifications()->latest()->limit(3)->get() ?? collect();
                         $openTaskCount = $user ? app(\App\Http\Controllers\TaskController::class)->openTaskCountFor($user) : 0;
-                        $initials = $user
-                            ? collect(explode(' ', $user->name))->filter()->take(2)->map(fn ($part) => str($part)->substr(0, 1)->upper())->join('')
-                            : 'EF';
+                        $user?->loadMissing('profile');
                     @endphp
 
                     <div class="flex flex-wrap items-center gap-3">
@@ -179,7 +177,7 @@
                                 <x-dropdown align="right" width="64" contentClasses="bg-white p-0">
                                     <x-slot name="trigger">
                                         <button type="button" class="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-2 transition hover:border-[#C8A24A] hover:bg-slate-50 sm:pr-3">
-                                            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0B1F3A] text-xs font-bold text-[#C8A24A]">{{ $initials }}</span>
+                                            <x-user-avatar :user="$user" size="sm" class="!h-8 !w-8" />
                                             <span class="hidden text-left sm:block">
                                                 <span class="block max-w-32 truncate text-sm font-semibold text-[#0B1F3A]">{{ $user->name }}</span>
                                                 <span class="block max-w-32 truncate text-xs text-slate-500">{{ $user->getRoleNames()->first() ?? 'Portal User' }}</span>
@@ -234,5 +232,6 @@
         </div>
 
         @livewireScripts
+        @include('layouts.partials.page-chrome')
     </body>
 </html>

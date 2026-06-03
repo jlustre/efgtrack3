@@ -2,9 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Mail\InvitationLinkMail;
+use App\Models\Profile;
 use App\Models\RegistrationInvitation;
 use App\Models\User;
-use App\Mail\InvitationLinkMail;
+use App\Services\DownlineHierarchyService;
+use Database\Seeders\CfmTrainingModuleSeeder;
+use Database\Seeders\FieldApprenticeshipProgramSeeder;
+use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\RankSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\TaskScenarioSeeder;
+use Database\Seeders\TeamSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -23,7 +32,108 @@ class ProfileTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertDontSee('Delete Account');
+            ->assertDontSee('Delete Account')
+            ->assertSee('Profile Details', false)
+            ->assertSee('Update Profile Photo', false)
+            ->assertSee('Onboarding', false)
+            ->assertSee('Recruits', false)
+            ->assertSee('Annual Premium', false)
+            ->assertSee('Other Training', false);
+    }
+
+    public function test_profile_page_shows_tab_listing_tables_with_seeded_data(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            RankSeeder::class,
+            TeamSeeder::class,
+            OnboardingStepSeeder::class,
+            FieldApprenticeshipProgramSeeder::class,
+            CfmTrainingModuleSeeder::class,
+            TaskScenarioSeeder::class,
+        ]);
+
+        $cfm = User::where('email', 'cfm@efgtrack.com')->firstOrFail();
+
+        $this->actingAs($cfm)
+            ->get(route('profile.edit', ['tab' => 'profile']))
+            ->assertOk()
+            ->assertSee('Agency Owner', false)
+            ->assertSee('Arielle Morgan', false)
+            ->assertSee('Best Contact Time', false)
+            ->assertDontSee('Member Information', false);
+
+        $this->actingAs($cfm)
+            ->get(route('profile.edit', ['tab' => 'onboarding']))
+            ->assertOk()
+            ->assertSee('Onboarding Checklist', false)
+            ->assertSee('Field Apprenticeship Program', false);
+    }
+
+    public function test_recruits_tab_shows_levels_and_total_with_search_and_filters(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            RankSeeder::class,
+            OnboardingStepSeeder::class,
+            FieldApprenticeshipProgramSeeder::class,
+            CfmTrainingModuleSeeder::class,
+        ]);
+
+        $sponsor = User::factory()->create(['name' => 'Tab Sponsor']);
+        $levelOne = User::factory()->create([
+            'name' => 'Recruit Level One',
+            'email' => 'recruit.level1@example.com',
+            'sponsor_id' => $sponsor->id,
+            'is_active' => true,
+        ]);
+        $levelOne->assignRole('certified-field-mentor');
+        Profile::query()->create([
+            'user_id' => $levelOne->id,
+            'phone' => '+1 416-555-0100',
+            'province' => 'Ontario',
+            'country' => 'Canada',
+        ]);
+        User::factory()->create([
+            'name' => 'Recruit Level Two',
+            'email' => 'recruit.level2@example.com',
+            'sponsor_id' => $levelOne->id,
+            'is_active' => true,
+        ]);
+
+        app(DownlineHierarchyService::class)->rebuild();
+
+        $this->actingAs($sponsor)
+            ->get(route('profile.edit', ['tab' => 'recruits']))
+            ->assertOk()
+            ->assertSee('Total recruits: 2', false)
+            ->assertSee('1 at Level 1', false)
+            ->assertSee('Level', false)
+            ->assertSee('Member', false)
+            ->assertSee('Role', false)
+            ->assertSee('Location', false)
+            ->assertSee('Recruit Level One', false)
+            ->assertSee('recruit.level1@example.com', false)
+            ->assertSee('+1 416-555-0100', false)
+            ->assertSee('Recruit Level Two', false)
+            ->assertSee('CFM', false)
+            ->assertSee('Ontario', false)
+            ->assertSee('Search by name, email, phone, role, rank, sponsor', false)
+            ->assertSee('All levels', false)
+            ->assertSee('All roles', false)
+            ->assertSee('All provinces', false)
+            ->assertSee('Clear filters', false);
+
+        $this->actingAs($sponsor)
+            ->get(route('profile.edit', ['tab' => 'direct-recruits']))
+            ->assertRedirect(route('profile.edit', ['tab' => 'recruits']));
+
+        $this->actingAs($sponsor)
+            ->get(route('profile.edit', ['tab' => 'annual-premium']))
+            ->assertOk()
+            ->assertSee('Search by source, description, period', false)
+            ->assertSee('All sources', false)
+            ->assertSee('Filtered total', false);
     }
 
     public function test_profile_information_can_be_updated(): void
@@ -38,6 +148,9 @@ class ProfileTest extends TestCase
                 'phone' => '555-123-4567',
                 'province' => 'Ontario',
                 'city' => 'Toronto',
+                'country' => 'Canada',
+                'timezone' => 'Canada Eastern Time',
+                'best_contact_time' => 'Morning (8am – 12pm)',
                 'license_number' => 'LIC-123',
                 'efg_associate_id' => 'EFG-2001',
                 'bio' => 'Building a strong financial services team.',
@@ -45,7 +158,14 @@ class ProfileTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect(route('profile.edit', ['tab' => 'profile']))
+            ->assertSessionHas('profile_feedback', fn (array $feedback) => $feedback['type'] === 'success');
+
+        $this->actingAs($user)
+            ->get(route('profile.edit', ['tab' => 'profile']))
+            ->assertOk()
+            ->assertSee('Profile saved', false)
+            ->assertSee('Your profile was updated successfully.', false);
 
         $user->refresh();
 
@@ -55,8 +175,35 @@ class ProfileTest extends TestCase
         $this->assertSame('555-123-4567', $user->profile->phone);
         $this->assertSame('Ontario', $user->profile->province);
         $this->assertSame('Toronto', $user->profile->city);
+        $this->assertSame('Canada', $user->profile->country);
+        $this->assertSame('Canada Eastern Time', $user->profile->timezone);
+        $this->assertSame('Morning (8am – 12pm)', $user->profile->best_contact_time);
         $this->assertSame('LIC-123', $user->profile->license_number);
         $this->assertSame('EFG-2001', $user->profile->efg_associate_id);
+    }
+
+    public function test_profile_update_shows_validation_errors_on_profile_tab(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from(route('profile.edit', ['tab' => 'profile']))
+            ->patch(route('profile.update'), [
+                'name' => 'Test User',
+                'email' => 'not-an-email',
+                'country' => 'Canada',
+                'province' => 'Invalid Province',
+                'timezone' => 'Invalid TZ',
+            ])
+            ->assertRedirect(route('profile.edit', ['tab' => 'profile']))
+            ->assertSessionHas('profile_feedback', fn (array $feedback) => $feedback['type'] === 'error')
+            ->assertSessionHasErrors(['email', 'province', 'timezone']);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit', ['tab' => 'profile']))
+            ->assertOk()
+            ->assertSee('Could not save profile', false)
+            ->assertSee('Save Profile', false);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
@@ -72,7 +219,7 @@ class ProfileTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect(route('profile.edit', ['tab' => 'profile']));
 
         $this->assertNotNull($user->refresh()->email_verified_at);
     }

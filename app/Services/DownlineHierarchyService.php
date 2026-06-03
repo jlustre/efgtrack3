@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\MemberDisplayName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -161,5 +162,81 @@ class DownlineHierarchyService
             ->count();
 
         return (int) round(($complete / $total) * 100);
+    }
+
+    /**
+     * @return list<array{
+     *     id: int,
+     *     parent_id: int|null,
+     *     depth: int,
+     *     name: string,
+     *     email: string,
+     *     rank: string,
+     *     sponsor: string,
+     *     country: string,
+     *     direct_recruits: int,
+     *     total_downline: int,
+     *     is_active: bool,
+     *     has_children: bool,
+     *     member_url: string,
+     *     branch_tree_url: string,
+     * }>
+     */
+    public function hierarchyTableRows(User $root, Collection $members): array
+    {
+        $members = $members->keyBy('id');
+
+        $root->loadMissing(['profile', 'rank', 'sponsor']);
+        if (! $root->relationLoaded('sponsoredMembers')) {
+            $root->loadCount(['sponsoredMembers as direct_recruits_count']);
+        }
+
+        if (! $members->has($root->id)) {
+            $root->setAttribute('branch_depth', 0);
+            $members = $members->put($root->id, $root);
+        }
+
+        $childrenBySponsor = $members
+            ->filter(fn (User $member): bool => $member->sponsor_id !== null && $members->has($member->sponsor_id))
+            ->groupBy('sponsor_id')
+            ->map(fn (Collection $group) => $group->sortBy('name')->values());
+
+        $rows = [];
+        $walk = function (int $memberId, int $depth) use (&$walk, &$rows, $members, $childrenBySponsor, $root): void {
+            /** @var User $member */
+            $member = $members->get($memberId);
+            if (! $member) {
+                return;
+            }
+
+            $branchDepth = (int) ($member->branch_depth ?? $member->getAttribute('branch_depth') ?? $depth);
+            $childGroup = $childrenBySponsor->get($memberId, collect());
+            $metrics = $this->memberMetrics($member);
+
+            $rows[] = [
+                'id' => $member->id,
+                'parent_id' => $member->id === $root->id ? null : $member->sponsor_id,
+                'depth' => $branchDepth,
+                'name' => MemberDisplayName::for($member),
+                'email' => $member->email,
+                'rank' => $member->rank?->code ?? 'FA',
+                'sponsor' => $member->sponsor?->name ?? '—',
+                'country' => $member->profile?->country ?? 'Global',
+                'direct_recruits' => (int) ($member->direct_recruits_count ?? $metrics['direct_recruits']),
+                'total_downline' => $metrics['total_downline'],
+                'is_active' => (bool) $member->is_active,
+                'has_children' => $childGroup->isNotEmpty(),
+                'member_url' => route('team.member', $member),
+                'branch_tree_url' => route('team.member.hierarchy', $member),
+            ];
+
+            foreach ($childGroup as $child) {
+                $walk($child->id, $branchDepth + 1);
+            }
+        };
+
+        $walk($root->id, 0);
+
+        return $rows;
     }
 }

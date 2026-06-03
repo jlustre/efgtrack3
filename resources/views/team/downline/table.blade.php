@@ -9,6 +9,7 @@
                 </div>
                 <div class="flex gap-2">
                     <a href="{{ route('team.tree') }}" class="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold hover:bg-white/10">Tree</a>
+                    <a href="{{ route('team.hierarchy') }}" class="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold hover:bg-white/10">Hierarchy</a>
                     <a href="{{ route('team.org-chart') }}" class="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold hover:bg-white/10">Org Chart</a>
                     @if (auth()->user()->hasAnyPermission(['export team data', 'view all teams']))
                         <a href="{{ route('team.export', request()->query()) }}" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Export CSV</a>

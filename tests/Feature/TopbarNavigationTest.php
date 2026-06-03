@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Http\Controllers\TaskController;
+use App\Models\User;
 use Database\Seeders\CfmTrainingModuleSeeder;
 use Database\Seeders\FieldApprenticeshipProgramSeeder;
 use Database\Seeders\LicensingStepSeeder;
@@ -163,7 +163,6 @@ class TopbarNavigationTest extends TestCase
             'assessments.index',
             'team.directs',
             'team.trainees',
-            'team.cfms',
             'team.downlines',
             'team.prospects',
             'announcements.index',

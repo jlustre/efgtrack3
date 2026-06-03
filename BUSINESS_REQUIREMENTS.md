@@ -135,6 +135,7 @@ The system should give each user a clear view of what they need to do next, whil
 - New Recruits and Associates should be assigned to a Certified Field Mentor.
 - Only agency owners must be able to assign mentors to new members under their sponsorship hierarchy.
 - Agency owners should prioritize their own CFM pool before selecting a CFM from another agency.
+- A CFM may only be assigned when licensed in the associate's province or state; assignment screens filter CFMs by the associate's profile jurisdiction and the server enforces the same rule.
 - CFMs must be able to view assigned apprentices.
 - Mentor assignments must support active, completed, and replaced statuses.
 

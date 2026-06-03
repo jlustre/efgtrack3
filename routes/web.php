@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CfmManagementController;
+use App\Http\Controllers\CfmPortalController;
 use App\Http\Controllers\DownlineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
@@ -41,6 +43,8 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/cfm-training', [TrackerChecklistController::class, 'cfmTraining'])->name('cfm-training.index');
     Route::patch('/cfm-training/{step}', [TrackerChecklistController::class, 'updateCfmTraining'])->name('cfm-training.update');
     Route::patch('/cfm-training-progress/{progress}/review', [TrackerChecklistController::class, 'reviewCfmTraining'])->name('cfm-training.review');
+    Route::get('/cfm/portal', [CfmPortalController::class, 'index'])->middleware('cfm.portal')->name('cfm.portal');
+    Route::patch('/cfm/portal/profile', [CfmPortalController::class, 'updateProfile'])->middleware('cfm.portal')->name('cfm.portal.profile.update');
     Route::view('/training', 'training.index')->name('training.index');
     Route::view('/assessments', 'assessments.index')->name('assessments.index');
     Route::view('/rank-advancement', 'rank-advancement.index')->name('rank-advancement.index');
@@ -48,13 +52,18 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/team/tree', [DownlineController::class, 'tree'])->middleware('permission:view team tree')->name('team.tree');
     Route::get('/team/org-chart', [DownlineController::class, 'orgChart'])->middleware('permission:view org chart')->name('team.org-chart');
     Route::get('/team/table', [DownlineController::class, 'table'])->middleware('permission:view team table')->name('team.table');
+    Route::get('/team/hierarchy', [DownlineController::class, 'hierarchyTable'])->middleware('permission:view team tree')->name('team.hierarchy');
     Route::get('/team/member/{user}', [DownlineController::class, 'member'])->middleware('permission:view own team')->name('team.member');
     Route::get('/team/member/{user}/tree', [DownlineController::class, 'tree'])->middleware('permission:view team tree')->name('team.member.tree');
+    Route::get('/team/member/{user}/hierarchy', [DownlineController::class, 'hierarchyTable'])->middleware('permission:view team tree')->name('team.member.hierarchy');
     Route::get('/team/member/{user}/org-chart', [DownlineController::class, 'orgChart'])->middleware('permission:view org chart')->name('team.member.org-chart');
     Route::get('/team/export', [DownlineController::class, 'export'])->middleware('permission:export team data')->name('team.export');
     Route::view('/team/directs', 'team.directs')->middleware('permission:view team')->name('team.directs');
     Route::view('/team/trainees', 'team.trainees')->middleware('permission:view team')->name('team.trainees');
-    Route::view('/team/cfms', 'team.cfms')->middleware('permission:view team')->name('team.cfms');
+    Route::get('/team/cfms', [CfmManagementController::class, 'index'])->middleware('cfm.management')->name('team.cfms');
+    Route::patch('/team/cfms/{user}/licensed-jurisdictions', [CfmManagementController::class, 'updateLicensedJurisdictions'])->middleware('cfm.management')->name('team.cfms.licensed-jurisdictions.update');
+    Route::post('/team/cfms/assign', [CfmManagementController::class, 'assign'])->middleware('cfm.management')->name('team.cfms.assign');
+    Route::post('/team/cfms', [CfmManagementController::class, 'store'])->middleware('cfm.management')->name('team.cfms.store');
     Route::view('/team/downlines', 'team.downlines')->middleware('permission:view team')->name('team.downlines');
     Route::get('/team/prospects', [ProspectManagementController::class, 'index'])->middleware('permission:manage prospects')->name('team.prospects');
     Route::get('/team/prospects/records/{prospect}', [ProspectManagementController::class, 'show'])->middleware('permission:manage prospects')->name('team.prospects.records.show');
@@ -96,6 +105,8 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
+    Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
     Route::post('/profile/invitations', [ProfileController::class, 'createInvitation'])->name('profile.invitations.store');
     Route::post('/profile/invitations/{invitation}/send', [ProfileController::class, 'sendInvitationEmail'])->name('profile.invitations.send');
     Route::delete('/profile/invitations/{invitation}', [ProfileController::class, 'destroyInvitation'])->name('profile.invitations.destroy');

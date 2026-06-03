@@ -11,9 +11,7 @@
             <div class="bg-[#0B1F3A] px-6 py-8 text-white">
                 <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div class="flex items-center gap-5">
-                        <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-[#C8A24A]/50 bg-white/10 text-2xl font-bold">
-                            {{ str($user->name)->substr(0, 1)->upper() }}
-                        </div>
+                        <x-user-avatar :user="$user" size="xl" class="border-white/20 bg-white/10" />
 
                         <div>
                             <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Member Profile</p>
@@ -60,9 +58,9 @@
         </section>
 
         <div class="grid gap-6 xl:grid-cols-3">
-            <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-                @include('profile.partials.update-profile-information-form')
-            </section>
+            <div class="xl:col-span-2">
+                @include('profile.partials.member-tabs')
+            </div>
 
             <aside class="space-y-6">
                 <section class="rounded-lg border border-[#C8A24A]/40 bg-white p-6 shadow-sm">
@@ -183,12 +181,6 @@
                     </div>
                 </section>
             </aside>
-        </div>
-
-        <div class="grid gap-6 lg:grid-cols-2">
-            <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-                @include('profile.partials.update-password-form')
-            </section>
         </div>
     </div>
 </x-app-layout>

@@ -35,5 +35,7 @@
                 </div>
             </div>
         @endif
+
+        @include('layouts.partials.page-chrome')
     </body>
 </html>

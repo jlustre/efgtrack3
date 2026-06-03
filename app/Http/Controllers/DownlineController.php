@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
+use App\Support\MemberDisplayName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -11,9 +12,7 @@ use Illuminate\View\View;
 
 class DownlineController extends Controller
 {
-    public function __construct(private readonly DownlineHierarchyService $hierarchy)
-    {
-    }
+    public function __construct(private readonly DownlineHierarchyService $hierarchy) {}
 
     public function index(Request $request): View
     {
@@ -49,24 +48,22 @@ class DownlineController extends Controller
 
     public function orgChart(Request $request, ?User $user = null): View
     {
-        $root = $user ?? $request->user();
-        abort_unless($this->hierarchy->canViewMember($request->user(), $root), 403);
+        $viewer = $request->user();
+        $root = $user ?? $viewer;
+        abort_unless($this->hierarchy->canViewMember($viewer, $root), 403);
+
+        $root->loadMissing(['profile', 'rank', 'roles', 'mentor', 'sponsor', 'team']);
 
         $leaders = $this->hierarchy->directRecruitsQuery($root)
-            ->with(['profile', 'rank', 'roles'])
+            ->with(['profile', 'rank', 'roles', 'mentor', 'sponsor', 'team'])
             ->withCount(['sponsoredMembers as direct_recruits_count'])
             ->orderBy('name')
             ->get()
-            ->map(fn (User $member) => [
-                ...$this->memberCard($member),
-                'role' => $member->roles->pluck('name')->first() ?? 'member',
-                'active_associates' => $this->hierarchy->descendantsQuery($member)->where('is_active', true)->count(),
-                'licensed_associates' => $this->licensedCount($member),
-                'pending_licensing' => $this->pendingLicensingCount($member),
-            ]);
+            ->map(fn (User $member): array => $this->orgChartProfilePayload($member, $viewer))
+            ->values();
 
         return view('team.downline.org-chart', [
-            'root' => $this->memberCard($root->loadMissing(['profile', 'rank', 'roles'])),
+            'root' => $this->orgChartProfilePayload($root, $viewer),
             'leaders' => $leaders,
             'branchSummary' => $this->stats($root),
         ]);
@@ -80,6 +77,98 @@ class DownlineController extends Controller
             'members' => $members->paginate(15)->withQueryString(),
             'filters' => $this->filterOptions($request->user()),
         ]);
+    }
+
+    public function hierarchyTable(Request $request, ?User $user = null): View
+    {
+        $viewer = $request->user();
+        $treeRoot = ($user && $user->id !== $viewer->id) ? $user : $viewer;
+        abort_unless($this->hierarchy->canViewMember($viewer, $treeRoot), 403);
+
+        $membersQuery = $this->hierarchy->descendantsQuery($treeRoot, includeSelf: true)
+            ->addSelect('user_hierarchy_paths.depth as branch_depth')
+            ->whereIn('users.id', $this->hierarchy->visibleMembersQuery($viewer)->select('users.id'));
+
+        $members = $membersQuery
+            ->get()
+            ->loadMissing(['profile', 'rank', 'roles', 'mentor', 'sponsor', 'team']);
+
+        $membersById = $members->keyBy('id');
+        $rows = collect($this->hierarchy->hierarchyTableRows($treeRoot, $members))
+            ->map(function (array $row) use ($membersById, $viewer, $treeRoot): array {
+                /** @var User $member */
+                $member = $membersById->get($row['id']);
+                $uplineHierarchyUrl = null;
+                $isCurrentTop = $member->id === $treeRoot->id;
+                $isLoggedInUserAtOwnHierarchy = $isCurrentTop && $treeRoot->id === $viewer->id;
+
+                // Down arrow: direct upline becomes topmost (hidden when already top or no viewable upline).
+                if (! $isLoggedInUserAtOwnHierarchy && $member->sponsor_id) {
+                    $sponsor = $member->relationLoaded('sponsor') ? $member->sponsor : User::query()->find($member->sponsor_id);
+
+                    if ($sponsor && $this->hierarchy->canViewMember($viewer, $sponsor)) {
+                        $uplineHierarchyUrl = $member->sponsor_id === $viewer->id
+                            ? route('team.hierarchy')
+                            : route('team.member.hierarchy', $member->sponsor_id);
+                    }
+                }
+
+                return [
+                    ...$row,
+                    'profile' => $this->hierarchyProfileSummary($member, $viewer),
+                    // Up arrow: this member becomes topmost (hidden when already the current top row).
+                    'make_top_url' => $isCurrentTop
+                        ? null
+                        : route('team.member.hierarchy', $member),
+                    'hierarchy_top_url' => $member->id === $viewer->id
+                        ? route('team.hierarchy')
+                        : route('team.member.hierarchy', $member),
+                    'upline_hierarchy_url' => $uplineHierarchyUrl,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $searchMembers = $this->hierarchy->descendantsQuery($viewer, includeSelf: true)
+            ->whereIn('users.id', $this->hierarchy->visibleMembersQuery($viewer)->select('users.id'))
+            ->with('profile')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $member): array => [
+                'id' => $member->id,
+                'name' => MemberDisplayName::for($member),
+                'hierarchy_top_url' => $member->id === $viewer->id
+                    ? route('team.hierarchy')
+                    : route('team.member.hierarchy', $member),
+            ])
+            ->values()
+            ->all();
+
+        return view('team.downline.hierarchy-table', [
+            'root' => $treeRoot->loadMissing(['profile', 'rank']),
+            'viewer' => $viewer,
+            'isBranchView' => $treeRoot->id !== $viewer->id,
+            'rows' => $rows,
+            'searchMembers' => $searchMembers,
+        ]);
+    }
+
+    private function hierarchyProfileSummary(User $member, User $viewer): array
+    {
+        $role = $member->roles->pluck('name')->first() ?? 'member';
+
+        return [
+            ...$this->memberCard($member, $viewer),
+            'role_label' => str($role)->replace('-', ' ')->title()->toString(),
+            'province' => $member->profile?->province ?? 'Not set',
+            'team' => $member->team?->name ?? 'Unassigned',
+            'phone' => $member->profile?->phone ?? 'Not set',
+            'license_number' => $member->profile?->license_number ?? 'Not licensed yet',
+            'can_see_sensitive' => $viewer->can('viewSensitive', $member),
+            'member_url' => route('team.member', $member),
+            'hierarchy_url' => route('team.member.hierarchy', $member),
+            'tree_url' => route('team.member.tree', $member),
+        ];
     }
 
     public function member(Request $request, User $user): View
@@ -172,6 +261,29 @@ class DownlineController extends Controller
         ];
     }
 
+    private function orgChartProfilePayload(User $member, User $viewer): array
+    {
+        $member->loadMissing(['profile', 'rank', 'roles', 'mentor', 'sponsor', 'team']);
+        $role = $member->roles->pluck('name')->first() ?? 'member';
+
+        return [
+            ...$this->memberCard($member, $viewer),
+            'role' => $role,
+            'role_label' => str($role)->replace('-', ' ')->title()->toString(),
+            'province' => $member->profile?->province ?? 'Not set',
+            'team' => $member->team?->name ?? 'Unassigned',
+            'phone' => $member->profile?->phone ?? 'Not set',
+            'license_number' => $member->profile?->license_number ?? 'Not licensed yet',
+            'can_see_sensitive' => $viewer->can('viewSensitive', $member),
+            'active_associates' => $this->hierarchy->descendantsQuery($member)->where('is_active', true)->count(),
+            'licensed_associates' => $this->licensedCount($member),
+            'pending_licensing' => $this->pendingLicensingCount($member),
+            'member_url' => route('team.member', $member),
+            'org_chart_url' => route('team.member.org-chart', $member),
+            'tree_url' => route('team.member.tree', $member),
+        ];
+    }
+
     private function memberCard(User $member, ?User $viewer = null): array
     {
         $metrics = $this->hierarchy->memberMetrics($member);
@@ -187,9 +299,10 @@ class DownlineController extends Controller
         return [
             'id' => $member->id,
             'sponsor_id' => $member->sponsor_id,
-            'name' => $member->name,
+            'name' => MemberDisplayName::for($member),
             'email' => $member->email,
-            'avatar' => str($member->name)->explode(' ')->map(fn ($part) => str($part)->substr(0, 1))->take(2)->implode(''),
+            'avatar' => $member->initials(),
+            'profile_photo_url' => $member->profilePhotoUrl(),
             'rank' => $member->rank?->code ?? 'FA',
             'rank_name' => $member->rank?->name ?? 'Field Associate',
             'sponsor' => $member->sponsor?->name ?? 'None',
