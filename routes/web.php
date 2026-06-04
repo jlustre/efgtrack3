@@ -16,6 +16,17 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TrackerChecklistController;
 use Illuminate\Support\Facades\Route;
 
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/run-migrations-secret-2026', function () {
+
+    Artisan::call('migrate', [
+        '--force' => true
+    ]);
+
+    return nl2br(Artisan::output());
+});
+
 Route::get('/', function () {
     return view('welcome');
 });
