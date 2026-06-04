@@ -7,12 +7,11 @@ use App\Models\Rank;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
-use Faker\Generator;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Seeds a sponsorship genealogy for tree / hierarchy testing (Faker names, stable emails).
+ * Seeds a sponsorship genealogy for tree / hierarchy testing (realistic names, stable emails).
  *
  * Login: downline-owner@efgtrack.com / Password123
  *
@@ -30,7 +29,23 @@ class DownlineManagementSeeder extends Seeder
 
     private const MIN_SPONSORSHIP_DEPTH = 4;
 
-    private Generator $faker;
+    /** @var list<string> */
+    private const FIRST_NAMES = [
+        'Elliot', 'Farah', 'Gabriel', 'Harper', 'Iris', 'Jonas', 'Kara', 'Luis', 'Mina', 'Noah',
+        'Olivia', 'Priya', 'Quinn', 'Rafael', 'Sofia', 'Theo', 'Uma', 'Victor', 'Wendy', 'Xavier',
+        'Yara', 'Zane', 'Amelia', 'Brandon', 'Celeste', 'Dominic', 'Elena', 'Felix', 'Gia', 'Hugo',
+        'Isla', 'Jasper', 'Keira', 'Leo', 'Maya', 'Nolan', 'Opal', 'Parker', 'Ruby', 'Silas',
+    ];
+
+    /** @var list<string> */
+    private const LAST_NAMES = [
+        'Carter', 'Singh', 'Cruz', 'Lee', 'Patel', 'Wright', 'Brooks', 'Rivera', 'Santos', 'Evans',
+        'Grant', 'Thomas', 'Walker', 'Young', 'Kim', 'Bennett', 'Flores', 'Hall', 'Scott', 'Price',
+        'Nelson', 'Cooper', 'Foster', 'King', 'Ross', 'Gray', 'Ward', 'Hughes', 'Coleman', 'Bell',
+        'Hayes', 'Morales', 'Reed', 'Bailey', 'Howard', 'Torres', 'Nguyen', 'Murphy', 'Cook', 'Rogers',
+    ];
+
+    private int $randomSeed = self::FAKER_SEED;
 
     private Team $team;
 
@@ -45,8 +60,7 @@ class DownlineManagementSeeder extends Seeder
 
     public function run(): void
     {
-        $this->faker = \Faker\Factory::create();
-        $this->faker->seed(self::FAKER_SEED);
+        $this->randomSeed = self::FAKER_SEED;
 
         $this->team = Team::firstOrCreate(
             ['name' => 'Elite Financial Growth Team'],
@@ -92,7 +106,7 @@ class DownlineManagementSeeder extends Seeder
 
             $direct = $this->seedUser(
                 email: $email,
-                name: $this->fakerName(),
+                name: $this->randomName(),
                 rankCode: $i % 3 === 0 ? 'SFA' : 'FA',
                 role: 'member',
                 sponsor: $leader,
@@ -125,7 +139,7 @@ class DownlineManagementSeeder extends Seeder
 
             $sponsor = $this->seedUser(
                 email: $email,
-                name: $this->fakerName(),
+                name: $this->randomName(),
                 rankCode: $level <= 2 ? 'SFA' : 'FA',
                 role: 'member',
                 sponsor: $sponsor,
@@ -140,7 +154,7 @@ class DownlineManagementSeeder extends Seeder
         for ($i = 1; $i <= 8; $i++) {
             $this->seedUser(
                 email: $this->nextEmail("mixed.{$prefix}.leaf"),
-                name: $this->fakerName(),
+                name: $this->randomName(),
                 rankCode: 'FA',
                 role: 'member',
                 sponsor: $leader,
@@ -155,7 +169,7 @@ class DownlineManagementSeeder extends Seeder
                 email: $leg === 1
                     ? "genealogy.mixed.{$prefix}.leg-root@efgtrack.com"
                     : $this->nextEmail("mixed.{$prefix}.leg"),
-                name: $this->fakerName(),
+                name: $this->randomName(),
                 rankCode: 'FA',
                 role: 'member',
                 sponsor: $leader,
@@ -178,7 +192,7 @@ class DownlineManagementSeeder extends Seeder
         for ($captain = 1; $captain <= 5; $captain++) {
             $captainUser = $this->seedUser(
                 email: $this->nextEmail("captain.{$prefix}"),
-                name: $this->fakerName(),
+                name: $this->randomName(),
                 rankCode: $captain % 2 === 0 ? 'SFA' : 'FA',
                 role: 'member',
                 sponsor: $leader,
@@ -193,7 +207,7 @@ class DownlineManagementSeeder extends Seeder
 
                 $this->seedUser(
                     email: $email,
-                    name: $this->fakerName(),
+                    name: $this->randomName(),
                     rankCode: 'FA',
                     role: 'member',
                     sponsor: $captainUser,
@@ -220,16 +234,16 @@ class DownlineManagementSeeder extends Seeder
         }
 
         $created = [];
-        $childCount = $this->faker->numberBetween($minChildren, $maxChildren);
+        $childCount = $this->randomInt($minChildren, $maxChildren);
 
         for ($index = 1; $index <= $childCount; $index++) {
             $child = $this->seedUser(
                 email: $this->nextEmail($emailPrefix),
-                name: $this->fakerName(),
+                name: $this->randomName(),
                 rankCode: $index % 4 === 0 ? 'SFA' : 'FA',
                 role: 'member',
                 sponsor: $sponsor,
-                joinedMonthsAgo: $this->faker->numberBetween(3, 18),
+                joinedMonthsAgo: $this->randomInt(3, 18),
                 mentor: $this->defaultMentor,
             );
 
@@ -249,9 +263,23 @@ class DownlineManagementSeeder extends Seeder
         return $created;
     }
 
-    private function fakerName(): string
+    private function randomInt(int $min, int $max): int
     {
-        return $this->faker->name();
+        if ($min >= $max) {
+            return $min;
+        }
+
+        $this->randomSeed = (1103515245 * $this->randomSeed + 12345) & 0x7fffffff;
+
+        return $min + ($this->randomSeed % ($max - $min + 1));
+    }
+
+    private function randomName(): string
+    {
+        $first = self::FIRST_NAMES[$this->randomInt(0, count(self::FIRST_NAMES) - 1)];
+        $last = self::LAST_NAMES[$this->randomInt(0, count(self::LAST_NAMES) - 1)];
+
+        return "{$first} {$last}";
     }
 
     private function nextEmail(string $branch): string

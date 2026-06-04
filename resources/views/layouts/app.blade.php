@@ -67,7 +67,8 @@
                         <button
                             type="button"
                             class="rounded-md p-2 text-[#0B1F3A] hover:bg-slate-100"
-                            x-on:click="isDesktop ? sidebarCollapsed = ! sidebarCollapsed : sidebarOpen = true"
+                            x-on:click="isDesktop ? (sidebarCollapsed = ! sidebarCollapsed) : (sidebarOpen = ! sidebarOpen)"
+                            :aria-expanded="isDesktop ? ! sidebarCollapsed : sidebarOpen"
                         >
                             <span class="sr-only">Toggle navigation</span>
                             <span class="block h-0.5 w-5 bg-current"></span>

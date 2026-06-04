@@ -4,7 +4,7 @@
 /.npm-cache
 /node_modules
 /vendor
-# /public/build
+/public/build
 /storage/*.key
 /storage/app/*
 /storage/framework/cache/*
