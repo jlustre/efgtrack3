@@ -23,9 +23,18 @@ class DatabaseSeeder extends Seeder
             UsersSeeder::class,
             TaskScenarioSeeder::class,
             TaskManagementSeeder::class,
+        ]);
+
+        if (app()->environment('local')) {
+            $this->call([
+                DownlineManagementSeeder::class,
+            ]);
+        }
+
+        $this->call([
             CfmManagementSeeder::class,
             ProspectDemoSeeder::class,
-            DownlineManagementSeeder::class,
+            
             CalendarModuleSeeder::class,
             UserCalendarPreferenceSeeder::class,
             BookingSchedulingSeeder::class,
