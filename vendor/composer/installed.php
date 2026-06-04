@@ -3,7 +3,7 @@
         'name' => 'efgtrack/portal',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '8baf6abb26d7a6ad072cc901a9ae9cb2713106c1',
+        'reference' => 'f4bd93deee1b572e36ae953e98c8b03f7a50c6ef',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -67,7 +67,7 @@
         'efgtrack/portal' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '8baf6abb26d7a6ad072cc901a9ae9cb2713106c1',
+            'reference' => 'f4bd93deee1b572e36ae953e98c8b03f7a50c6ef',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
