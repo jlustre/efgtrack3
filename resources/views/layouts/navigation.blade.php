@@ -249,73 +249,101 @@
                 return;
             }
 
-            const groupKey = 'efgtrack.sidebar.currentGroup';
-            const itemKey = 'efgtrack.sidebar.currentItem';
-
-            localStorage.removeItem('efgtrack.sidebar.activeGroup');
-
+            const openGroupsKey = 'efgtrack.sidebar.openGroups';
             const buttons = [...nav.querySelectorAll('[data-sidebar-group-button]')];
             const panels = [...nav.querySelectorAll('[data-sidebar-group-panel]')];
 
-            const saveSidebarState = (group, item = '') => {
-                localStorage.removeItem(groupKey);
-                localStorage.removeItem(itemKey);
+            const readSavedOpenGroups = () => {
+                try {
+                    const raw = localStorage.getItem(openGroupsKey);
 
-                if (group) {
-                    localStorage.setItem(groupKey, group);
-                }
-
-                if (item) {
-                    localStorage.setItem(itemKey, item);
+                    return raw ? JSON.parse(raw) : null;
+                } catch {
+                    return null;
                 }
             };
 
-            const setCheckedGroup = (group) => {
-                if (! group) {
+            const persistOpenGroups = () => {
+                const open = buttons
+                    .filter((button) => button.dataset.open === 'true')
+                    .map((button) => button.dataset.sidebarGroup);
+
+                localStorage.setItem(openGroupsKey, JSON.stringify(open));
+            };
+
+            const setGroupOpen = (group, open) => {
+                const button = buttons.find((entry) => entry.dataset.sidebarGroup === group);
+                const panel = panels.find((entry) => entry.dataset.sidebarGroup === group);
+
+                if (! button || ! panel) {
                     return;
                 }
 
-                buttons.forEach((button) => {
-                    const open = button.dataset.sidebarGroup === group;
+                button.dataset.open = open ? 'true' : 'false';
+                button.setAttribute('aria-expanded', open ? 'true' : 'false');
+                panel.hidden = ! open;
+            };
 
-                    button.dataset.open = open ? 'true' : 'false';
-                    button.setAttribute('aria-expanded', open ? 'true' : 'false');
-                });
+            const toggleGroup = (group) => {
+                const button = buttons.find((entry) => entry.dataset.sidebarGroup === group);
 
-                panels.forEach((panel) => {
-                    panel.hidden = panel.dataset.sidebarGroup !== group;
-                });
+                if (! button) {
+                    return;
+                }
+
+                setGroupOpen(group, button.dataset.open !== 'true');
+                persistOpenGroups();
             };
 
             const serverActiveGroup = nav.dataset.serverActiveGroup || '';
-            const serverActiveItem = nav.querySelector('[data-server-active-item]')?.dataset.sidebarItem || '';
+            const savedOpenGroups = readSavedOpenGroups();
+            let openGroups = savedOpenGroups ?? buttons
+                .filter((button) => button.dataset.open === 'true')
+                .map((button) => button.dataset.sidebarGroup);
 
-            if (serverActiveGroup || serverActiveItem) {
-                saveSidebarState(serverActiveGroup, serverActiveItem);
-                setCheckedGroup(serverActiveGroup);
-            } else {
-                setCheckedGroup(localStorage.getItem(groupKey));
+            if (serverActiveGroup && ! openGroups.includes(serverActiveGroup)) {
+                openGroups = [...openGroups, serverActiveGroup];
             }
 
             buttons.forEach((button) => {
-                button.addEventListener('click', () => {
-                    const group = button.dataset.sidebarGroup || '';
+                setGroupOpen(button.dataset.sidebarGroup, openGroups.includes(button.dataset.sidebarGroup));
+            });
 
-                    saveSidebarState(group);
-                    setCheckedGroup(group);
+            persistOpenGroups();
+
+            buttons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    toggleGroup(button.dataset.sidebarGroup || '');
                 });
             });
 
             nav.querySelectorAll('[data-sidebar-link]').forEach((link) => {
                 link.addEventListener('pointerdown', () => {
-                    saveSidebarState(link.dataset.sidebarGroup || '', link.dataset.sidebarItem || '');
-                    setCheckedGroup(link.dataset.sidebarGroup || '');
+                    const group = link.dataset.sidebarGroup || '';
+
+                    if (! group) {
+                        return;
+                    }
+
+                    setGroupOpen(group, true);
+                    persistOpenGroups();
                 }, { capture: true });
             });
 
             window.addEventListener('pageshow', () => {
-                if (! serverActiveGroup && ! serverActiveItem) {
-                    setCheckedGroup(localStorage.getItem(groupKey));
+                const restored = readSavedOpenGroups();
+
+                if (restored === null) {
+                    return;
+                }
+
+                buttons.forEach((button) => {
+                    setGroupOpen(button.dataset.sidebarGroup, restored.includes(button.dataset.sidebarGroup));
+                });
+
+                if (serverActiveGroup) {
+                    setGroupOpen(serverActiveGroup, true);
+                    persistOpenGroups();
                 }
             });
         })();
