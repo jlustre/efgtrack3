@@ -2,10 +2,10 @@
 /.phpunit.cache
 /.phpunit.result.cache
 /.npm-cache
-/node_modules
-/vendor
-/public/build
-/storage/*.key
+# /node_modules
+# /vendor
+# /public/build
+# /storage/*.key
 /storage/app/*
 /storage/framework/cache/*
 /storage/framework/sessions/*
