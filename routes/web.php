@@ -7,6 +7,8 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CfmManagementController;
 use App\Http\Controllers\CfmPortalController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\DownlineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
@@ -14,9 +16,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProspectManagementController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TrackerChecklistController;
-use Illuminate\Support\Facades\Route;
-
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/run-migrations-secret-2026', function () {
     abort_unless(app()->environment(['staging']), 403);
@@ -36,9 +37,17 @@ Route::get('/book/mentor/{mentorSlug}', [BookingController::class, 'publicPage']
 Route::get('/book/{username}/{eventTypeSlug?}', [BookingController::class, 'publicPage'])->name('bookings.public');
 
 Route::middleware(['auth', 'verified', 'active'])->group(function () {
-    Route::view('/dashboard', 'dashboard')
+    Route::get('/dashboard', DashboardController::class)
         ->middleware('permission:view dashboard')
         ->name('dashboard');
+
+    Route::get('/facilities-websites', [FacilityController::class, 'index'])
+        ->middleware('employee')
+        ->name('facilities.index');
+
+    Route::view('/employment', 'employment.index')->name('employment.index');
+    Route::view('/pre-employment', 'pre-employment.index')->name('pre-employment.index');
+    Route::view('/messages', 'messages.index')->name('messages.index');
 
     Route::view('/search', 'search.index')->name('search.index');
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding.index');
@@ -136,6 +145,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
                 Route::patch('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
                 Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
                 Route::patch('/users/{user}/restore', [UserManagementController::class, 'restore'])->name('users.restore');
+                Route::post('/users/{user}/hire', [UserManagementController::class, 'hire'])->name('users.hire');
             });
             Route::middleware('role:super-admin|admin|agency-owner|team-leader|certified-field-mentor|trainer')->prefix('management')->name('management.')->group(function () {
                 Route::get('/', [AdminManagementController::class, 'index'])->name('index');

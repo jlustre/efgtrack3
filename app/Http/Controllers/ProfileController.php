@@ -10,6 +10,7 @@ use App\Models\RegistrationInvitation;
 use App\Models\User;
 use App\Services\MemberProfileTabsService;
 use App\Services\MemberUplineService;
+use App\Services\PreEmploymentSyncService;
 use App\Services\ProfilePhotoService;
 use App\Support\LocationOptions;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,7 @@ class ProfileController extends Controller
     public function __construct(
         private readonly MemberProfileTabsService $memberProfileTabs,
         private readonly MemberUplineService $memberUpline,
+        private readonly PreEmploymentSyncService $preEmploymentSync,
         private readonly ProfilePhotoService $profilePhotos,
     ) {}
 
@@ -43,7 +45,9 @@ class ProfileController extends Controller
         $user->unsetRelation('profile');
 
         $user->load([
-            'profile',
+            'profile.countryRecord',
+            'profile.stateProvince',
+            'profile.timezoneRecord',
             'rank',
             'team.owner',
             'team',
@@ -97,17 +101,26 @@ class ProfileController extends Controller
             [
                 'phone' => $validated['phone'] ?? null,
                 'city' => $validated['city'] ?? null,
-                'province' => $validated['province'] ?? null,
-                'country' => $validated['country'] ?? null,
-                'timezone' => $validated['timezone'] ?? null,
+                'country_id' => $validated['country_id'] ?? null,
+                'state_province_id' => $validated['state_province_id'] ?? null,
+                'timezone_id' => $validated['timezone_id'] ?? null,
                 'best_contact_time' => $validated['best_contact_time'] ?? null,
                 'license_number' => $validated['license_number'] ?? null,
                 'efg_associate_id' => $validated['efg_associate_id'] ?? null,
+                'efg_invite_link' => $validated['efg_invite_link'] ?? null,
                 'bio' => $validated['bio'] ?? null,
             ]
         );
 
-        return Redirect::route('profile.edit', ['tab' => 'profile'])->with('profile_feedback', [
+        if (! $user->isEmployee()) {
+            $this->preEmploymentSync->sync($user->fresh(['profile', 'rank']));
+        }
+
+        $redirectRoute = $request->input('redirect_to') === 'dashboard'
+            ? route('dashboard')
+            : route('profile.edit', ['tab' => 'profile']);
+
+        return Redirect::to($redirectRoute)->with('profile_feedback', [
             'type' => 'success',
             'message' => 'Your profile was updated successfully.',
         ]);

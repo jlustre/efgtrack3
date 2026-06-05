@@ -9,16 +9,16 @@
         x-data="{
             showEditProfileModal: @js($openEditProfileModal || $errors->any()),
             profileSaving: false,
-            editCountry: @js(old('country', $portal['editForm']['country'] ?? '')),
-            editProvince: @js(old('province', $portal['editForm']['province'] ?? '')),
-            editProvinces: @js($portal['locationOptions']['provincesByCountry']),
+            editCountryId: @js(old('country_id', $portal['editForm']['country_id'] ?? '')),
+            editProvinceId: @js(old('state_province_id', $portal['editForm']['state_province_id'] ?? '')),
+            editProvinces: @js($portal['locationOptions']['provincesByCountryId']),
             get editProvinceOptions() {
-                return this.editProvinces[this.editCountry] || {};
+                return this.editProvinces[String(this.editCountryId)] || {};
             },
             onCountryChange() {
                 const options = this.editProvinceOptions;
-                if (this.editProvince && ! Object.prototype.hasOwnProperty.call(options, this.editProvince)) {
-                    this.editProvince = '';
+                if (this.editProvinceId && ! Object.prototype.hasOwnProperty.call(options, String(this.editProvinceId))) {
+                    this.editProvinceId = '';
                 }
             },
             submitProfileForm() {

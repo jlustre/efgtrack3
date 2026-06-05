@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\LocationOptions;
+use Database\Seeders\CountrySeeder;
 use Database\Seeders\OnboardingStepSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,16 +19,16 @@ class OnboardingPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
             OnboardingStepSeeder::class,
         ]);
 
         $user = User::factory()->create();
         $user->assignRole('member');
-        $user->profile()->create([
-            'country' => 'Canada',
+        $user->profile()->create(array_merge([
             'is_efg_active_associate' => true,
             'efg_associate_id' => 'EFG-ONB-1',
-        ]);
+        ], LocationOptions::profileLocationIds('Canada')));
 
         $profileStepId = DB::table('onboarding_steps')
             ->where('title', 'Complete Member Profile')
@@ -57,16 +59,16 @@ class OnboardingPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
             OnboardingStepSeeder::class,
         ]);
 
         $user = User::factory()->create();
         $user->assignRole('member');
-        $user->profile()->create([
-            'country' => 'Canada',
+        $user->profile()->create(array_merge([
             'is_efg_active_associate' => true,
             'efg_associate_id' => 'EFG-ONB-2',
-        ]);
+        ], LocationOptions::profileLocationIds('Canada')));
 
         $stepId = DB::table('onboarding_steps')
             ->where('title', 'Complete Member Profile')
@@ -99,6 +101,7 @@ class OnboardingPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
             OnboardingStepSeeder::class,
         ]);
 
@@ -109,11 +112,10 @@ class OnboardingPageTest extends TestCase
             'sponsor_id' => $sponsor->id,
         ]);
         $user->assignRole('member');
-        $user->profile()->create([
-            'country' => 'Canada',
+        $user->profile()->create(array_merge([
             'is_efg_active_associate' => true,
             'efg_associate_id' => 'EFG-ONB-4',
-        ]);
+        ], LocationOptions::profileLocationIds('Canada')));
 
         $stepId = DB::table('onboarding_steps')
             ->where('title', 'Complete Member Profile')
@@ -181,16 +183,16 @@ class OnboardingPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
             OnboardingStepSeeder::class,
         ]);
 
         $user = User::factory()->create();
         $user->assignRole('member');
-        $user->profile()->create([
-            'country' => 'Canada',
+        $user->profile()->create(array_merge([
             'is_efg_active_associate' => true,
             'efg_associate_id' => 'EFG-ONB-5',
-        ]);
+        ], LocationOptions::profileLocationIds('Canada')));
 
         $otherUser = User::factory()->create();
         $otherUser->assignRole('member');
@@ -220,16 +222,16 @@ class OnboardingPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
             OnboardingStepSeeder::class,
         ]);
 
         $user = User::factory()->create();
         $user->assignRole('member');
-        $user->profile()->create([
-            'country' => 'Canada',
+        $user->profile()->create(array_merge([
             'is_efg_active_associate' => true,
             'efg_associate_id' => 'EFG-ONB-3',
-        ]);
+        ], LocationOptions::profileLocationIds('Canada')));
 
         $usStepId = DB::table('onboarding_steps')
             ->where('title', 'United States: Review State Licensing Path')

@@ -14,16 +14,16 @@
     x-data="{
         activeTab: @js(request('tab', 'profile')),
         profileSaving: false,
-        editCountry: @js(old('country', $user->profile?->country ?? '')),
-        editProvince: @js(old('province', $user->profile?->province ?? '')),
-        editProvinces: @js($profileContext['locationOptions']['provincesByCountry']),
+        editCountryId: @js(old('country_id', $user->profile?->country_id ?? '')),
+        editProvinceId: @js(old('state_province_id', $user->profile?->state_province_id ?? '')),
+        editProvinces: @js($profileContext['locationOptions']['provincesByCountryId']),
         get editProvinceOptions() {
-            return this.editProvinces[this.editCountry] || {};
+            return this.editProvinces[String(this.editCountryId)] || {};
         },
         onCountryChange() {
             const options = this.editProvinceOptions;
-            if (this.editProvince && ! Object.prototype.hasOwnProperty.call(options, this.editProvince)) {
-                this.editProvince = '';
+            if (this.editProvinceId && ! Object.prototype.hasOwnProperty.call(options, String(this.editProvinceId))) {
+                this.editProvinceId = '';
             }
         },
         submitProfileForm() {

@@ -2,14 +2,7 @@
     @php
         $locationOptions = $portal['locationOptions'];
         $editForm = $portal['editForm'];
-        $timezoneOptions = $locationOptions['timezones'];
-        $currentTimezone = $editForm['timezone'] ?? '';
-        $currentProvince = $editForm['province'] ?? '';
-        $currentCountry = $editForm['country'] ?? '';
         $selectedLicensed = $editForm['licensed_jurisdictions'] ?? [];
-        $provinceOptions = $locationOptions['provincesByCountry'][$currentCountry] ?? [];
-        $provinceIsLegacy = filled($currentProvince) && ! array_key_exists($currentProvince, $provinceOptions) && ! in_array($currentProvince, $provinceOptions, true);
-        $timezoneIsLegacy = filled($currentTimezone) && ! array_key_exists($currentTimezone, $timezoneOptions);
         $profileFeedback = session('profile_feedback');
         $inputClass = 'mt-1 w-full bg-gray-800 border rounded-xl px-4 py-2 text-gray-200 focus:border-amber-500 focus:outline-none';
         $inputErrorClass = 'border-red-500/60';
@@ -86,65 +79,16 @@
                     @enderror
                 </div>
 
-                <div>
-                    <label for="edit-country" class="text-xs font-medium text-gray-400">Country</label>
-                    <select
-                        id="edit-country"
-                        name="country"
-                        x-model="editCountry"
-                        @change="onCountryChange()"
-                        class="{{ $inputClass }} {{ $errors->has('country') ? $inputErrorClass : $inputOkClass }}"
-                    >
-                        <option value="">Select country</option>
-                        @foreach ($locationOptions['countries'] as $country)
-                            <option value="{{ $country }}" @selected($currentCountry === $country)>{{ $country }}</option>
-                        @endforeach
-                    </select>
-                    @error('country')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="edit-province" class="text-xs font-medium text-gray-400">Province / State</label>
-                    <select
-                        id="edit-province"
-                        name="province"
-                        x-model="editProvince"
-                        class="{{ $inputClass }} {{ $errors->has('province') ? $inputErrorClass : $inputOkClass }}"
-                    >
-                        <option value="">Select province / state</option>
-                        @if ($provinceIsLegacy)
-                            <option value="{{ $currentProvince }}" selected>{{ $currentProvince }}</option>
-                        @endif
-                        <template x-for="(label, value) in editProvinceOptions" :key="value">
-                            <option :value="value" x-text="label"></option>
-                        </template>
-                    </select>
-                    @error('province')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="edit-timezone" class="text-xs font-medium text-gray-400">Timezone</label>
-                    <select
-                        id="edit-timezone"
-                        name="timezone"
-                        class="{{ $inputClass }} {{ $errors->has('timezone') ? $inputErrorClass : $inputOkClass }}"
-                    >
-                        <option value="">Select timezone</option>
-                        @if ($timezoneIsLegacy)
-                            <option value="{{ $currentTimezone }}" selected>{{ $currentTimezone }}</option>
-                        @endif
-                        @foreach ($timezoneOptions as $timezoneValue => $timezoneLabel)
-                            <option value="{{ $timezoneValue }}" @selected($currentTimezone === $timezoneValue)>{{ $timezoneLabel }}</option>
-                        @endforeach
-                    </select>
-                    @error('timezone')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
+                @include('partials.profile-location-selects', [
+                    'locationOptions' => $locationOptions,
+                    'countryId' => $editForm['country_id'],
+                    'stateProvinceId' => $editForm['state_province_id'],
+                    'timezoneId' => $editForm['timezone_id'],
+                    'selectClass' => $inputClass.' '.($errors->has('country_id') || $errors->has('state_province_id') || $errors->has('timezone_id') ? $inputErrorClass : $inputOkClass),
+                    'countryInputId' => 'edit-country-id',
+                    'provinceInputId' => 'edit-state-province-id',
+                    'timezoneInputId' => 'edit-timezone-id',
+                ])
 
                 @include('cfm.partials.licensed-jurisdictions-picker', [
                     'locationOptions' => $locationOptions,

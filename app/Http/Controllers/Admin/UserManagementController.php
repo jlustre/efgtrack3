@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\ApplicantAlreadyHiredException;
 use App\Http\Controllers\Controller;
 use App\Models\Rank;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\ApplicantHireService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -16,6 +19,10 @@ use Spatie\Permission\Models\Role;
 
 class UserManagementController extends Controller
 {
+    public function __construct(
+        private readonly ApplicantHireService $applicantHire,
+    ) {}
+
     public function index(Request $request): View
     {
         $filters = $request->only(['search', 'role', 'rank_id', 'team_id', 'status', 'trashed']);
@@ -81,12 +88,33 @@ class UserManagementController extends Controller
 
     public function edit(User $user): View
     {
-        $user->load(['rank', 'team', 'sponsor', 'roles']);
+        $user->load(['rank', 'team', 'sponsor', 'roles', 'profile', 'bpEmployee']);
 
         return view('admin.users.edit', [
             'managedUser' => $user,
             ...$this->formOptions($user),
         ]);
+    }
+
+    public function hire(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'hire_date' => ['nullable', 'date'],
+        ]);
+
+        try {
+            $this->applicantHire->hire(
+                $user,
+                $request->user(),
+                isset($validated['hire_date']) ? Carbon::parse($validated['hire_date']) : null,
+            );
+        } catch (ApplicantAlreadyHiredException $exception) {
+            return back()->withErrors(['hire' => $exception->getMessage()]);
+        }
+
+        return redirect()
+            ->route('admin.users.edit', $user)
+            ->with('status', 'applicant-hired');
     }
 
     public function update(Request $request, User $user): RedirectResponse

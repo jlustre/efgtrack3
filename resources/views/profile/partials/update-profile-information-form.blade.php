@@ -2,14 +2,7 @@
     $readonly = $profileContext['readonly'];
     $locationOptions = $profileContext['locationOptions'];
     $contactTimes = $locationOptions['contactTimes'];
-    $timezoneOptions = $locationOptions['timezones'];
-    $currentCountry = old('country', $user->profile?->country ?? '');
-    $currentProvince = old('province', $user->profile?->province ?? '');
-    $currentTimezone = old('timezone', $user->profile?->timezone ?? '');
     $currentContactTime = old('best_contact_time', $user->profile?->best_contact_time ?? '');
-    $provinceOptions = $locationOptions['provincesByCountry'][$currentCountry] ?? [];
-    $provinceIsLegacy = filled($currentProvince) && ! array_key_exists($currentProvince, $provinceOptions) && ! in_array($currentProvince, $provinceOptions, true);
-    $timezoneIsLegacy = filled($currentTimezone) && ! array_key_exists($currentTimezone, $timezoneOptions);
     $contactTimeIsLegacy = filled($currentContactTime) && ! array_key_exists($currentContactTime, $contactTimes);
 @endphp
 
@@ -133,60 +126,23 @@
             </div>
 
             <div>
+                <x-input-label for="efg_invite_link" :value="__('EFG Invite Link')" />
+                <x-text-input id="efg_invite_link" name="efg_invite_link" type="url" class="mt-1 block w-full" :value="old('efg_invite_link', $user->profile?->efg_invite_link)" placeholder="https://..." />
+                <x-input-error class="mt-2" :messages="$errors->get('efg_invite_link')" />
+            </div>
+
+            <div>
                 <x-input-label for="city" :value="__('City')" />
                 <x-text-input id="city" name="city" type="text" class="mt-1 block w-full" :value="old('city', $user->profile?->city)" />
                 <x-input-error class="mt-2" :messages="$errors->get('city')" />
             </div>
 
-            <div>
-                <x-input-label for="country" :value="__('Country')" />
-                <select
-                    id="country"
-                    name="country"
-                    x-model="editCountry"
-                    @change="onCountryChange()"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
-                >
-                    <option value="">Select country</option>
-                    @foreach ($locationOptions['countries'] as $country)
-                        <option value="{{ $country }}" @selected($currentCountry === $country)>{{ $country }}</option>
-                    @endforeach
-                </select>
-                <x-input-error class="mt-2" :messages="$errors->get('country')" />
-            </div>
-
-            <div>
-                <x-input-label for="province" :value="__('Province / State')" />
-                <select
-                    id="province"
-                    name="province"
-                    x-model="editProvince"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
-                >
-                    <option value="">Select province / state</option>
-                    @if ($provinceIsLegacy)
-                        <option value="{{ $currentProvince }}" selected>{{ $currentProvince }}</option>
-                    @endif
-                    <template x-for="(label, value) in editProvinceOptions" :key="value">
-                        <option :value="value" x-text="label"></option>
-                    </template>
-                </select>
-                <x-input-error class="mt-2" :messages="$errors->get('province')" />
-            </div>
-
-            <div>
-                <x-input-label for="timezone" :value="__('Timezone')" />
-                <select id="timezone" name="timezone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
-                    <option value="">Select timezone</option>
-                    @if ($timezoneIsLegacy)
-                        <option value="{{ $currentTimezone }}" selected>{{ $currentTimezone }}</option>
-                    @endif
-                    @foreach ($timezoneOptions as $timezoneValue => $timezoneLabel)
-                        <option value="{{ $timezoneValue }}" @selected($currentTimezone === $timezoneValue)>{{ $timezoneLabel }}</option>
-                    @endforeach
-                </select>
-                <x-input-error class="mt-2" :messages="$errors->get('timezone')" />
-            </div>
+            @include('partials.profile-location-selects', [
+                'locationOptions' => $locationOptions,
+                'countryId' => $user->profile?->country_id,
+                'stateProvinceId' => $user->profile?->state_province_id,
+                'timezoneId' => $user->profile?->timezone_id,
+            ])
         </div>
 
         <div>

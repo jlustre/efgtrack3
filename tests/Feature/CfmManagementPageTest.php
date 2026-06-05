@@ -64,7 +64,7 @@ class CfmManagementPageTest extends TestCase
             ->get(route('team.cfms', ['cfm' => $cfm->id]))
             ->assertOk()
             ->assertSee('Licensed jurisdictions', false)
-            ->assertSee('Manitoba, Canada', false)
-            ->assertSee('California, United States', false);
+            ->assertSee('MB, CA', false)
+            ->assertSee('CA, US', false);
     }
 }

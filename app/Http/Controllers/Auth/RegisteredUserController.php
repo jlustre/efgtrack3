@@ -3,16 +3,18 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\RegistrationInvitation;
-use App\Models\Profile;
 use App\Models\Rank;
+use App\Models\RegistrationInvitation;
 use App\Models\User;
+use App\Services\PreEmploymentSyncService;
+use App\Support\LocationOptions;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -20,6 +22,10 @@ use Spatie\Permission\Models\Role;
 
 class RegisteredUserController extends Controller
 {
+    public function __construct(
+        private readonly PreEmploymentSyncService $preEmploymentSync,
+    ) {}
+
     /**
      * Display the registration view.
      */
@@ -38,6 +44,7 @@ class RegisteredUserController extends Controller
 
         return view('auth.register', [
             'invitation' => $invitation,
+            'locationOptions' => \App\Support\LocationOptions::forPortal(),
         ]);
     }
 
@@ -55,8 +62,15 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'efg_associate_id' => ['required', 'string', 'max:100', 'unique:profiles,efg_associate_id'],
             'city' => ['required', 'string', 'max:120'],
-            'country' => ['required', 'string', 'in:Canada,United States,Philippines,Mexico'],
-            'timezone' => ['required', 'string', 'max:120'],
+            'country_id' => [
+                'required',
+                'integer',
+                Rule::exists('countries', 'id')->where(fn ($query) => $query->whereIn(
+                    'name',
+                    ['Canada', 'United States', 'Philippines', 'Mexico']
+                )),
+            ],
+            'timezone_id' => ['required', 'integer', 'exists:timezones,id'],
             'sponsor_confirmed' => ['accepted'],
             'active_associate_confirmed' => ['accepted'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -106,8 +120,8 @@ class RegisteredUserController extends Controller
             $user->profile()->create([
                 'efg_associate_id' => $request->string('efg_associate_id')->toString(),
                 'city' => $request->string('city')->toString(),
-                'country' => $request->string('country')->toString(),
-                'timezone' => $request->string('timezone')->toString(),
+                'country_id' => $request->integer('country_id'),
+                'timezone_id' => $request->integer('timezone_id'),
                 'is_efg_active_associate' => true,
             ]);
 
@@ -122,6 +136,8 @@ class RegisteredUserController extends Controller
                 'uses_count' => $invitation->uses_count + 1,
             ])->save();
 
+            $this->preEmploymentSync->sync($user);
+
             return $user;
         });
 
@@ -129,6 +145,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(route('dashboard', absolute: false))
+            ->with('show_profile_completion_modal', true);
     }
 }

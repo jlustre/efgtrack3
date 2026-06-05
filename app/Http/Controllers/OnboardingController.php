@@ -157,6 +157,7 @@ class OnboardingController extends Controller
             ->join('users', 'users.id', '=', 'user_onboarding_progress.user_id')
             ->join('onboarding_steps', 'onboarding_steps.id', '=', 'user_onboarding_progress.onboarding_step_id')
             ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
+            ->leftJoin('countries', 'countries.id', '=', 'profiles.country_id')
             ->where('user_onboarding_progress.status', 'pending_confirmation')
             ->whereNull('users.deleted_at')
             ->whereNull('onboarding_steps.deleted_at')
@@ -170,7 +171,7 @@ class OnboardingController extends Controller
                 'users.email as member_email',
                 'users.sponsor_id',
                 'users.mentor_id',
-                'profiles.country as member_country',
+                'countries.name as member_country',
                 'onboarding_steps.title',
                 'onboarding_steps.description',
                 'onboarding_steps.notified_parties'

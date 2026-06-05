@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\LocationOptions;
 use Database\Seeders\CfmTrainingModuleSeeder;
+use Database\Seeders\CountrySeeder;
 use Database\Seeders\FieldApprenticeshipProgramSeeder;
 use Database\Seeders\LicensingStepSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -192,6 +194,7 @@ class TrackerChecklistPagesTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
             LicensingStepSeeder::class,
             FieldApprenticeshipProgramSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -202,11 +205,10 @@ class TrackerChecklistPagesTest extends TestCase
     {
         $user = User::factory()->create($attributes);
         $user->assignRole('member');
-        $user->profile()->create([
-            'country' => 'Canada',
+        $user->profile()->create(array_merge([
             'is_efg_active_associate' => true,
             'efg_associate_id' => 'EFG-TRACK-'.$user->id,
-        ]);
+        ], LocationOptions::profileLocationIds('Canada')));
 
         return $user;
     }

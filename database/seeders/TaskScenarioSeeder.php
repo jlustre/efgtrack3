@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Rank;
 use App\Models\User;
+use App\Support\LocationOptions;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +14,12 @@ class TaskScenarioSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+        ]);
+
         $teamId = $this->teamId();
         $ranks = Rank::query()->pluck('id', 'code');
 
@@ -199,18 +206,29 @@ class TaskScenarioSeeder extends Seeder
 
     private function profile(User $user, array $overrides = []): void
     {
+        $defaults = [
+            'phone' => '555-0100',
+            'city' => 'Vancouver',
+            'country' => 'Canada',
+            'province' => 'British Columbia',
+            'timezone' => 'Canada Pacific Time',
+            'efg_associate_id' => 'EFG-DEMO-'.$user->id,
+            'is_efg_active_associate' => true,
+            'recruited_at' => now()->subDays(6)->toDateString(),
+        ];
+
+        $data = array_merge($defaults, $overrides);
+        $locationIds = LocationOptions::profileLocationIds(
+            $data['country'] ?? 'Canada',
+            $data['province'] ?? null,
+            $data['timezone'] ?? null,
+        );
+
+        unset($data['country'], $data['province'], $data['timezone']);
+
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-            array_merge([
-                'phone' => '555-0100',
-                'city' => 'Vancouver',
-                'province' => 'British Columbia',
-                'country' => 'Canada',
-                'timezone' => 'Canada Pacific Time',
-                'efg_associate_id' => 'EFG-DEMO-'.$user->id,
-                'is_efg_active_associate' => true,
-                'recruited_at' => now()->subDays(6)->toDateString(),
-            ], $overrides)
+            array_merge($data, $locationIds)
         );
     }
 

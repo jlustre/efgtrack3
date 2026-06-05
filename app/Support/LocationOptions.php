@@ -2,6 +2,11 @@
 
 namespace App\Support;
 
+use App\Models\Country;
+use App\Models\StateProvince;
+use App\Models\Timezone;
+use Illuminate\Support\Facades\Schema;
+
 class LocationOptions
 {
     public static function countries(): array
@@ -345,12 +350,121 @@ class LocationOptions
 
     public static function forPortal(): array
     {
+        if (Schema::hasTable('countries')) {
+            $countries = Country::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name']);
+
+            $provincesByCountryId = StateProvince::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'country_id', 'name'])
+                ->groupBy('country_id')
+                ->map(fn ($group) => $group->mapWithKeys(fn (StateProvince $province): array => [
+                    (string) $province->id => $province->name,
+                ])->all())
+                ->all();
+
+            $timezones = Timezone::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code']);
+
+            return [
+                'countries' => $countries->pluck('name', 'id')->all(),
+                'provincesByCountryId' => $provincesByCountryId,
+                'provincesByCountry' => self::provincesByCountry(),
+                'timezones' => $timezones->mapWithKeys(fn (Timezone $timezone): array => [
+                    (string) $timezone->id => $timezone->name,
+                ])->all(),
+                'contactTimes' => self::contactTimes(),
+                'jurisdictionDisplayLabels' => self::jurisdictionDisplayLabels(),
+            ];
+        }
+
         return [
-            'countries' => self::countries(),
-            'timezones' => self::timezones(),
+            'countries' => collect(self::countries())->mapWithKeys(fn (string $name): array => [$name => $name])->all(),
+            'provincesByCountryId' => [],
             'provincesByCountry' => self::provincesByCountry(),
+            'timezones' => collect(self::timezones())->mapWithKeys(fn (string $label, string $code): array => [$code => $label])->all(),
             'contactTimes' => self::contactTimes(),
             'jurisdictionDisplayLabels' => self::jurisdictionDisplayLabels(),
+        ];
+    }
+
+    public static function isValidStateProvinceId(?int $countryId, ?int $stateProvinceId): bool
+    {
+        if ($stateProvinceId === null) {
+            return true;
+        }
+
+        if ($countryId === null) {
+            return false;
+        }
+
+        return StateProvince::query()
+            ->whereKey($stateProvinceId)
+            ->where('country_id', $countryId)
+            ->exists();
+    }
+
+    public static function resolveCountryId(?string $name): ?int
+    {
+        if (! filled($name)) {
+            return null;
+        }
+
+        return Country::query()->where('name', $name)->value('id');
+    }
+
+    public static function resolveStateProvinceId(?string $countryName, ?string $provinceName): ?int
+    {
+        if (! filled($countryName) || ! filled($provinceName)) {
+            return null;
+        }
+
+        $countryId = self::resolveCountryId($countryName);
+
+        if ($countryId === null) {
+            return null;
+        }
+
+        return StateProvince::query()
+            ->where('country_id', $countryId)
+            ->where('name', $provinceName)
+            ->value('id');
+    }
+
+    public static function resolveTimezoneId(?string $codeOrName): ?int
+    {
+        if (! filled($codeOrName)) {
+            return null;
+        }
+
+        return Timezone::query()
+            ->where(function ($query) use ($codeOrName): void {
+                $query->where('code', $codeOrName)
+                    ->orWhere('name', $codeOrName);
+            })
+            ->value('id');
+    }
+
+    /**
+     * @return array{country_id: ?int, state_province_id: ?int, timezone_id: ?int}
+     */
+    public static function profileLocationIds(
+        ?string $countryName = 'Canada',
+        ?string $provinceName = null,
+        ?string $timezoneCode = null,
+    ): array {
+        return [
+            'country_id' => self::resolveCountryId($countryName),
+            'state_province_id' => self::resolveStateProvinceId($countryName, $provinceName),
+            'timezone_id' => self::resolveTimezoneId($timezoneCode),
         ];
     }
 

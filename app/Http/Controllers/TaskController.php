@@ -403,6 +403,7 @@ class TaskController extends Controller
             ->join('users', 'users.id', '=', $config['progress_table'].'.user_id')
             ->join($config['step_table'], $config['step_table'].'.id', '=', $config['progress_table'].'.'.$config['foreign_key'])
             ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
+            ->leftJoin('countries', 'countries.id', '=', 'profiles.country_id')
             ->where($config['progress_table'].'.status', 'pending_confirmation')
             ->whereNull('users.deleted_at')
             ->whereNull($config['step_table'].'.deleted_at')
@@ -416,7 +417,7 @@ class TaskController extends Controller
                 'users.email as member_email',
                 'users.sponsor_id',
                 'users.mentor_id',
-                'profiles.country as member_country',
+                'countries.name as member_country',
                 $config['step_table'].'.title',
                 $config['step_table'].'.description',
                 $config['step_table'].'.notified_parties'

@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\LocationOptions;
+use Database\Seeders\CountrySeeder;
 use Database\Seeders\OnboardingStepSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -18,6 +21,8 @@ class TaskPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
+            TimezoneSeeder::class,
             OnboardingStepSeeder::class,
         ]);
 
@@ -29,11 +34,10 @@ class TaskPageTest extends TestCase
             'mentor_id' => null,
         ]);
         $member->assignRole('member');
-        $member->profile()->create([
-            'country' => 'Canada',
+        $member->profile()->create(array_merge([
             'is_efg_active_associate' => true,
             'efg_associate_id' => 'EFG-TASK-1',
-        ]);
+        ], LocationOptions::profileLocationIds('Canada')));
 
         $stepId = DB::table('onboarding_steps')
             ->where('title', 'Complete Member Profile')

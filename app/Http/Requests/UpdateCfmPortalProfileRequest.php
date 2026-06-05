@@ -29,9 +29,9 @@ class UpdateCfmPortalProfileRequest extends FormRequest
         return [
             'phone' => ['nullable', 'string', 'max:50'],
             'city' => ['nullable', 'string', 'max:120'],
-            'province' => ['nullable', 'string', 'max:120'],
-            'country' => ['nullable', 'string', Rule::in(LocationOptions::countries())],
-            'timezone' => ['nullable', 'string', Rule::in(array_keys(LocationOptions::timezones()))],
+            'country_id' => ['nullable', 'integer', 'exists:countries,id'],
+            'state_province_id' => ['nullable', 'integer', 'exists:state_provinces,id'],
+            'timezone_id' => ['nullable', 'integer', 'exists:timezones,id'],
             'mentor_bio' => ['nullable', 'string', 'max:2000'],
             'languages' => ['nullable', 'string', 'max:500'],
             'specialties' => ['nullable', 'string', 'max:500'],
@@ -44,11 +44,11 @@ class UpdateCfmPortalProfileRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $country = $this->input('country');
-            $province = $this->input('province');
+            $countryId = $this->integer('country_id') ?: null;
+            $stateProvinceId = $this->integer('state_province_id') ?: null;
 
-            if (filled($province) && ! LocationOptions::isValidProvince($country, $province)) {
-                $validator->errors()->add('province', 'Select a valid province or state for the chosen country.');
+            if (! LocationOptions::isValidStateProvinceId($countryId, $stateProvinceId)) {
+                $validator->errors()->add('state_province_id', 'Select a valid province or state for the chosen country.');
             }
 
             foreach ($this->input('licensed_jurisdictions', []) as $index => $key) {

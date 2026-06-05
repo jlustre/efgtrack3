@@ -150,7 +150,7 @@ class CalendarModuleTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('name="category_ids[]"', false)
-            ->assertSee('New Associate Fast Start Training')
+            ->assertSee('New Associate Fast Start', false)
             ->assertDontSee('Licensing Milestone Review');
 
         $this->assertSame(
@@ -161,7 +161,7 @@ class CalendarModuleTest extends TestCase
         $this->actingAs($user)
             ->get(route('calendar.index'))
             ->assertOk()
-            ->assertSee('New Associate Fast Start Training')
+            ->assertSee('New Associate Fast Start', false)
             ->assertDontSee('Licensing Milestone Review');
     }
 

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -69,9 +70,29 @@ class User extends Authenticatable
         });
     }
 
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Notification::class, 'notifiable')->latest();
+    }
+
+    public function sentNotifications(): HasMany
+    {
+        return $this->hasMany(Notification::class, 'sender_user_id')->latest();
+    }
+
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
+    }
+
+    public function peEmployee(): HasOne
+    {
+        return $this->hasOne(PeEmployee::class);
+    }
+
+    public function bpEmployee(): HasOne
+    {
+        return $this->hasOne(BpEmployee::class);
     }
 
     public function rank(): BelongsTo
@@ -210,6 +231,11 @@ class User extends Authenticatable
         }
 
         return $this->hasRole('certified-field-mentor');
+    }
+
+    public function isEmployee(): bool
+    {
+        return $this->profile?->recruited_at !== null;
     }
 
     public function initials(): string
