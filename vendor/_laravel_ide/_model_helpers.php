@@ -11868,13 +11868,14 @@ namespace App\Models {
 	 * @property string|null $bio
 	 * @property \Illuminate\Support\Carbon|null $recruited_at
 	 * @property boolean $is_efg_active_associate
+	 * @property string|null $efg_invite_link
 	 * @property string|null $efg_associate_id
 	 * @property string|null $license_number
 	 * @property string|null $best_contact_time
-	 * @property string|null $timezone
-	 * @property string|null $country
+	 * @property int|null $timezone_id
+	 * @property int|null $state_province_id
+	 * @property int|null $country_id
 	 * @property string|null $city
-	 * @property string|null $province
 	 * @property string|null $phone
 	 * @property int $user_id
 	 * @property int $id
@@ -11882,13 +11883,14 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereUserId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile wherePhone($value)
-	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereProvince($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereCity($value)
-	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereCountry($value)
-	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereTimezone($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereCountryId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereStateProvinceId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereTimezoneId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereBestContactTime($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereLicenseNumber($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereEfgAssociateId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereEfgInviteLink($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereIsEfgActiveAssociate($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereRecruitedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Profile>|Profile whereBio($value)
