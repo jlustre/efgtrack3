@@ -1,0 +1,116 @@
+@php
+    if (! function_exists('dashboardStatCardTheme')) {
+        function dashboardStatCardTheme(string $key, string $variant = 'team'): array
+        {
+            $themes = [
+                'team' => [
+                    'profile' => [
+                'card' => 'relative rounded-lg border border-[#0B1F3A]/20 border-l-4 border-l-[#0B1F3A] bg-gradient-to-br from-[#0B1F3A]/14 via-[#0B1F3A]/6 to-white p-4 shadow-sm',
+                'label' => 'text-[#0B1F3A]/75',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-[#0B1F3A]/12',
+                'bar_fill' => 'bg-[#0B1F3A]',
+                'button' => 'border-[#0B1F3A]/35 text-[#0B1F3A] hover:bg-[#0B1F3A]/10',
+                'icon' => 'text-[#0B1F3A]',
+            ],
+            'onboarding' => [
+                'card' => 'relative rounded-lg border border-[#C8A24A]/30 border-l-4 border-l-[#C8A24A] bg-gradient-to-br from-[#C8A24A]/22 via-amber-50/80 to-white p-4 shadow-sm',
+                'label' => 'text-[#5c4a1f]',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-[#C8A24A]/20',
+                'bar_fill' => 'bg-[#C8A24A]',
+                'button' => 'border-[#C8A24A]/50 text-[#0B1F3A] hover:bg-[#C8A24A]/15',
+                'icon' => 'text-[#C8A24A]',
+            ],
+            'credentials' => [
+                'card' => 'relative rounded-lg border border-sky-200/80 border-l-4 border-l-sky-700 bg-gradient-to-br from-sky-100/90 via-sky-50/60 to-white p-4 shadow-sm',
+                'label' => 'text-sky-900/75',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-sky-200/60',
+                'bar_fill' => 'bg-sky-700',
+                'button' => 'border-sky-600/35 text-sky-950 hover:bg-sky-100',
+                'icon' => 'text-sky-700',
+            ],
+            'apprenticeship' => [
+                'card' => 'relative rounded-lg border border-teal-200/80 border-l-4 border-l-teal-600 bg-gradient-to-br from-teal-100/80 via-emerald-50/50 to-white p-4 shadow-sm',
+                'label' => 'text-teal-900/75',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-teal-200/50',
+                'bar_fill' => 'bg-teal-600',
+                'button' => 'border-teal-600/35 text-teal-950 hover:bg-teal-100',
+                'icon' => 'text-teal-600',
+            ],
+            'training' => [
+                'card' => 'relative rounded-lg border border-indigo-200/80 border-l-4 border-l-indigo-600 bg-gradient-to-br from-indigo-100/80 via-violet-50/40 to-white p-4 shadow-sm',
+                'label' => 'text-indigo-900/75',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-indigo-200/50',
+                'bar_fill' => 'bg-indigo-600',
+                'button' => 'border-indigo-600/35 text-indigo-950 hover:bg-indigo-100',
+                'icon' => 'text-indigo-600',
+                    ],
+                ],
+                'personal' => [
+                    'profile' => [
+                'card' => 'rounded-lg border border-[#0B1F3A]/15 border-l-[3px] border-l-[#0B1F3A] bg-gradient-to-br from-[#0B1F3A]/8 to-white p-3 shadow-sm',
+                'label' => 'text-[#0B1F3A]/70',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-[#0B1F3A]/10',
+                'bar_fill' => 'bg-[#0B1F3A]',
+            ],
+            'onboarding' => [
+                'card' => 'rounded-lg border border-[#C8A24A]/25 border-l-[3px] border-l-[#C8A24A] bg-gradient-to-br from-[#C8A24A]/14 to-amber-50/40 p-3 shadow-sm',
+                'label' => 'text-[#5c4a1f]/90',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-[#C8A24A]/18',
+                'bar_fill' => 'bg-[#C8A24A]',
+            ],
+            'credentials' => [
+                'card' => 'rounded-lg border border-sky-200/70 border-l-[3px] border-l-sky-600 bg-gradient-to-br from-sky-50/90 to-white p-3 shadow-sm',
+                'label' => 'text-sky-900/70',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-sky-200/50',
+                'bar_fill' => 'bg-sky-600',
+            ],
+            'apprenticeship' => [
+                'card' => 'rounded-lg border border-teal-200/70 border-l-[3px] border-l-teal-500 bg-gradient-to-br from-teal-50/80 to-white p-3 shadow-sm',
+                'label' => 'text-teal-900/70',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-teal-200/45',
+                'bar_fill' => 'bg-teal-500',
+            ],
+            'training' => [
+                'card' => 'rounded-lg border border-indigo-200/70 border-l-[3px] border-l-indigo-500 bg-gradient-to-br from-indigo-50/80 to-white p-3 shadow-sm',
+                'label' => 'text-indigo-900/70',
+                'value' => 'text-[#0B1F3A]',
+                'bar_track' => 'bg-indigo-200/45',
+                'bar_fill' => 'bg-indigo-500',
+            ],
+            'prospects' => [
+                'card' => 'rounded-lg border border-cyan-200/70 border-l-[3px] border-l-cyan-600 bg-gradient-to-br from-cyan-50/90 via-sky-50/40 to-white p-3 shadow-sm',
+                'label' => 'text-cyan-950/70',
+                'value' => 'text-cyan-950',
+                'bar_track' => 'bg-cyan-200/45',
+                'bar_fill' => 'bg-cyan-600',
+            ],
+            'recruits' => [
+                'card' => 'rounded-lg border border-emerald-200/70 border-l-[3px] border-l-emerald-600 bg-gradient-to-br from-emerald-50/90 via-green-50/30 to-white p-3 shadow-sm',
+                'label' => 'text-emerald-950/70',
+                'value' => 'text-emerald-950',
+                'bar_track' => 'bg-emerald-200/45',
+                'bar_fill' => 'bg-emerald-600',
+            ],
+            'production' => [
+                'card' => 'rounded-lg border border-[#C8A24A]/35 border-l-[3px] border-l-[#C8A24A] bg-gradient-to-br from-[#0B1F3A] via-[#132d52] to-[#0B1F3A] p-3 shadow-md',
+                'label' => 'text-[#C8A24A]/90',
+                'value' => 'text-[#C8A24A]',
+                'bar_track' => 'bg-white/15',
+                'bar_fill' => 'bg-[#C8A24A]',
+                    ],
+                ],
+            ];
+
+            return $themes[$variant][$key] ?? $themes[$variant]['profile'];
+        }
+    }
+@endphp

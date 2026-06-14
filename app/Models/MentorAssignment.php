@@ -17,6 +17,8 @@ class MentorAssignment extends Model
         'assigned_by',
         'status',
         'started_at',
+        'confirmed_at',
+        'first_contact_sent_at',
         'completed_at',
     ];
 
@@ -24,6 +26,8 @@ class MentorAssignment extends Model
     {
         return [
             'started_at' => 'date',
+            'confirmed_at' => 'datetime',
+            'first_contact_sent_at' => 'datetime',
             'completed_at' => 'date',
         ];
     }
@@ -46,5 +50,10 @@ class MentorAssignment extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(MentorNote::class);
+    }
+
+    public function traineeChecklistProgress(): HasMany
+    {
+        return $this->hasMany(CfmTraineeChecklistProgress::class, 'mentor_assignment_id');
     }
 }

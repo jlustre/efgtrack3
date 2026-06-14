@@ -1,106 +1,132 @@
 <x-app-layout>
-    @php($isEdit = $mode === 'edit')
-
     <section class="space-y-6">
         <div class="overflow-hidden rounded-lg border border-slate-400 bg-gradient-to-br from-white via-slate-50 to-[#FFF9EA] shadow-sm">
             <div class="flex flex-col gap-4 bg-[#0B1F3A] px-6 py-6 text-white md:flex-row md:items-end md:justify-between">
                 <div>
-                    <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Prospect Management</p>
-                    <h1 class="mt-2 text-2xl font-semibold">{{ $isEdit ? 'Edit Prospect' : 'Prospect Profile' }}</h1>
-                    <p class="mt-2 text-sm text-slate-200">{{ $prospect->first_name }} {{ $prospect->last_name }}</p>
+                    <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Prospect Profile</p>
+                    <h1 class="mt-2 text-2xl font-semibold">{{ $prospect->displayName() }}</h1>
+                    <p class="mt-2 text-sm text-slate-200">
+                        @if ($prospect->fullName() && $prospect->fullName() !== $prospect->displayName())
+                            Legal name: {{ $prospect->fullName() }} ·
+                        @endif
+                        {{ $prospect->stage?->name ?? 'No stage' }}
+                        · {{ str($prospect->interest_level)->title() }} interest
+                        · {{ str($prospect->status)->title() }}
+                    </p>
                 </div>
-                <div class="flex gap-2">
-                    @unless ($isEdit)
-                        <a href="{{ route('team.prospects.records.edit', $prospect) }}" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Edit</a>
-                    @endunless
+                <div class="flex flex-wrap gap-2">
+                    @can('convert', $prospect)
+                        <button type="button" onclick="Livewire.dispatch('open-prospect-convert-modal', { prospectId: '{{ $prospect->id }}' })" class="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Convert</button>
+                    @endcan
+                    @can('share', $prospect)
+                        <button type="button" onclick="Livewire.dispatch('open-prospect-share-modal', { prospectId: '{{ $prospect->id }}' })" class="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Share</button>
+                    @endcan
+                    @can('create', \App\Models\FnaClientInvite::class)
+                        <button type="button" onclick="Livewire.dispatch('open-fna-client-invite-modal', { prospectId: '{{ $prospect->id }}' })" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Send FNA Link</button>
+                    @endcan
+                    <a href="{{ route('team.prospects.records.edit', $prospect) }}" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Edit</a>
+                    <a href="{{ route('team.prospects.records.activity', $prospect) }}" class="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Activity</a>
                     <a href="{{ route('team.prospects') }}" class="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Back</a>
                 </div>
             </div>
         </div>
 
-        <form method="POST" action="{{ route('team.prospects.records.update', $prospect) }}" class="rounded-lg border border-slate-400 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-6 shadow-sm">
-            @csrf
-            @method('PATCH')
-
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">First Name</span>
-                    <input name="first_name" value="{{ old('first_name', $prospect->first_name) }}" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Last Name</span>
-                    <input name="last_name" value="{{ old('last_name', $prospect->last_name) }}" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Email</span>
-                    <input name="email" type="email" value="{{ old('email', $prospect->email) }}" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Phone</span>
-                    <input name="phone" value="{{ old('phone', $prospect->phone) }}" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">City</span>
-                    <input name="city" value="{{ old('city', $prospect->city) }}" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Status</span>
-                    <select name="status" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                        @foreach (['active', 'archived', 'inactive'] as $status)
-                            <option value="{{ $status }}" @selected(old('status', $prospect->status) === $status)>{{ str($status)->title() }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Pipeline Stage</span>
-                    <select name="pipeline_stage_id" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                        <option value="">No Stage</option>
-                        @foreach ($pipelineStages as $stage)
-                            <option value="{{ $stage->id }}" @selected((string) old('pipeline_stage_id', $prospect->pipeline_stage_id) === (string) $stage->id)>{{ $stage->name }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Source</span>
-                    <select name="prospect_source_id" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                        <option value="">No Source</option>
-                        @foreach ($sources as $source)
-                            <option value="{{ $source->id }}" @selected((string) old('prospect_source_id', $prospect->prospect_source_id) === (string) $source->id)>{{ $source->name }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Interest</span>
-                    <select name="interest_level" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                        @foreach (['cold', 'warm', 'hot'] as $interest)
-                            <option value="{{ $interest }}" @selected(old('interest_level', $prospect->interest_level) === $interest)>{{ str($interest)->title() }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Priority</span>
-                    <select name="priority" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                        @foreach (['low', 'medium', 'high', 'urgent'] as $priority)
-                            <option value="{{ $priority }}" @selected(old('priority', $prospect->priority) === $priority)>{{ str($priority)->title() }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-sm font-semibold text-slate-700">Next Follow-Up</span>
-                    <input name="next_follow_up_at" type="datetime-local" value="{{ old('next_follow_up_at', $prospect->next_follow_up_at?->format('Y-m-d\TH:i')) }}" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
-                </label>
+        @if (session('status'))
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                {{ session('status') }}
             </div>
+        @endif
 
-            <label class="mt-4 block">
-                <span class="text-sm font-semibold text-slate-700">Notes Summary</span>
-                <textarea name="notes_summary" rows="4" @disabled(! $isEdit) class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">{{ old('notes_summary', $prospect->notes_summary) }}</textarea>
-            </label>
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Funnel</p>
+                <p class="mt-2 text-lg font-semibold text-[#0B1F3A]">{{ $prospect->funnel?->name ?? str($prospect->funnel_type ?? 'insurance')->title() }}</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Stage</p>
+                <p class="mt-2 text-lg font-semibold text-[#0B1F3A]">{{ $prospect->stage?->name ?? 'Not set' }}</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Interest</p>
+                <p class="mt-2 text-lg font-semibold text-[#0B1F3A]">{{ str($prospect->interest_level)->title() }}@if ($prospect->interest_score) ({{ $prospect->interest_score }}/10)@endif</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Source</p>
+                <p class="mt-2 text-lg font-semibold text-[#0B1F3A]">{{ $prospect->source?->name ?? 'Not set' }}</p>
+            </div>
+        </div>
 
-            @if ($isEdit)
-                <div class="mt-5 flex justify-end">
-                    <button type="submit" class="rounded-lg bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#12345B]">Save Changes</button>
+        @can('share', $prospect)
+            <livewire:prospects.prospect-share-modal />
+        @endcan
+
+        @can('convert', $prospect)
+            <livewire:prospects.prospect-convert-modal />
+        @endcan
+
+        @can('create', \App\Models\FnaClientInvite::class)
+            <livewire:fna.fna-client-invite-modal />
+        @endcan
+
+        @if ($prospect->conversions->isNotEmpty())
+            <div class="rounded-lg border border-slate-300 bg-white p-6 shadow-sm">
+                <h2 class="text-lg font-semibold text-[#0B1F3A]">Conversion History</h2>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                                <th class="px-3 py-2">Type</th>
+                                <th class="px-3 py-2">Date</th>
+                                <th class="px-3 py-2">By</th>
+                                <th class="px-3 py-2">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($prospect->conversions->sortByDesc('converted_at') as $conversion)
+                                <tr class="border-b border-slate-100">
+                                    <td class="px-3 py-3 font-semibold text-[#0B1F3A]">{{ config('prospects.conversion_types.'.$conversion->conversion_type, str($conversion->conversion_type)->title()) }}</td>
+                                    <td class="px-3 py-3 text-slate-600">{{ $conversion->converted_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                                    <td class="px-3 py-3 text-slate-600">{{ $conversion->convertedBy?->name ?? '—' }}</td>
+                                    <td class="px-3 py-3 text-slate-600">
+                                        @if ($conversion->policy_reference)
+                                            Policy: {{ $conversion->policy_reference }}
+                                        @endif
+                                        @if ($conversion->application_reference)
+                                            @if ($conversion->policy_reference)<br>@endif
+                                            Application: {{ $conversion->application_reference }}
+                                        @endif
+                                        @if ($conversion->createdUser)
+                                            @if ($conversion->policy_reference || $conversion->application_reference)<br>@endif
+                                            Member: {{ $conversion->createdUser->name }}
+                                        @endif
+                                        @if ($conversion->notes)
+                                            @if ($conversion->policy_reference || $conversion->application_reference || $conversion->createdUser)<br>@endif
+                                            {{ $conversion->notes }}
+                                        @endif
+                                        @if (! $conversion->policy_reference && ! $conversion->application_reference && ! $conversion->createdUser && ! $conversion->notes)
+                                            —
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
-            @endif
-        </form>
+            </div>
+        @endif
+
+        <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
+            @include('prospects.partials.contact-panel', ['prospect' => $prospect])
+
+            <div class="lg:col-span-2">
+                <livewire:prospects.prospect-profile-tabs :prospect="$prospect" />
+            </div>
+        </div>
+
+        <livewire:prospects.prospect-ai-coach-panel :prospect="$prospect" />
     </section>
+
+    <livewire:prospects.log-activity-modal />
+    <livewire:prospects.log-communication-modal />
+    <livewire:prospects.prospect-quick-log-modal />
 </x-app-layout>

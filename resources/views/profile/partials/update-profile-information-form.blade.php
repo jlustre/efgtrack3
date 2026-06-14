@@ -1,5 +1,7 @@
 @php
+    $isOwnProfile = $isOwnProfile ?? true;
     $readonly = $profileContext['readonly'];
+    $canViewSensitive = $profileContext['canViewSensitive'] ?? true;
     $locationOptions = $profileContext['locationOptions'];
     $contactTimes = $locationOptions['contactTimes'];
     $timezoneOptions = $locationOptions['timezones'];
@@ -15,7 +17,11 @@
 
 <section>
     <p class="text-sm text-slate-600">
-        Update your editable contact and licensing details. Team and login information below is managed by the system.
+        @if ($isOwnProfile)
+            Update your editable contact and licensing details. Team and login information below is managed by the system.
+        @else
+            Contact, licensing, and team information for this member. Editable fields are shown read-only.
+        @endif
     </p>
 
     <dl class="mt-5 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -51,12 +57,62 @@
             <dt class="text-xs font-semibold uppercase text-slate-500">Last Login</dt>
             <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['lastLoginAt'] }}</dd>
         </div>
+        @if ($canViewSensitive)
         <div>
             <dt class="text-xs font-semibold uppercase text-slate-500">Last IP</dt>
             <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $readonly['lastLoginIp'] }}</dd>
         </div>
+        @endif
     </dl>
 
+    @if (! $isOwnProfile)
+        <dl class="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">Name</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->name }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">Email</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->email }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">Phone</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->phone ?? 'Not added' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">Best Contact Time</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->best_contact_time ?? 'Not added' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">License Number</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->license_number ?? 'Not added' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">EFG Associate ID</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->efg_associate_id ?? 'Not added' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">City</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->city ?? 'Not added' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">Country</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->country ?? 'Not added' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">Province / State</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->province ?? 'Not added' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase text-slate-500">Timezone</dt>
+                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->timezone ?? 'Not added' }}</dd>
+            </div>
+            <div class="sm:col-span-2">
+                <dt class="text-xs font-semibold uppercase text-slate-500">Member Bio</dt>
+                <dd class="mt-1 text-sm text-[#0B1F3A]">{{ $user->profile?->bio ?? 'Not added' }}</dd>
+            </div>
+        </dl>
+    @else
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
         @csrf
     </form>
@@ -230,4 +286,5 @@
             </button>
         </div>
     </form>
+    @endif
 </section>

@@ -12,6 +12,11 @@
             editCountry: @js(old('country', $portal['editForm']['country'] ?? '')),
             editProvince: @js(old('province', $portal['editForm']['province'] ?? '')),
             editProvinces: @js($portal['locationOptions']['provincesByCountry']),
+            showTraineeChecklistModal: false,
+            checklistModalLoading: false,
+            checklistModalError: null,
+            checklistModalData: null,
+            checklistModalView: 'accomplished',
             get editProvinceOptions() {
                 return this.editProvinces[this.editCountry] || {};
             },
@@ -24,6 +29,76 @@
             submitProfileForm() {
                 this.profileSaving = true;
             },
+            closeTraineeChecklistModal() {
+                this.showTraineeChecklistModal = false;
+                this.checklistModalLoading = false;
+                this.checklistModalError = null;
+                this.checklistModalData = null;
+                this.checklistModalView = 'accomplished';
+            },
+            async openTraineeChecklistModal(url) {
+                this.showTraineeChecklistModal = true;
+                this.checklistModalLoading = true;
+                this.checklistModalError = null;
+                this.checklistModalData = null;
+                this.checklistModalView = 'accomplished';
+
+                try {
+                    const response = await fetch(url, {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    if (! response.ok) {
+                        throw new Error('Failed to load checklist');
+                    }
+
+                    this.checklistModalData = await response.json();
+                } catch (error) {
+                    this.checklistModalError = 'Could not load mentoring checklist. Please try again.';
+                } finally {
+                    this.checklistModalLoading = false;
+                }
+            },
+            accomplishedPhases() {
+                if (! this.checklistModalData?.phases) {
+                    return [];
+                }
+
+                return this.checklistModalData.phases
+                    .map((phase) => {
+                        const sections = phase.sections
+                            .map((section) => ({
+                                ...section,
+                                items: section.items.filter((item) => item.is_completed),
+                            }))
+                            .filter((section) => section.items.length > 0);
+
+                        return { ...phase, sections };
+                    })
+                    .filter((phase) => phase.sections.length > 0);
+            },
+            remainingPhases() {
+                if (! this.checklistModalData?.phases) {
+                    return [];
+                }
+
+                return this.checklistModalData.phases
+                    .map((phase) => {
+                        const sections = phase.sections
+                            .map((section) => ({
+                                ...section,
+                                items: section.items.filter((item) => ! item.is_completed),
+                            }))
+                            .filter((section) => section.items.length > 0);
+
+                        return { ...phase, sections };
+                    })
+                    .filter((phase) => phase.sections.length > 0);
+            },
         }"
         x-init="
             @if (session('profile_feedback'))
@@ -35,6 +110,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
             @include('cfm-portal.partials.flash')
             @include('cfm-portal.partials.header')
+
+            @include('cfm-portal.partials.pending-assignments')
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
@@ -78,5 +155,6 @@
         </div>
 
         @include('cfm-portal.partials.edit-profile-modal')
+        @include('cfm-portal.partials.trainee-checklist-modal')
     </section>
 </x-app-layout>

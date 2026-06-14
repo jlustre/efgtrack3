@@ -1,32 +1,42 @@
 <x-app-layout>
     <section class="space-y-6">
-        <div class="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-            <div>
-                <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Admin Management</p>
-                <h1 class="mt-2 text-2xl font-semibold text-[#0B1F3A]">{{ $config['label'] }}</h1>
-                <p class="mt-2 text-sm leading-6 text-slate-600">{{ $config['description'] }}</p>
+        <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Admin Management</p>
+            <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h1 class="text-2xl font-semibold text-[#0B1F3A]">{{ $config['label'] }}</h1>
+                @if ($canManage)
+                    <div class="flex shrink-0 flex-wrap gap-2 self-start sm:self-center">
+                        <a href="{{ route('admin.management.create', $resource) }}" class="inline-flex items-center justify-center rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#D8B75F]">
+                            {{ $canUpdateSeeder ? 'Add Item' : 'Add Record' }}
+                        </a>
+                        @if ($canUpdateSeeder)
+                            <form method="POST" action="{{ route('admin.management.update-seeder', [$resource, 'trashed' => $filters['trashed']]) }}">
+                                @csrf
+                                <button class="inline-flex items-center justify-center rounded-md border border-[#C8A24A] bg-white px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#C8A24A]/10">
+                                    Update Seeder
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                @endif
             </div>
-            @if ($canManage)
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('admin.management.create', $resource) }}" class="inline-flex items-center justify-center rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#D8B75F]">
-                        {{ $canUpdateSeeder ? 'Add Item' : 'Add Record' }}
-                    </a>
-                    @if ($canUpdateSeeder)
-                        <form method="POST" action="{{ route('admin.management.update-seeder', [$resource, 'trashed' => $filters['trashed']]) }}">
-                            @csrf
-                            <button class="inline-flex items-center justify-center rounded-md border border-[#C8A24A] bg-white px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#C8A24A]/10">
-                                Update Seeder
-                            </button>
-                        </form>
-                    @endif
-                </div>
-            @endif
+            <p class="mt-2 text-sm leading-6 text-slate-600">{{ $config['description'] }}</p>
         </div>
 
         @if (session('status'))
             <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
                 {{ str(session('status'))->replace('-', ' ')->title() }}
             </div>
+        @endif
+
+        @if (session('error'))
+            <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        @if ($resource === 'email-templates')
+            @include('admin.management.partials.email-template-tokens')
         @endif
 
         <form method="GET" class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_auto_auto]">
@@ -47,6 +57,7 @@
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             @php($booleanColumns = collect($config['fields'])->where('type', 'boolean')->pluck('name')->all())
             @php($hasActiveColumn = collect($config['fields'])->contains(fn ($field) => $field['name'] === 'is_active'))
+            @php($useInlineModals = $config['use_inline_modals'] ?? true)
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -60,7 +71,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($records as $record)
-                            <tr x-data="{ viewOpen: false, editOpen: false }">
+                            <tr @if ($useInlineModals) x-data="{ viewOpen: false, editOpen: false }" @endif>
                                 @foreach ($config['columns'] as $column)
                                     @php($value = data_get($record, $column))
                                     <td class="max-w-xs px-4 py-3 text-slate-700">
@@ -102,7 +113,7 @@
                                     <div class="flex justify-end gap-1.5">
                                         <a
                                             href="{{ route('admin.management.show', [$resource, $record->id]) }}"
-                                            x-on:click.prevent="viewOpen = true"
+                                            @if ($useInlineModals) x-on:click.prevent="viewOpen = true" @endif
                                             title="View"
                                             aria-label="View record"
                                             class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
@@ -114,21 +125,79 @@
                                             <span class="sr-only">View</span>
                                             <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">View</span>
                                         </a>
-                                        @if ($canManage)
+                                        @if ($resource === 'resources' && filled($record->file_path) && ! str_starts_with($record->file_path, 'http') && strtoupper($record->file_format ?? 'PDF') === 'PDF')
                                             <a
-                                                href="{{ route('admin.management.edit', [$resource, $record->id]) }}"
-                                                x-on:click.prevent="editOpen = true"
-                                                title="Edit"
-                                                aria-label="Edit record"
-                                                class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                                href="{{ route('admin.management.resources.view-pdf', $record->id, absolute: false) }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                title="View PDF"
+                                                aria-label="View PDF"
+                                                class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition hover:border-red-300 hover:bg-red-100 hover:text-red-800"
                                             >
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path d="M12 20h9" />
-                                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                                                    <path d="M14 2v6h6" />
+                                                    <path d="M10 13h4" />
+                                                    <path d="M10 17h4" />
+                                                    <path d="M10 9H8" />
                                                 </svg>
-                                                <span class="sr-only">Edit</span>
-                                                <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">Edit</span>
+                                                <span class="sr-only">View PDF</span>
+                                                <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">View PDF</span>
                                             </a>
+                                        @elseif ($resource === 'resources' && filled($record->url) && str_ends_with(strtolower(parse_url(\App\Support\ResourceUrl::resolve($record->url) ?? '', PHP_URL_PATH) ?? ''), '.pdf'))
+                                            <a
+                                                href="{{ \App\Support\ResourceUrl::resolve($record->url) }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                title="View PDF"
+                                                aria-label="View PDF"
+                                                class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition hover:border-red-300 hover:bg-red-100 hover:text-red-800"
+                                            >
+                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                                                    <path d="M14 2v6h6" />
+                                                    <path d="M10 13h4" />
+                                                    <path d="M10 17h4" />
+                                                    <path d="M10 9H8" />
+                                                </svg>
+                                                <span class="sr-only">View PDF</span>
+                                                <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">View PDF</span>
+                                            </a>
+                                        @endif
+                                        @if ($canManage)
+                                            @php($canEditRecord = $resource !== 'resources' || auth()->user()->canUpdateDocument($record))
+                                            @if ($canEditRecord)
+                                                <a
+                                                    href="{{ route('admin.management.edit', [$resource, $record->id]) }}"
+                                                    @if ($useInlineModals) x-on:click.prevent="editOpen = true" @endif
+                                                    title="Edit"
+                                                    aria-label="Edit record"
+                                                    class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                                >
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                        <path d="M12 20h9" />
+                                                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                    </svg>
+                                                    <span class="sr-only">Edit</span>
+                                                    <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">Edit</span>
+                                                </a>
+                                            @elseif ($resource === 'resources')
+                                                <button
+                                                    type="button"
+                                                    title="Read only"
+                                                    aria-label="Cannot edit record you do not own"
+                                                    class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 transition hover:bg-amber-100"
+                                                    x-on:click="alert('You can only update documents that you created. Contact an administrator if this record needs changes.')"
+                                                >
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                        <path d="M12 20h9" />
+                                                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                        <path d="m2 2 20 20" />
+                                                    </svg>
+                                                    <span class="sr-only">Cannot edit</span>
+                                                    <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">Owner only</span>
+                                                </button>
+                                            @endif
                                             @if ($hasActiveColumn && ! $record->deleted_at)
                                                 <form method="POST" action="{{ route('admin.management.status', [$resource, $record->id, 'trashed' => $filters['trashed']]) }}">
                                                     @csrf
@@ -155,6 +224,7 @@
                                                 </form>
                                             @endif
                                             @if ($record->deleted_at)
+                                                @if ($canDeleteRecords)
                                                 <form method="POST" action="{{ route('admin.management.restore', [$resource, $record->id]) }}">
                                                     @csrf
                                                     @method('PATCH')
@@ -171,7 +241,9 @@
                                                         <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">Restore</span>
                                                     </button>
                                                 </form>
+                                                @endif
                                             @else
+                                                @if ($canDeleteRecords)
                                                 <form method="POST" action="{{ route('admin.management.destroy', [$resource, $record->id]) }}">
                                                     @csrf
                                                     @method('DELETE')
@@ -189,10 +261,12 @@
                                                         <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">Archive</span>
                                                     </button>
                                                 </form>
+                                                @endif
                                             @endif
                                         @endif
                                     </div>
 
+                                    @if ($useInlineModals)
                                     <div
                                         x-show="viewOpen"
                                         x-cloak
@@ -240,14 +314,15 @@
                                             </div>
                                             <div class="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
                                                 <button type="button" x-on:click="viewOpen = false" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Close</button>
-                                                @if ($canManage)
+                                                @if ($canEditRecord)
                                                     <button type="button" x-on:click="viewOpen = false; editOpen = true" class="rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] hover:bg-[#D8B75F]">Edit Item</button>
                                                 @endif
                                             </div>
                                         </div>
                                     </div>
+                                    @endif
 
-                                    @if ($canManage)
+                                    @if ($useInlineModals && $canManage && ($resource !== 'resources' || auth()->user()->canUpdateDocument($record)))
                                         <div
                                             x-show="editOpen"
                                             x-cloak

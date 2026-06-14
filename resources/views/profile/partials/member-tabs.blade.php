@@ -1,4 +1,5 @@
 @php
+    $isOwnProfile = $isOwnProfile ?? true;
     $tabs = [
         'profile' => 'Profile Details',
         'onboarding' => 'Onboarding',
@@ -63,10 +64,12 @@
             @include('profile.partials.profile-feedback')
             @include('profile.partials.update-profile-information-form')
 
+            @if ($isOwnProfile)
             <div class="mt-8 grid gap-8 border-t border-slate-200 pt-8 lg:grid-cols-2">
                 @include('profile.partials.update-profile-photo-form')
                 @include('profile.partials.update-password-form')
             </div>
+            @endif
         </div>
 
         <div x-show="activeTab === 'onboarding'" x-cloak>

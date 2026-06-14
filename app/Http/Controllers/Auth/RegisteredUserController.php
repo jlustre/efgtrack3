@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\NewMemberRegistered;
 use App\Http\Controllers\Controller;
 use App\Models\RegistrationInvitation;
 use App\Models\Profile;
 use App\Models\Rank;
 use App\Models\User;
+use App\Services\Prospects\ProspectConversionService;
+use App\Support\LocationOptions;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,6 +41,7 @@ class RegisteredUserController extends Controller
 
         return view('auth.register', [
             'invitation' => $invitation,
+            'locationOptions' => LocationOptions::forPortal(),
         ]);
     }
 
@@ -55,12 +59,19 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'efg_associate_id' => ['required', 'string', 'max:100', 'unique:profiles,efg_associate_id'],
             'city' => ['required', 'string', 'max:120'],
+            'province' => ['required', 'string', 'max:120'],
             'country' => ['required', 'string', 'in:Canada,United States,Philippines,Mexico'],
             'timezone' => ['required', 'string', 'max:120'],
             'sponsor_confirmed' => ['accepted'],
             'active_associate_confirmed' => ['accepted'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        if (! LocationOptions::isValidProvince($request->string('country')->toString(), $request->string('province')->toString())) {
+            throw ValidationException::withMessages([
+                'province' => 'Select a valid province or state for the chosen country.',
+            ]);
+        }
 
         $user = DB::transaction(function () use ($request): User {
             $invitation = RegistrationInvitation::query()
@@ -103,11 +114,18 @@ class RegisteredUserController extends Controller
                 'is_online' => true,
             ]);
 
+            $locationIds = LocationOptions::profileLocationIds(
+                $request->string('country')->toString(),
+                $request->string('province')->toString(),
+                $request->string('timezone')->toString(),
+            );
+
             $user->profile()->create([
                 'efg_associate_id' => $request->string('efg_associate_id')->toString(),
                 'city' => $request->string('city')->toString(),
-                'country' => $request->string('country')->toString(),
-                'timezone' => $request->string('timezone')->toString(),
+                'country_id' => $locationIds['country_id'],
+                'state_province_id' => $locationIds['state_province_id'],
+                'timezone_id' => $locationIds['timezone_id'],
                 'is_efg_active_associate' => true,
             ]);
 
@@ -122,10 +140,15 @@ class RegisteredUserController extends Controller
                 'uses_count' => $invitation->uses_count + 1,
             ])->save();
 
+            if ($invitation->prospect_id) {
+                app(ProspectConversionService::class)->completeAssociateConversion($invitation, $user);
+            }
+
             return $user;
         });
 
         event(new Registered($user));
+        event(new NewMemberRegistered($user));
 
         Auth::login($user);
 

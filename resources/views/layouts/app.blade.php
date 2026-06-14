@@ -57,10 +57,10 @@
                 <header class="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 shadow-sm lg:px-8">
                     @php
                         $user = auth()->user();
-                        $unreadNotifications = $user?->unreadNotifications()->count() ?? 0;
-                        $recentNotifications = $user?->notifications()->latest()->limit(3)->get() ?? collect();
+                        $topbarUnreadNotificationCount = $user?->unreadNotifications()->count() ?? 0;
+                        $topbarNotifications = $user?->notifications()->latest()->limit(3)->get() ?? collect();
                         $openTaskCount = $user ? app(\App\Http\Controllers\TaskController::class)->openTaskCountFor($user) : 0;
-                        $user?->loadMissing('profile');
+                        $user?->loadMissing(['profile', 'rank']);
                     @endphp
 
                     <div class="flex flex-wrap items-center gap-3">
@@ -101,29 +101,33 @@
                                 <a
                                     href="{{ route('tasks.index') }}"
                                     class="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#C8A24A] hover:text-[#0B1F3A]"
-                                    title="My Tasks"
+                                    title="{{ $openTaskCount > 0 ? $openTaskCount.' open tasks' : 'My Tasks' }}"
                                 >
                                     <span class="sr-only">Open my tasks</span>
                                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                         <path d="M9 11l3 3L22 4"></path>
                                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                                     </svg>
+                                    @if ($openTaskCount > 0)
                                     <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0B1F3A] px-1 text-[0.65rem] font-bold text-[#C8A24A]">
                                         {{ $openTaskCount }}
                                     </span>
+                                    @endif
                                 </a>
 
                                 <x-dropdown align="right" width="80" contentClasses="bg-white p-0">
                                     <x-slot name="trigger">
-                                        <button type="button" class="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#C8A24A] hover:text-[#0B1F3A]">
+                                        <button type="button" title="{{ $topbarUnreadNotificationCount > 0 ? $topbarUnreadNotificationCount.' unread notifications' : 'Notifications' }}" class="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#C8A24A] hover:text-[#0B1F3A]">
                                             <span class="sr-only">Open notifications</span>
                                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
                                                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                                             </svg>
+                                            @if ($topbarUnreadNotificationCount > 0)
                                             <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#C8A24A] px-1 text-[0.65rem] font-bold text-[#0B1F3A]">
-                                                {{ $unreadNotifications }}
+                                                {{ $topbarUnreadNotificationCount }}
                                             </span>
+                                            @endif
                                         </button>
                                     </x-slot>
 
@@ -131,11 +135,11 @@
                                         <div class="w-80 max-w-[calc(100vw-2rem)]">
                                             <div class="border-b border-slate-100 px-4 py-3">
                                                 <div class="text-sm font-semibold text-[#0B1F3A]">Notifications</div>
-                                                <div class="text-xs text-slate-500">{{ $unreadNotifications }} unread update{{ $unreadNotifications === 1 ? '' : 's' }}</div>
+                                                <div class="text-xs text-slate-500">{{ $topbarUnreadNotificationCount }} unread update{{ $topbarUnreadNotificationCount === 1 ? '' : 's' }}</div>
                                             </div>
 
                                             <div class="max-h-72 overflow-y-auto py-1">
-                                                @forelse ($recentNotifications as $notification)
+                                                @forelse ($topbarNotifications as $notification)
                                                     <div class="flex gap-2 px-4 py-3 transition hover:bg-slate-50">
                                                         <a href="{{ route('notifications.index') }}" class="min-w-0 flex-1">
                                                             <div class="text-sm font-medium text-[#0B1F3A]">
@@ -181,7 +185,7 @@
                                             <x-user-avatar :user="$user" size="sm" class="!h-8 !w-8" />
                                             <span class="hidden text-left sm:block">
                                                 <span class="block max-w-32 truncate text-sm font-semibold text-[#0B1F3A]">{{ $user->name }}</span>
-                                                <span class="block max-w-32 truncate text-xs text-slate-500">{{ $user->getRoleNames()->first() ?? 'Portal User' }}</span>
+                                                <span class="block max-w-32 truncate text-xs text-slate-500">{{ $user->topbarRankRoleLabel() }}</span>
                                             </span>
                                             <svg class="hidden h-4 w-4 text-slate-400 sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                 <path d="m6 9 6 6 6-6"></path>

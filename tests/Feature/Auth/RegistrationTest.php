@@ -6,8 +6,12 @@ use App\Models\RegistrationInvitation;
 use App\Models\Rank;
 use App\Models\Team;
 use App\Models\User;
+use Database\Seeders\CountrySeeder;
+use Database\Seeders\EmailTemplateSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\StateProvinceSeeder;
+use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -31,7 +35,14 @@ class RegistrationTest extends TestCase
         $response
             ->assertStatus(200)
             ->assertSee($invitation->code)
-            ->assertSee($invitation->sponsor->name);
+            ->assertSee($invitation->sponsor->name)
+            ->assertSee('Important Before Registering')
+            ->assertSee('You must already be registered with Experior Financial Group before completing EFGTrack registration.')
+            ->assertSee('If you have not finished your Experior enrollment, ask your sponsor how to proceed.')
+            ->assertSee('Your Experior sponsor must be the same person as your EFGTrack sponsor')
+            ->assertSee('If this is not the person who invited you, stop here and ask the correct sponsor to send their invitation link.')
+            ->assertDontSee('Verified Sponsor')
+            ->assertSee('State / Province');
     }
 
     public function test_registration_screen_shows_unavailable_message_for_unknown_invitation(): void
@@ -46,6 +57,10 @@ class RegistrationTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
         ]);
 
         $sponsor = User::factory()->create();
@@ -68,6 +83,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1001',
             'city' => 'Vancouver',
+            'province' => 'British Columbia',
             'country' => 'Canada',
             'timezone' => 'Canada Pacific Time',
             'sponsor_confirmed' => '1',
@@ -91,6 +107,7 @@ class RegistrationTest extends TestCase
         $this->assertTrue($newUser->is_online);
         $this->assertSame('EFG-1001', $newUser->profile->efg_associate_id);
         $this->assertSame('Vancouver', $newUser->profile->city);
+        $this->assertSame('British Columbia', $newUser->profile->province);
         $this->assertSame('Canada', $newUser->profile->country);
         $this->assertSame('Canada Pacific Time', $newUser->profile->timezone);
         $this->assertTrue($newUser->profile->is_efg_active_associate);
@@ -115,6 +132,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1002',
             'city' => 'Vancouver',
+            'province' => 'British Columbia',
             'country' => 'Canada',
             'timezone' => 'Canada Pacific Time',
             'password' => 'password',
@@ -143,6 +161,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1003',
             'city' => 'Vancouver',
+            'province' => 'British Columbia',
             'country' => 'Canada',
             'timezone' => 'Canada Pacific Time',
             'sponsor_confirmed' => '1',

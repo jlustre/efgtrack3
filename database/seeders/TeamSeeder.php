@@ -10,7 +10,7 @@ class TeamSeeder extends Seeder
     public function run(): void
     {
         DB::table('teams')->updateOrInsert(
-            ['name' => 'Elite Financial Growth Team'],
+            ['name' => 'Wealth Legacy Alliance'],
             [
                 'description' => 'Default team for local development and seeded demo users.',
                 'is_active' => true,

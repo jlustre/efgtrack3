@@ -12,19 +12,23 @@ use App\Models\CalendarEventReminder;
 use App\Models\CalendarEventType;
 use App\Models\User;
 use App\Models\UserCalendarPreference;
+use App\Services\CalendarShareService;
+use App\Support\LocationOptions;
 use Carbon\CarbonImmutable;
-use DateTimeZone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CalendarController extends Controller
 {
+    public function __construct(private readonly CalendarShareService $calendarShare) {}
+
     public function index(Request $request): View
     {
         return $this->calendar($request, $request->string('view', 'month')->value());
@@ -61,7 +65,7 @@ class CalendarController extends Controller
             'calendar_category_id' => ['nullable', 'integer', 'exists:calendar_categories,id'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
-            'timezone' => ['required', 'string', Rule::in(DateTimeZone::listIdentifiers(DateTimeZone::AMERICA))],
+            'timezone' => ['required', 'string', Rule::in(array_keys(LocationOptions::timezones()))],
             'is_all_day' => ['nullable', 'boolean'],
             'is_recurring' => ['nullable', 'boolean'],
             'recurrence_frequency' => ['nullable', Rule::in(['daily', 'weekly', 'monthly', 'yearly'])],
@@ -92,6 +96,12 @@ class CalendarController extends Controller
         $category = filled($validated['calendar_category_id'] ?? null)
             ? CalendarCategory::query()->find($validated['calendar_category_id'])
             : null;
+
+        if ($category && ! $this->assignableCategories($request->user())->contains('id', $category->id)) {
+            return back()
+                ->withErrors(['calendar_category_id' => 'Select a calendar category you are allowed to use.'])
+                ->withInput();
+        }
 
         $resolvedCategory = $category ?? $type?->category;
         $categoryId = $resolvedCategory?->id;
@@ -184,19 +194,69 @@ class CalendarController extends Controller
             ->with('status', 'Calendar event created.');
     }
 
-    public function updateCategory(Request $request, CalendarCategory $category): RedirectResponse
+    public function storeCategory(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasPermissionTo('manage organization calendar'), 403);
+        abort_unless($request->user()->hasPermissionTo('view calendar'), 403);
+
+        $user = $request->user();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('calendar_categories', 'name')->ignore($category->id)],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('calendar_categories', 'name')->where(fn ($query) => $query->where('user_id', $user->id)),
+            ],
             'color' => ['required', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'is_public' => ['nullable', 'boolean'],
+            'return_to' => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        $slug = $this->uniqueCategorySlug($user->id, $validated['name']);
+
+        $category = CalendarCategory::create([
+            'user_id' => $user->id,
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'color' => strtoupper($validated['color']),
+            'icon' => 'calendar',
+            'sort_order' => (int) (CalendarCategory::query()->where('user_id', $user->id)->max('sort_order') ?? 900) + 10,
+            'is_active' => true,
+            'is_public' => (bool) ($validated['is_public'] ?? false),
+        ]);
+
+        $preference = $this->calendarPreference($request);
+        $visibleIds = collect($preference->visible_calendar_categories ?? [])
+            ->push($category->id)
+            ->unique()
+            ->values()
+            ->all();
+        $preference->update(['visible_calendar_categories' => $visibleIds]);
+
+        return redirect()
+            ->to($this->safeReturnUrl($validated['return_to'] ?? route('calendar.index')))
+            ->with('status', 'Personal calendar created.');
+    }
+
+    public function updateCategory(Request $request, CalendarCategory $category): RedirectResponse
+    {
+        abort_unless($this->canManageCategory($request->user(), $category), 403);
+
+        $nameRule = $category->isSystem()
+            ? Rule::unique('calendar_categories', 'name')->ignore($category->id)->where(fn ($query) => $query->whereNull('user_id'))
+            : Rule::unique('calendar_categories', 'name')->ignore($category->id)->where(fn ($query) => $query->where('user_id', $category->user_id));
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', $nameRule],
+            'color' => ['required', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'is_public' => ['nullable', 'boolean'],
             'return_to' => ['nullable', 'string', 'max:2048'],
         ]);
 
         $category->update([
             'name' => $validated['name'],
             'color' => strtoupper($validated['color']),
+            'is_public' => $category->isSystem() ? false : (bool) ($validated['is_public'] ?? false),
         ]);
 
         return redirect()
@@ -206,9 +266,19 @@ class CalendarController extends Controller
 
     public function destroyCategory(Request $request, CalendarCategory $category): RedirectResponse
     {
-        abort_unless($request->user()->hasPermissionTo('manage organization calendar'), 403);
+        abort_unless($this->canManageCategory($request->user(), $category), 403);
 
         $category->delete();
+
+        $preference = UserCalendarPreference::query()->where('user_id', $request->user()->id)->first();
+        if ($preference) {
+            $preference->update([
+                'visible_calendar_categories' => collect($preference->visible_calendar_categories ?? [])
+                    ->reject(fn ($id): bool => (int) $id === (int) $category->id)
+                    ->values()
+                    ->all(),
+            ]);
+        }
 
         return redirect()
             ->to($this->safeReturnUrl($request->input('return_to', route('calendar.index'))))
@@ -233,7 +303,7 @@ class CalendarController extends Controller
 
         return view('events.settings', [
             'preference' => $preference,
-            'categories' => CalendarCategory::query()->where('is_active', true)->orderBy('sort_order')->get(),
+            'categories' => $this->visibleCategories($request->user()),
         ]);
     }
 
@@ -278,6 +348,7 @@ class CalendarController extends Controller
         $currentDate = CarbonImmutable::parse($request->input('date', now()->toDateString()))->startOfDay();
         [$rangeStart, $rangeEnd] = $this->dateRange($currentDate, $viewMode);
         $selectedCalendarIds = $this->selectedCalendarIds($request);
+        $sharedMentorCalendars = $this->calendarShare->sharedCfmOrganizersFor($request->user());
 
         $events = $this->visibleEventsQuery($request, $selectedCalendarIds)
             ->where(function (Builder $query) use ($rangeStart, $rangeEnd): void {
@@ -310,11 +381,13 @@ class CalendarController extends Controller
             'weekDays' => $this->weekDays($rangeStart, $viewMode === 'work-week'),
             'hours' => range(7, 20),
             'upcomingEvents' => $upcomingEvents,
-            'categories' => CalendarCategory::query()->where('is_active', true)->orderBy('sort_order')->get(),
+            'categories' => $this->visibleCategories($request->user()),
+            'assignableCategories' => $this->assignableCategories($request->user()),
             'types' => CalendarEventType::query()->where('is_active', true)->orderBy('sort_order')->get(),
             'attendeeUsers' => $this->attendeeUsers($request),
-            'americaTimezones' => DateTimeZone::listIdentifiers(DateTimeZone::AMERICA),
+            'eventTimezones' => LocationOptions::timezones(),
             'selectedCalendarIds' => $selectedCalendarIds,
+            'sharedMentorCalendars' => $sharedMentorCalendars,
             'stats' => $this->stats($events, $upcomingEvents),
             'filters' => $request->only(['q', 'category', 'category_ids', 'calendars_filter', 'type', 'status', 'visibility']),
             'previousDate' => $this->shiftedDate($currentDate, $viewMode, -1),
@@ -326,6 +399,7 @@ class CalendarController extends Controller
     {
         $user = $request->user();
         $selectedCalendarIds ??= $this->selectedCalendarIds($request);
+        $sharedCfmOrganizerIds = $this->calendarShare->sharedCfmOrganizerIdsFor($user);
 
         return CalendarEvent::query()
             ->where(function (Builder $query): void {
@@ -342,15 +416,30 @@ class CalendarController extends Controller
                 });
             })
             ->when($request->filled('category'), fn (Builder $query) => $query->where('calendar_category_id', $request->integer('category')))
-            ->when(true, function (Builder $query) use ($selectedCalendarIds): void {
-                empty($selectedCalendarIds)
-                    ? $query->whereRaw('1 = 0')
-                    : $query->whereIn('calendar_category_id', $selectedCalendarIds);
+            ->when(true, function (Builder $query) use ($selectedCalendarIds, $sharedCfmOrganizerIds): void {
+                if (empty($selectedCalendarIds) && empty($sharedCfmOrganizerIds)) {
+                    $query->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $query->where(function (Builder $query) use ($selectedCalendarIds, $sharedCfmOrganizerIds): void {
+                    if (! empty($selectedCalendarIds)) {
+                        $query->whereIn('calendar_category_id', $selectedCalendarIds);
+                    }
+
+                    if (! empty($sharedCfmOrganizerIds)) {
+                        $query->orWhere(function (Builder $query) use ($sharedCfmOrganizerIds): void {
+                            $query->whereIn('organizer_id', $sharedCfmOrganizerIds)
+                                ->where('visibility', '!=', 'private');
+                        });
+                    }
+                });
             })
             ->when($request->filled('type'), fn (Builder $query) => $query->where('calendar_event_type_id', $request->integer('type')))
             ->when($request->filled('status'), fn (Builder $query) => $query->where('status', $request->string('status')))
             ->when($request->filled('visibility'), fn (Builder $query) => $query->where('visibility', $request->string('visibility')))
-            ->where(function (Builder $query) use ($user): void {
+            ->where(function (Builder $query) use ($user, $sharedCfmOrganizerIds): void {
                 if ($user->hasAnyPermission(['manage organization calendar', 'view private events'])) {
                     return;
                 }
@@ -366,6 +455,13 @@ class CalendarController extends Controller
                             ->orWhere('team_id', $user->team_id)
                             ->orWhereIn('role_name', $user->getRoleNames()->all());
                     });
+
+                if (! empty($sharedCfmOrganizerIds)) {
+                    $query->orWhere(function (Builder $query) use ($sharedCfmOrganizerIds): void {
+                        $query->whereIn('organizer_id', $sharedCfmOrganizerIds)
+                            ->where('visibility', '!=', 'private');
+                    });
+                }
             });
     }
 
@@ -389,11 +485,13 @@ class CalendarController extends Controller
     {
         $preference = $this->calendarPreference($request);
 
+        $visibleIds = $this->visibleCalendarIds($request->user());
+
         if ($request->has('calendars_filter')) {
             $selectedIds = collect(Arr::wrap($request->input('category_ids', [])))
                 ->filter(fn ($id): bool => is_numeric($id))
                 ->map(fn ($id): int => (int) $id)
-                ->intersect($this->activeCalendarIds())
+                ->intersect($visibleIds)
                 ->values()
                 ->all();
 
@@ -402,8 +500,8 @@ class CalendarController extends Controller
             return $selectedIds;
         }
 
-        return collect($preference->visible_calendar_categories ?? $this->activeCalendarIds())
-            ->intersect($this->activeCalendarIds())
+        return collect($preference->visible_calendar_categories ?? $this->defaultVisibleCalendarIds($request->user()))
+            ->intersect($visibleIds)
             ->values()
             ->all();
     }
@@ -414,21 +512,81 @@ class CalendarController extends Controller
             ['user_id' => $request->user()->id],
             [
                 'default_view' => 'month',
-                'timezone' => $request->user()->profile?->timezone ?? 'America/Vancouver',
-                'visible_calendar_categories' => $this->activeCalendarIds(),
+                'timezone' => $request->user()->profile?->timezone ?? 'PST',
+                'visible_calendar_categories' => $this->defaultVisibleCalendarIds($request->user()),
                 'show_weekends' => true,
             ]
         );
     }
 
-    private function activeCalendarIds(): array
+    private function visibleCategories(User $user): Collection
+    {
+        return CalendarCategory::query()
+            ->visibleTo($user)
+            ->orderByRaw('user_id is null desc')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function assignableCategories(User $user): Collection
     {
         return CalendarCategory::query()
             ->where('is_active', true)
+            ->where(function (Builder $query) use ($user): void {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', $user->id);
+            })
+            ->orderByRaw('user_id is null desc')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function visibleCalendarIds(User $user): array
+    {
+        return $this->visibleCategories($user)
+            ->pluck('id')
+            ->map(fn (int $id): int => $id)
+            ->all();
+    }
+
+    private function defaultVisibleCalendarIds(User $user): array
+    {
+        return CalendarCategory::query()
+            ->where('is_active', true)
+            ->where(function (Builder $query) use ($user): void {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', $user->id);
+            })
+            ->orderByRaw('user_id is null desc')
             ->orderBy('sort_order')
             ->pluck('id')
             ->map(fn (int $id): int => $id)
             ->all();
+    }
+
+    private function canManageCategory(User $user, CalendarCategory $category): bool
+    {
+        if ($category->isOwnedBy($user)) {
+            return true;
+        }
+
+        return $category->isSystem() && $user->hasPermissionTo('manage organization calendar');
+    }
+
+    private function uniqueCategorySlug(int $userId, string $name): string
+    {
+        $base = 'u'.$userId.'-'.Str::slug($name);
+        $slug = $base;
+        $counter = 1;
+
+        while (CalendarCategory::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 
     private function safeReturnUrl(string $url): string

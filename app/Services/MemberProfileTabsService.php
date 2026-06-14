@@ -28,9 +28,29 @@ class MemberProfileTabsService
             'recruitsTotal' => count($recruits),
             'recruitsDirectTotal' => collect($recruits)->where('level', 1)->count(),
             'annualPremium' => $annualPremium,
-            'annualPremiumTotal' => collect($annualPremium)->sum('premium_amount'),
+            'annualPremiumTotal' => $this->sumAnnualPremium($annualPremium),
             'otherTraining' => $otherTraining,
         ];
+    }
+
+    public function annualPremiumTotal(User $user): int
+    {
+        $user->loadMissing(['profile', 'rank', 'mentor']);
+
+        return $this->sumAnnualPremium($this->annualPremiumRows(
+            $user,
+            $this->onboardingRows($user),
+            $this->checklistRows($user, $this->apprenticeshipConfig()),
+            $this->checklistRows($user, $this->cfmTrainingConfig()),
+        ));
+    }
+
+    /**
+     * @param  list<array{premium_amount: int}>  $rows
+     */
+    private function sumAnnualPremium(array $rows): int
+    {
+        return (int) collect($rows)->sum('premium_amount');
     }
 
     private function onboardingRows(User $user): array

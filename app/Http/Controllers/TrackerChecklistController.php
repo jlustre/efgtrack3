@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\ProfileLocationQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -190,6 +191,7 @@ class TrackerChecklistController extends Controller
             ->join('users', 'users.id', '=', $config['progressTable'].'.user_id')
             ->join($config['stepTable'], $config['stepTable'].'.id', '=', $config['progressTable'].'.'.$config['foreignKey'])
             ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
+            ->tap(fn ($query) => ProfileLocationQuery::joinCountry($query))
             ->where($config['progressTable'].'.status', 'pending_confirmation')
             ->whereNull('users.deleted_at')
             ->whereNull($config['stepTable'].'.deleted_at')
@@ -203,7 +205,7 @@ class TrackerChecklistController extends Controller
                 'users.email as member_email',
                 'users.sponsor_id',
                 'users.mentor_id',
-                'profiles.country as member_country',
+                ProfileLocationQuery::memberCountrySelect(),
                 $config['stepTable'].'.title',
                 $config['stepTable'].'.description',
                 $config['stepTable'].'.notified_parties'

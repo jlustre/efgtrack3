@@ -14,6 +14,7 @@ use App\Models\Rank;
 use App\Models\User;
 use App\Models\UserTask;
 use App\Services\DownlineHierarchyService;
+use App\Support\LocationOptions;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,12 @@ class CfmManagementSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+        ]);
+
         $this->seedRankStructure();
 
         $agencyOwner = User::where('email', 'agency-owner@efgtrack.com')->first();
@@ -126,12 +133,30 @@ class CfmManagementSeeder extends Seeder
     {
         $this->mentorTask($celeste, $agencyOwner, 'Confirm FAP step submissions for Maya Chen', 'open', now()->addDays(3));
 
+        $maya = User::where('email', 'maya.fap@example.com')->first();
+        if ($maya) {
+            $assignment = $this->mentorAssignment($celeste, $maya, $agencyOwner, 'active', now()->subDays(45));
+            $assignment->update([
+                'confirmed_at' => now()->subDays(44),
+                'first_contact_sent_at' => now()->subDays(43),
+            ]);
+        }
+
+        $nina = User::where('email', 'nina.onboarding@example.com')->first();
+        if ($nina) {
+            $assignment = $this->mentorAssignment($celeste, $nina, $agencyOwner, 'active', now()->subDays(14));
+            $assignment->update([
+                'confirmed_at' => now()->subDays(13),
+                'first_contact_sent_at' => now()->subDays(12),
+            ]);
+        }
+
         $completedApprentice = $this->member('celeste.completed@example.com', 'Jordan Ellis', $agencyOwner->team_id, $agencyOwner->id, null, Rank::where('code', 'FA')->value('id'));
         $this->seedAssociateLocation($completedApprentice, 'Canada', 'Ontario', 'Ottawa', 'Canada Eastern Time');
         $this->mentorAssignment($celeste, $completedApprentice, $agencyOwner, 'completed', now()->subMonths(8), now()->subMonths(2));
 
-        $this->booking($celeste, $categoryId, now()->addDays(2)->setTime(10, 0), User::where('email', 'maya.fap@example.com')->first());
-        $this->booking($celeste, $categoryId, now()->addDays(4)->setTime(14, 0), User::where('email', 'nina.onboarding@example.com')->first());
+        $this->booking($celeste, $categoryId, now()->addDays(2)->setTime(10, 0), $maya);
+        $this->booking($celeste, $categoryId, now()->addDays(4)->setTime(14, 0), $nina);
         $this->booking($celeste, $categoryId, now()->addDays(6)->setTime(11, 0), null);
     }
 
@@ -141,12 +166,12 @@ class CfmManagementSeeder extends Seeder
             $apprentice = $this->member($email, 'Maria Apprentice '.($index + 1), $agencyOwner->team_id, $agencyOwner->id, $maria->id, $rankFa);
             $apprentice->profile()->updateOrCreate(
                 ['user_id' => $apprentice->id],
-                [
+                LocationOptions::profileAttributesForStorage([
                     'country' => 'Canada',
                     'province' => $index === 0 ? 'Ontario' : 'Quebec',
                     'city' => $index === 0 ? 'Toronto' : 'Montreal',
                     'timezone' => 'Canada Eastern Time',
-                ]
+                ])
             );
             $this->mentorAssignment($maria, $apprentice, $agencyOwner, 'active', now()->subDays(20 + $index));
             $this->seedApprenticeshipProgress($apprentice, $index === 0 ? 4 : 2);
@@ -259,7 +284,7 @@ class CfmManagementSeeder extends Seeder
             $associate = $this->member($row['email'], $row['name'], $teamId, $agencyOwner->id, null, $rankFa);
             $associate->profile()->updateOrCreate(
                 ['user_id' => $associate->id],
-                [
+                LocationOptions::profileAttributesForStorage([
                     'country' => $row['country'],
                     'province' => $row['province'],
                     'city' => $row['city'],
@@ -269,7 +294,7 @@ class CfmManagementSeeder extends Seeder
                     'efg_associate_id' => 'EFG-QUEUE-'.$associate->id,
                     'is_efg_active_associate' => true,
                     'recruited_at' => now()->subDays(3)->toDateString(),
-                ]
+                ])
             );
         }
     }
@@ -390,13 +415,13 @@ class CfmManagementSeeder extends Seeder
         $user->syncRoles(['certified-field-mentor']);
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-            [
+            LocationOptions::profileAttributesForStorage([
                 'country' => 'Canada',
                 'province' => 'British Columbia',
                 'city' => 'Victoria',
                 'timezone' => 'Canada Pacific Time',
                 'phone' => '555-0199',
-            ]
+            ])
         );
 
         for ($i = 1; $i <= 9; $i++) {
@@ -430,7 +455,10 @@ class CfmManagementSeeder extends Seeder
         );
 
         $user->syncRoles(['certified-field-mentor']);
-        $user->profile()->updateOrCreate(['user_id' => $user->id], $profile);
+        $user->profile()->updateOrCreate(
+            ['user_id' => $user->id],
+            LocationOptions::profileAttributesForStorage($profile)
+        );
 
         return $user;
     }
@@ -704,7 +732,7 @@ class CfmManagementSeeder extends Seeder
 
             $user->profile()->updateOrCreate(
                 ['user_id' => $user->id],
-                $definition['location']
+                LocationOptions::profileAttributesForStorage($definition['location'])
             );
 
             $this->seedProfile($user, $definition['mentor']);
@@ -831,12 +859,12 @@ class CfmManagementSeeder extends Seeder
     ): void {
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-            [
+            LocationOptions::profileAttributesForStorage([
                 'country' => $country,
                 'province' => $province,
                 'city' => $city,
                 'timezone' => $timezone,
-            ]
+            ])
         );
     }
 

@@ -7,13 +7,17 @@ use App\Models\Profile;
 use App\Models\RegistrationInvitation;
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
+use App\Support\LocationOptions;
+use Database\Seeders\CountrySeeder;
 use Database\Seeders\CfmTrainingModuleSeeder;
 use Database\Seeders\FieldApprenticeshipProgramSeeder;
 use Database\Seeders\OnboardingStepSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\StateProvinceSeeder;
 use Database\Seeders\TaskScenarioSeeder;
 use Database\Seeders\TeamSeeder;
+use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -38,7 +42,9 @@ class ProfileTest extends TestCase
             ->assertSee('Onboarding', false)
             ->assertSee('Recruits', false)
             ->assertSee('Annual Premium', false)
-            ->assertSee('Other Training', false);
+            ->assertSee('Other Training', false)
+            ->assertSee('Experior Invite Link', false)
+            ->assertSee('Save Invite Link', false);
     }
 
     public function test_profile_page_shows_tab_listing_tables_with_seeded_data(): void
@@ -75,6 +81,9 @@ class ProfileTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             RankSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             OnboardingStepSeeder::class,
             FieldApprenticeshipProgramSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -88,12 +97,12 @@ class ProfileTest extends TestCase
             'is_active' => true,
         ]);
         $levelOne->assignRole('certified-field-mentor');
-        Profile::query()->create([
+        Profile::query()->create(LocationOptions::profileAttributesForStorage([
             'user_id' => $levelOne->id,
             'phone' => '+1 416-555-0100',
             'province' => 'Ontario',
             'country' => 'Canada',
-        ]);
+        ]));
         User::factory()->create([
             'name' => 'Recruit Level Two',
             'email' => 'recruit.level2@example.com',
@@ -138,6 +147,12 @@ class ProfileTest extends TestCase
 
     public function test_profile_information_can_be_updated(): void
     {
+        $this->seed([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+        ]);
+
         $user = User::factory()->create();
 
         $response = $this
@@ -184,6 +199,12 @@ class ProfileTest extends TestCase
 
     public function test_profile_update_shows_validation_errors_on_profile_tab(): void
     {
+        $this->seed([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+        ]);
+
         $user = User::factory()->create();
 
         $this->actingAs($user)
@@ -224,9 +245,82 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_member_can_create_invitation_link_from_profile(): void
+    public function test_member_can_save_experior_invite_link(): void
     {
         $user = User::factory()->create();
+        $inviteLink = 'https://experiorfinancial.com/invite/abc123';
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('profile.invite-link.update'), [
+                'efg_invite_link' => $inviteLink,
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHas('invite_link_feedback', fn (array $feedback) => $feedback['type'] === 'success');
+
+        $this->assertDatabaseHas('profiles', [
+            'user_id' => $user->id,
+            'efg_invite_link' => $inviteLink,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee($inviteLink, false);
+    }
+
+    public function test_experior_invite_link_must_be_a_valid_url(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from(route('profile.edit'))
+            ->patch(route('profile.invite-link.update'), [
+                'efg_invite_link' => 'not-a-valid-url',
+            ]);
+
+        $response
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHasErrors('efg_invite_link', null, 'profileInviteLink')
+            ->assertSessionHas('invite_link_feedback', fn (array $feedback) => $feedback['type'] === 'error');
+
+        $this->assertDatabaseMissing('profiles', [
+            'user_id' => $user->id,
+            'efg_invite_link' => 'not-a-valid-url',
+        ]);
+    }
+
+    public function test_member_can_clear_experior_invite_link(): void
+    {
+        $user = User::factory()->create();
+        Profile::query()->create([
+            'user_id' => $user->id,
+            'efg_invite_link' => 'https://experiorfinancial.com/invite/old',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('profile.invite-link.update'), [
+                'efg_invite_link' => '',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertNull($user->fresh()->profile->efg_invite_link);
+    }
+
+    public function test_member_can_create_invitation_link_from_profile(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
 
         $response = $this
             ->actingAs($user)
@@ -251,7 +345,10 @@ class ProfileTest extends TestCase
 
     public function test_member_cannot_create_duplicate_active_invitation_for_same_email(): void
     {
+        $this->seed(RolePermissionSeeder::class);
+
         $user = User::factory()->create();
+        $user->assignRole('member');
 
         RegistrationInvitation::factory()->for($user, 'sponsor')->create([
             'email' => 'invitee@example.com',
@@ -295,7 +392,11 @@ class ProfileTest extends TestCase
 
     public function test_member_can_delete_active_invitation_and_reinvite_same_email(): void
     {
+        $this->seed(RolePermissionSeeder::class);
+
         $user = User::factory()->create();
+        $user->assignRole('member');
+
         $invitation = RegistrationInvitation::factory()->for($user, 'sponsor')->create([
             'email' => 'invitee@example.com',
         ]);
@@ -325,7 +426,10 @@ class ProfileTest extends TestCase
 
     public function test_member_cannot_invite_an_email_that_already_registered(): void
     {
+        $this->seed(RolePermissionSeeder::class);
+
         $user = User::factory()->create();
+        $user->assignRole('member');
         User::factory()->create(['email' => 'existing@example.com']);
 
         $response = $this
@@ -364,6 +468,33 @@ class ProfileTest extends TestCase
         });
 
         $this->assertNotNull($invitation->refresh()->last_emailed_at);
+    }
+
+    public function test_member_can_send_invitation_email_with_html_message_body(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create();
+        $invitation = RegistrationInvitation::factory()->for($user, 'sponsor')->create([
+            'email' => 'invitee@example.com',
+        ]);
+
+        $url = $invitation->invitationUrl();
+        $htmlMessage = '<p>Please register here:</p><p><a href="'.$url.'">'.$url.'</a></p>';
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('profile.invitations.send', $invitation), [
+                'recipient_email' => 'invitee@example.com',
+                'subject' => 'Join EFGTrack',
+                'message' => $htmlMessage,
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        Mail::assertSent(InvitationLinkMail::class, fn (InvitationLinkMail $mail): bool => str_contains($mail->emailBody, $url));
     }
 
     public function test_member_cannot_mail_invitation_to_email_with_active_invitation(): void

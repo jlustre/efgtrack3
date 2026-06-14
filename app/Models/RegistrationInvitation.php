@@ -17,6 +17,7 @@ class RegistrationInvitation extends Model
     protected $fillable = [
         'sponsor_id',
         'accepted_by',
+        'prospect_id',
         'code',
         'email',
         'role_name',
@@ -46,6 +47,11 @@ class RegistrationInvitation extends Model
     public function acceptedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'accepted_by');
+    }
+
+    public function prospect(): BelongsTo
+    {
+        return $this->belongsTo(Prospect::class);
     }
 
     public static function generateCode(): string

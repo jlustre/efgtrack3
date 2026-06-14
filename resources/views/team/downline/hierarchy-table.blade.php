@@ -12,13 +12,13 @@
                         @if ($isBranchView)
                             Branch rooted at
                             <span class="font-semibold text-[#C8A24A]">{{ \App\Support\MemberDisplayName::for($root) }}</span>.
-                            <span class="text-slate-300">&uarr;</span> member = topmost;
-                            <span class="text-slate-300">&darr;</span> upline = topmost.
+                            <span class="text-slate-300">&uarr;</span> on a member = make them topmost;
+                            <span class="text-slate-300">&darr;</span> on the top row = step up to their direct upline (back to your hierarchy when you are the upline).
                         @else
                             Your downline from
                             <span class="font-semibold text-[#C8A24A]">{{ \App\Support\MemberDisplayName::for($root) }}</span>.
-                            <span class="text-slate-300">&uarr;</span> member = topmost;
-                            <span class="text-slate-300">&darr;</span> direct upline = topmost.
+                            <span class="text-slate-300">&uarr;</span> on a member = make them topmost;
+                            <span class="text-slate-300">&darr;</span> on the top row = step up to their direct upline (back to your hierarchy when you are the upline).
                         @endif
                     </p>
                 </div>
@@ -90,6 +90,7 @@
                     <thead class="sticky top-0 bg-slate-50 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500">
                         <tr>
                             <th class="px-2 py-1.5">Member</th>
+                            <th class="w-16 px-2 py-1.5 text-right">Team</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100/80">
@@ -159,6 +160,7 @@
                                         </div>
                                     </div>
                                 </td>
+                                <td class="px-2 py-0.5 text-right tabular-nums text-sm text-slate-600" x-text="row.total_downline"></td>
                             </tr>
                         </template>
                     </tbody>

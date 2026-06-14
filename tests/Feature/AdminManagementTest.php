@@ -182,4 +182,125 @@ class AdminManagementTest extends TestCase
             ->get('/admin/management/not-a-real-table')
             ->assertNotFound();
     }
+
+    public function test_admin_can_list_email_templates_page(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.resource.index', 'email-templates'))
+            ->assertOk()
+            ->assertSee('Email Templates')
+            ->assertSee('Update Seeder')
+            ->assertSee('Available merge tokens')
+            ->assertSee('{{ member_name }}');
+    }
+
+    public function test_admin_can_update_email_template_seeder_from_list(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $seederPath = database_path('seeders/EmailTemplateSeeder.php');
+        $originalSeeder = file_get_contents($seederPath);
+
+        DB::table('email_templates')->insert([
+            'key' => 'seed_export_test',
+            'name' => 'Seed Export Test',
+            'subject' => 'Subject for {{ member_name }}',
+            'body' => '<p>Exported body for {{ app_name }}</p>',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $this->actingAs($admin)
+                ->post(route('admin.management.update-seeder', 'email-templates'))
+                ->assertRedirect(route('admin.management.resource.index', 'email-templates'))
+                ->assertSessionHas('status', 'seeder-updated');
+
+            $seeder = file_get_contents($seederPath);
+
+            $this->assertStringContainsString('seed_export_test', $seeder);
+            $this->assertStringContainsString('Seed Export Test', $seeder);
+            $this->assertStringContainsString('Exported body for {{ app_name }}', $seeder);
+            $this->assertStringContainsString('EmailTemplate::updateOrCreate', $seeder);
+        } finally {
+            file_put_contents($seederPath, $originalSeeder);
+        }
+    }
+
+    public function test_admin_can_create_update_toggle_archive_and_restore_email_template(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->post(route('admin.management.store', 'email-templates'), [
+                'key' => 'test_welcome',
+                'name' => 'Test Welcome',
+                'subject' => 'Welcome to {{ app_name }}',
+                'body' => '<p>Hi {{ member_name }},</p><p>Welcome aboard.</p>',
+                'is_active' => 1,
+            ])
+            ->assertRedirect();
+
+        $templateId = DB::table('email_templates')->where('key', 'test_welcome')->value('id');
+
+        $this->assertNotNull($templateId);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.management.update', ['email-templates', $templateId]), [
+                'key' => 'test_welcome',
+                'name' => 'Test Welcome Updated',
+                'subject' => 'Welcome aboard, {{ member_name }}',
+                'body' => '<p>Hi {{ member_name }},</p><p>Glad you joined {{ app_name }}.</p>',
+                'is_active' => 0,
+            ])
+            ->assertRedirect(route('admin.management.edit', ['email-templates', $templateId]));
+
+        $this->assertDatabaseHas('email_templates', [
+            'id' => $templateId,
+            'name' => 'Test Welcome Updated',
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.management.status', ['email-templates', $templateId]))
+            ->assertRedirect();
+
+        $this->assertTrue((bool) DB::table('email_templates')->where('id', $templateId)->value('is_active'));
+
+        $this->actingAs($admin)
+            ->delete(route('admin.management.destroy', ['email-templates', $templateId]))
+            ->assertRedirect();
+
+        $this->assertNotNull(DB::table('email_templates')->where('id', $templateId)->value('deleted_at'));
+
+        $this->actingAs($admin)
+            ->patch(route('admin.management.restore', ['email-templates', $templateId]))
+            ->assertRedirect(route('admin.management.edit', ['email-templates', $templateId]));
+
+        $this->assertNull(DB::table('email_templates')->where('id', $templateId)->value('deleted_at'));
+    }
+
+    public function test_agency_owner_cannot_access_email_templates(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $agencyOwner = User::factory()->create();
+        $agencyOwner->assignRole('agency-owner');
+
+        $this->actingAs($agencyOwner)
+            ->get(route('admin.management.resource.index', 'email-templates'))
+            ->assertForbidden();
+    }
 }

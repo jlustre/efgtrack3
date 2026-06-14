@@ -27,9 +27,43 @@ class Prospect extends Model
             'appointment_at' => 'datetime',
             'conversion_at' => 'datetime',
             'archived_at' => 'datetime',
+            'last_activity_at' => 'datetime',
             'is_client' => 'boolean',
             'is_archived' => 'boolean',
+            'engagement_score' => 'decimal:2',
         ];
+    }
+
+    public function funnel(): BelongsTo
+    {
+        return $this->belongsTo(ProspectFunnel::class, 'prospect_funnel_id');
+    }
+
+    public function stageHistory(): HasMany
+    {
+        return $this->hasMany(ProspectStageHistory::class);
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(ProspectActivity::class);
+    }
+
+    public function displayName(): string
+    {
+        $preferred = trim((string) ($this->preferred_name ?? ''));
+        if ($preferred !== '') {
+            return $preferred;
+        }
+
+        $fullName = trim(trim((string) ($this->first_name ?? '')).' '.trim((string) ($this->last_name ?? '')));
+
+        return $fullName !== '' ? $fullName : 'Unnamed Prospect';
+    }
+
+    public function fullName(): string
+    {
+        return trim(trim((string) ($this->first_name ?? '')).' '.trim((string) ($this->last_name ?? '')));
     }
 
     public function owner(): BelongsTo
@@ -77,6 +111,11 @@ class Prospect extends Model
         return $this->hasMany(ProspectAppointment::class);
     }
 
+    public function fnaRecords(): HasMany
+    {
+        return $this->hasMany(FnaRecord::class);
+    }
+
     public function followups(): HasMany
     {
         return $this->hasMany(ProspectFollowUp::class);
@@ -100,5 +139,10 @@ class Prospect extends Model
     public function conversions(): HasMany
     {
         return $this->hasMany(ProspectConversion::class);
+    }
+
+    public function registrationInvitations(): HasMany
+    {
+        return $this->hasMany(RegistrationInvitation::class);
     }
 }

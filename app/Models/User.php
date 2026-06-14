@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\UserAvatar;
+use App\Support\UserRankRoleLabel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -212,9 +213,53 @@ class User extends Authenticatable
         return $this->hasRole('certified-field-mentor');
     }
 
+    public function canManageDocuments(): bool
+    {
+        return $this->hasAnyRole([
+            'super-admin',
+            'admin',
+            'agency-owner',
+            'certified-field-mentor',
+        ]);
+    }
+
+    public function canDeleteDocuments(): bool
+    {
+        return $this->hasAnyRole(['super-admin', 'admin']);
+    }
+
+    public function canUpdateDocumentSeeder(): bool
+    {
+        return $this->hasAnyRole(['super-admin', 'admin']);
+    }
+
+    public function canUpdateDocument(?object $record = null): bool
+    {
+        if ($this->hasAnyRole(['super-admin', 'admin'])) {
+            return true;
+        }
+
+        if (! $this->canManageDocuments()) {
+            return false;
+        }
+
+        if ($record === null) {
+            return true;
+        }
+
+        $createdBy = $record->created_by ?? null;
+
+        return $createdBy !== null && (int) $createdBy === (int) $this->id;
+    }
+
     public function initials(): string
     {
         return UserAvatar::initials($this->name);
+    }
+
+    public function topbarRankRoleLabel(string $fallback = 'Portal User'): string
+    {
+        return UserRankRoleLabel::for($this, $fallback);
     }
 
     public function profilePhotoUrl(): ?string

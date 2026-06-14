@@ -13,11 +13,23 @@ class StoreCfmAssignmentRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
-            'notify_cfm' => $this->boolean('notify_cfm'),
-            'notify_associate' => $this->boolean('notify_associate'),
-            'require_cfm_approval' => $this->boolean('require_cfm_approval'),
-        ]);
+        $merge = [];
+
+        if ($this->has('notify_cfm')) {
+            $merge['notify_cfm'] = $this->boolean('notify_cfm');
+        }
+
+        if ($this->has('notify_associate')) {
+            $merge['notify_associate'] = $this->boolean('notify_associate');
+        }
+
+        if ($this->has('require_cfm_approval')) {
+            $merge['require_cfm_approval'] = $this->boolean('require_cfm_approval');
+        }
+
+        if ($merge !== []) {
+            $this->merge($merge);
+        }
     }
 
     public function rules(): array

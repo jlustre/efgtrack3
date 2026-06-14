@@ -1,20 +1,10 @@
 <x-guest-layout>
     @php
-        $timezones = [
-            'PST' => 'PST',
-            'MST' => 'MST',
-            'CST' => 'CST',
-            'EST' => 'EST',
-            'Canada Pacific Time' => 'Canada Pacific Time',
-            'Canada Mountain Time' => 'Canada Mountain Time',
-            'Canada Central Time' => 'Canada Central Time',
-            'Canada Eastern Time' => 'Canada Eastern Time',
-            'Philippines Time' => 'Philippines Time',
-            'Mexico Pacific Time' => 'Mexico Pacific Time',
-            'Mexico Mountain Time' => 'Mexico Mountain Time',
-            'Mexico Central Time' => 'Mexico Central Time',
-            'Mexico Eastern Time' => 'Mexico Eastern Time',
-        ];
+        $timezones = $locationOptions['timezones'];
+        $currentCountry = old('country');
+        $currentProvince = old('province');
+        $provinceOptions = $locationOptions['provincesByCountry'][$currentCountry] ?? [];
+        $provinceIsLegacy = filled($currentProvince) && ! array_key_exists($currentProvince, $provinceOptions) && ! in_array($currentProvince, $provinceOptions, true);
     @endphp
 
     <div class="min-h-screen bg-[radial-gradient(circle_at_10%_20%,#111111,#000000)] px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
@@ -64,13 +54,13 @@
                                 </div>
                             </div>
 
-                            <div class="mt-10 rounded-2xl border border-[#D4AF37]/25 bg-[#131316] p-5">
-                                <div class="text-xs font-semibold uppercase tracking-[0.14em] text-[#D4AF37]">Verified Sponsor</div>
-                                <div class="mt-2 text-xl font-semibold text-white">{{ $invitation->sponsor->name }}</div>
-                                <p class="mt-3 text-sm leading-6 text-slate-400">
-                                    If this is not the person who invited you, discontinue this registration and ask the correct person to send their own invitation link.
+                            <div class="mt-8 rounded-2xl border border-[#D4AF37]/25 bg-[#070707] p-5 shadow-[0_12px_28px_-20px_rgba(212,175,55,0.45)]" role="note">
+                                <div class="text-xs font-semibold uppercase tracking-[0.14em] text-[#D4AF37]">Important Before Registering</div>
+                                <p class="mt-3 text-sm leading-6 text-slate-300">
+                                    You must already be registered with Experior Financial Group before completing EFGTrack registration. If you have not finished your Experior enrollment, ask your sponsor how to proceed. Your Experior sponsor must be the same person as your EFGTrack sponsor&mdash;<span class="font-semibold text-white">{{ $invitation->sponsor->name }}</span>. If this is not the person who invited you, stop here and ask the correct sponsor to send their invitation link.
                                 </p>
                             </div>
+
                         </div>
                     </aside>
 
@@ -80,7 +70,25 @@
                             <p class="mt-2 text-sm text-slate-400">Secure invitation access &middot; EFG associate verification required</p>
                         </div>
 
-                        <form method="POST" action="{{ route('register') }}" class="space-y-5">
+                        <form
+                            method="POST"
+                            action="{{ route('register') }}"
+                            class="space-y-5"
+                            x-data="{
+                                editCountry: @js($currentCountry ?? ''),
+                                editProvince: @js($currentProvince ?? ''),
+                                editProvinces: @js($locationOptions['provincesByCountry']),
+                                get editProvinceOptions() {
+                                    return this.editProvinces[this.editCountry] || {};
+                                },
+                                onCountryChange() {
+                                    const options = this.editProvinceOptions;
+                                    if (this.editProvince && ! Object.prototype.hasOwnProperty.call(options, this.editProvince)) {
+                                        this.editProvince = '';
+                                    }
+                                },
+                            }"
+                        >
                             @csrf
 
                             <input type="hidden" name="registration_code" value="{{ old('registration_code', $invitation->code) }}">
@@ -140,16 +148,10 @@
                                 </div>
                             </div>
 
-                            <div>
-                                <label for="city" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">City</label>
-                                <input id="city" name="city" type="text" value="{{ old('city') }}" required autocomplete="address-level2" placeholder="Vancouver / Manila / Mexico City" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
-                                <x-input-error :messages="$errors->get('city')" class="mt-2" />
-                            </div>
-
                             <div class="grid gap-5 sm:grid-cols-2">
                                 <div>
                                     <label for="country" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Country</label>
-                                    <select id="country" name="country" required class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
+                                    <select id="country" name="country" required x-model="editCountry" @change="onCountryChange()" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
                                         <option value="" disabled @selected(! old('country'))>Select jurisdiction</option>
                                         @foreach (['Canada', 'United States', 'Philippines', 'Mexico'] as $country)
                                             <option value="{{ $country }}" @selected(old('country') === $country)>{{ $country }}</option>
@@ -167,6 +169,34 @@
                                         @endforeach
                                     </select>
                                     <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
+                                </div>
+                            </div>
+
+                            <div class="grid gap-5 sm:grid-cols-2">
+                                <div>
+                                    <label for="province" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">State / Province</label>
+                                    <select
+                                        id="province"
+                                        name="province"
+                                        x-model="editProvince"
+                                        required
+                                        class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
+                                    >
+                                        <option value="" disabled @selected(! $currentProvince)>Select state / province</option>
+                                        @if ($provinceIsLegacy)
+                                            <option value="{{ $currentProvince }}" selected>{{ $currentProvince }}</option>
+                                        @endif
+                                        <template x-for="(label, value) in editProvinceOptions" :key="value">
+                                            <option :value="value" x-text="label"></option>
+                                        </template>
+                                    </select>
+                                    <x-input-error :messages="$errors->get('province')" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <label for="city" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">City</label>
+                                    <input id="city" name="city" type="text" value="{{ old('city') }}" required autocomplete="address-level2" placeholder="Vancouver / Manila / Mexico City" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
+                                    <x-input-error :messages="$errors->get('city')" class="mt-2" />
                                 </div>
                             </div>
 

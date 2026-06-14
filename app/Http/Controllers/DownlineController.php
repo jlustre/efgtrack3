@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
+use App\Services\MemberProfileTabsService;
 use App\Support\MemberDisplayName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -12,7 +13,10 @@ use Illuminate\View\View;
 
 class DownlineController extends Controller
 {
-    public function __construct(private readonly DownlineHierarchyService $hierarchy) {}
+    public function __construct(
+        private readonly DownlineHierarchyService $hierarchy,
+        private readonly MemberProfileTabsService $memberProfileTabs,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -24,26 +28,50 @@ class DownlineController extends Controller
             'rankDistribution' => $this->rankDistribution($user),
             'countryDistribution' => $this->countryDistribution($user),
             'members' => $members->paginate(10)->withQueryString(),
+            'filters' => $this->filterOptions($user),
         ]);
     }
 
     public function tree(Request $request, ?User $user = null): View
     {
-        $root = $user ?? $request->user();
-        abort_unless($this->hierarchy->canViewMember($request->user(), $root), 403);
+        $viewer = $request->user();
+        $root = $user ?? $viewer;
+        abort_unless($this->hierarchy->canViewMember($viewer, $root), 403);
 
         $children = $this->hierarchy->directRecruitsQuery($root)
             ->with(['profile', 'rank', 'sponsor', 'mentor'])
             ->withCount(['sponsoredMembers as direct_recruits_count', 'prospects'])
             ->orderBy('name')
             ->get()
-            ->map(fn (User $member) => $this->memberCard($member, $request->user()));
+            ->map(fn (User $member) => $this->memberCard($member, $viewer));
 
         return view('team.downline.tree', [
-            'root' => $this->memberCard($root->loadMissing(['profile', 'rank', 'sponsor', 'mentor']), $request->user()),
+            'root' => $this->memberCard($root->loadMissing(['profile', 'rank', 'sponsor', 'mentor']), $viewer),
             'children' => $children,
-            'filters' => $this->filterOptions($request->user()),
+            'filters' => $this->filterOptions($viewer),
+            'searchMembers' => $this->treeSearchMembers($viewer),
         ]);
+    }
+
+    /**
+     * @return list<array{id: int, name: string, tree_top_url: string}>
+     */
+    private function treeSearchMembers(User $viewer): array
+    {
+        return $this->hierarchy->descendantsQuery($viewer, includeSelf: true)
+            ->whereIn('users.id', $this->hierarchy->visibleMembersQuery($viewer)->select('users.id'))
+            ->with('profile')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $member): array => [
+                'id' => $member->id,
+                'name' => MemberDisplayName::for($member),
+                'tree_top_url' => $member->id === $viewer->id
+                    ? route('team.tree')
+                    : route('team.member.tree', $member),
+            ])
+            ->values()
+            ->all();
     }
 
     public function orgChart(Request $request, ?User $user = null): View
@@ -84,6 +112,7 @@ class DownlineController extends Controller
         $viewer = $request->user();
         $treeRoot = ($user && $user->id !== $viewer->id) ? $user : $viewer;
         abort_unless($this->hierarchy->canViewMember($viewer, $treeRoot), 403);
+        $treeRoot->loadMissing('sponsor');
 
         $membersQuery = $this->hierarchy->descendantsQuery($treeRoot, includeSelf: true)
             ->addSelect('user_hierarchy_paths.depth as branch_depth')
@@ -100,16 +129,14 @@ class DownlineController extends Controller
                 $member = $membersById->get($row['id']);
                 $uplineHierarchyUrl = null;
                 $isCurrentTop = $member->id === $treeRoot->id;
-                $isLoggedInUserAtOwnHierarchy = $isCurrentTop && $treeRoot->id === $viewer->id;
 
-                // Down arrow: direct upline becomes topmost (hidden when already top or no viewable upline).
-                if (! $isLoggedInUserAtOwnHierarchy && $member->sponsor_id) {
-                    $sponsor = $member->relationLoaded('sponsor') ? $member->sponsor : User::query()->find($member->sponsor_id);
-
-                    if ($sponsor && $this->hierarchy->canViewMember($viewer, $sponsor)) {
-                        $uplineHierarchyUrl = $member->sponsor_id === $viewer->id
-                            ? route('team.hierarchy')
-                            : route('team.member.hierarchy', $member->sponsor_id);
+                // Down arrow: on the topmost row when they have a viewable direct upline.
+                // If that upline is the logged-in user, return to own hierarchy; otherwise move up one branch.
+                if ($isCurrentTop && $treeRoot->sponsor_id && $treeRoot->sponsor_id !== $treeRoot->id) {
+                    if ($treeRoot->sponsor_id === $viewer->id) {
+                        $uplineHierarchyUrl = route('team.hierarchy');
+                    } elseif ($this->hierarchy->canViewMember($viewer, $treeRoot->sponsor)) {
+                        $uplineHierarchyUrl = route('team.member.hierarchy', $treeRoot->sponsor_id);
                     }
                 }
 
@@ -236,7 +263,10 @@ class DownlineController extends Controller
                 });
             })
             ->when($request->filled('rank_id'), fn (Builder $query) => $query->where('users.rank_id', $request->integer('rank_id')))
-            ->when($request->filled('country'), fn (Builder $query) => $query->whereHas('profile', fn (Builder $query) => $query->where('country', $request->string('country'))))
+            ->when($request->filled('country'), fn (Builder $query) => $query->whereHas(
+                'profile.countryRecord',
+                fn (Builder $query) => $query->where('name', $request->string('country'))
+            ))
             ->when($request->filled('status'), fn (Builder $query) => $query->where('users.is_active', $request->string('status') === 'active'))
             ->when($request->filled('joined_from'), fn (Builder $query) => $query->whereDate('users.joined_at', '>=', $request->date('joined_from')))
             ->when($request->filled('joined_to'), fn (Builder $query) => $query->whereDate('users.joined_at', '<=', $request->date('joined_to')))
@@ -287,6 +317,9 @@ class DownlineController extends Controller
     private function memberCard(User $member, ?User $viewer = null): array
     {
         $metrics = $this->hierarchy->memberMetrics($member);
+        $production = $this->memberProfileTabs->annualPremiumTotal($member);
+        $metrics['production'] = $production;
+        $metrics['production_formatted'] = '$'.number_format($production);
         $progress = $this->progressSummary($member);
         $uplineTreeUrl = null;
 
@@ -370,10 +403,11 @@ class DownlineController extends Controller
         return \DB::table('user_hierarchy_paths')
             ->join('users', 'users.id', '=', 'user_hierarchy_paths.descendant_id')
             ->leftJoin('profiles', 'users.id', '=', 'profiles.user_id')
+            ->leftJoin('countries', 'countries.id', '=', 'profiles.country_id')
             ->where('user_hierarchy_paths.ancestor_id', $root->id)
             ->where('user_hierarchy_paths.depth', '>', 0)
             ->whereNull('users.deleted_at')
-            ->selectRaw('COALESCE(profiles.country, "Global") as label, COUNT(users.id) as total')
+            ->selectRaw('COALESCE(countries.name, "Global") as label, COUNT(users.id) as total')
             ->groupBy('label')
             ->orderByDesc('total')
             ->limit(6)
@@ -397,11 +431,12 @@ class DownlineController extends Controller
             'ranks' => \DB::table('ranks')->whereNull('deleted_at')->where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name']),
             'countries' => $countryQuery
                 ->leftJoin('profiles', 'users.id', '=', 'profiles.user_id')
-                ->whereNotNull('profiles.country')
+                ->leftJoin('countries', 'countries.id', '=', 'profiles.country_id')
+                ->whereNotNull('profiles.country_id')
                 ->whereNull('users.deleted_at')
                 ->distinct()
-                ->orderBy('profiles.country')
-                ->pluck('profiles.country'),
+                ->orderBy('countries.name')
+                ->pluck('countries.name'),
         ];
     }
 }

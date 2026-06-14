@@ -52,7 +52,8 @@
     };
 
     $topItems = [
-        ['label' => 'Dashboard', 'route' => 'dashboard'],
+        ['label' => 'My Dashboard', 'route' => 'dashboard'],
+        ['label' => 'My Profile', 'route' => 'profile.edit', 'active' => ['profile.*']],
         ['label' => 'CFM Management', 'route' => 'team.cfms', 'access' => 'canAccessCfmManagement'],
         ['label' => 'CFM Portal', 'route' => 'cfm.portal', 'access' => 'canAccessCfmPortal'],
     ];
@@ -82,6 +83,7 @@
                 ['label' => 'My Trainees', 'route' => 'team.trainees', 'permissions' => ['view team']],
                 ['label' => 'All Downlines', 'route' => 'team.downlines', 'permissions' => ['view team']],
                 ['label' => 'Prospect Management', 'route' => 'team.prospects', 'permissions' => ['manage prospects']],
+                ['label' => 'FNA Management', 'route' => 'team.fna.dashboard', 'permissions' => ['manage fna records']],
             ],
         ],
         [
@@ -102,7 +104,7 @@
                 ['label' => 'Documents', 'route' => 'resources.documents', 'active' => ['resources.documents']],
                 ['label' => 'Videos', 'route' => 'resources.videos', 'active' => ['resources.videos']],
                 ['label' => 'Recorded Webinars', 'route' => 'resources.recorded-webinars', 'active' => ['resources.recorded-webinars']],
-                ['label' => 'Zoom Links', 'route' => 'resources.zoom-links', 'active' => ['resources.zoom-links']],
+                ['label' => 'Links', 'route' => 'resources.links', 'active' => ['resources.links', 'resources.zoom-links']],
             ],
         ],
         [
@@ -121,6 +123,7 @@
                 ['label' => 'Booking Event Types', 'route' => 'admin.management.resource.index', 'params' => ['booking-event-types'], 'active_resource' => 'booking-event-types', 'roles' => ['super-admin', 'admin', 'agency-owner']],
                 ['label' => 'Booking Links', 'route' => 'admin.management.resource.index', 'params' => ['booking-links'], 'active_resource' => 'booking-links', 'roles' => ['super-admin', 'admin', 'agency-owner']],
                 ['label' => 'Bookings', 'route' => 'admin.management.resource.index', 'params' => ['bookings'], 'active_resource' => 'bookings', 'roles' => ['super-admin', 'admin', 'agency-owner']],
+                ['label' => 'Email Templates', 'route' => 'admin.management.resource.index', 'params' => ['email-templates'], 'active_resource' => 'email-templates', 'roles' => ['super-admin', 'admin']],
                 ['label' => 'Training Setup', 'route' => 'admin.training.index', 'active' => ['admin.training.*'], 'permissions' => ['manage training']],
                 ['label' => 'CFM Certification', 'route' => 'admin.cfm.index', 'permissions' => ['manage CFM certification']],
                 ['label' => 'All Setup Tables', 'route' => 'admin.management.index', 'active' => ['admin.management.index'], 'roles' => ['super-admin', 'admin']],

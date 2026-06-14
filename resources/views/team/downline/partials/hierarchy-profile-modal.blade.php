@@ -58,7 +58,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
                 <div class="rounded-lg border border-[#C8A24A]/50 bg-[#FFF9EA] p-3">
                     <div class="text-lg font-bold text-[#8A6A1F]" x-text="selectedProfile?.metrics?.direct_recruits ?? 0"></div>
                     <div class="text-xs font-semibold text-[#0B1F3A]">Direct</div>
@@ -70,6 +70,10 @@
                 <div class="rounded-lg border border-[#C8A24A]/50 bg-[#FFF9EA] p-3">
                     <div class="text-lg font-bold text-[#8A6A1F]" x-text="selectedProfile?.metrics?.prospects ?? 0"></div>
                     <div class="text-xs font-semibold text-[#0B1F3A]">Prospects</div>
+                </div>
+                <div class="rounded-lg border border-[#C8A24A]/50 bg-[#FFF9EA] p-3">
+                    <div class="text-lg font-bold text-[#8A6A1F]" x-text="selectedProfile?.metrics?.production_formatted ?? '$0'"></div>
+                    <div class="text-xs font-semibold text-[#0B1F3A]">Production</div>
                 </div>
             </div>
 

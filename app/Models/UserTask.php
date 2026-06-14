@@ -10,6 +10,7 @@ class UserTask extends Model
 {
     public const CATEGORIES = [
         'Prospect Follow-Up',
+        'FNA',
         'Licensing',
         'Training',
         'CFM Mentorship',
@@ -31,6 +32,8 @@ class UserTask extends Model
         'category',
         'related_module',
         'related_person',
+        'related_prospect_id',
+        'related_fna_id',
         'due_date',
         'progress',
         'reminder',
@@ -54,6 +57,16 @@ class UserTask extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function relatedProspect(): BelongsTo
+    {
+        return $this->belongsTo(Prospect::class, 'related_prospect_id');
+    }
+
+    public function relatedFna(): BelongsTo
+    {
+        return $this->belongsTo(FnaRecord::class, 'related_fna_id');
     }
 
     public function checklistItems(): HasMany

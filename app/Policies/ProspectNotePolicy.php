@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Prospect;
 use App\Models\ProspectNote;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesProspectAccess;
@@ -15,8 +16,8 @@ class ProspectNotePolicy
         return $this->canAccessProspect($user, $note->prospect);
     }
 
-    public function create(User $user, ProspectNote $note): bool
+    public function create(User $user, Prospect $prospect): bool
     {
-        return $this->canAccessProspect($user, $note->prospect, 'can_add_notes');
+        return $this->canAccessProspect($user, $prospect, 'can_add_notes');
     }
 }

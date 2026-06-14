@@ -6,7 +6,6 @@ use App\Models\Booking;
 use App\Models\CfmAdvancementGuideline;
 use App\Models\CfmMentorProfile;
 use App\Models\CfmRankTier;
-use App\Models\CfmRecommendationSuggestion;
 use App\Models\MentorAssignment;
 use App\Models\TeamVisibilityPermission;
 use App\Models\User;
@@ -23,7 +22,12 @@ class CfmManagementService
 {
     private const WEEKLY_SLOT_CAPACITY = 12;
 
-    public function __construct(private readonly DownlineHierarchyService $hierarchy) {}
+    public function __construct(
+        private readonly DownlineHierarchyService $hierarchy,
+        private readonly CfmRecommendationEngine $recommendations,
+        private readonly CfmAssignmentWorkflowService $assignmentWorkflow,
+        private readonly CfmTraineeChecklistService $traineeChecklist,
+    ) {}
 
     public function rankStructureFor(): array
     {
@@ -37,6 +41,7 @@ class CfmManagementService
     {
         $cfms = $this->accessibleCfms($viewer);
         $fapQueue = $this->fapQueueFor($viewer);
+        $recommendationsByAssociate = $this->recommendations->recommendForAssociates($fapQueue, $cfms);
 
         return [
             'stats' => $this->statsFrom($cfms, $viewer),
@@ -54,20 +59,8 @@ class CfmManagementService
             ])->values()->all(),
             'fapQueue' => $fapQueue,
             'cfmCandidates' => $this->cfmCandidatesFor($viewer),
-            'aiSuggestions' => CfmRecommendationSuggestion::query()
-                ->active()
-                ->with('cfm:id,name')
-                ->get()
-                ->map(fn (CfmRecommendationSuggestion $row) => [
-                    'type' => $row->recommendation_type,
-                    'label' => $row->label,
-                    'cfmName' => $row->cfm?->name ?? $row->cfm_name,
-                    'fitScore' => $row->fit_score,
-                    'statusLabel' => $row->status_label,
-                    'detail' => $row->detail,
-                ])
-                ->values()
-                ->all(),
+            'recommendationsByAssociate' => $recommendationsByAssociate,
+            'defaultRecommendationAssociateId' => $fapQueue[0]['id'] ?? null,
             'filterOptions' => [
                 'countries' => $cfms->pluck('country')->filter(fn ($v) => $v !== '—')->unique()->sort()->values()->all(),
                 'ranks' => $cfms->pluck('rank')->filter(fn ($v) => $v !== '—')->unique()->sort()->values()->all(),
@@ -226,15 +219,12 @@ class CfmManagementService
 
         $this->assertCfmLicensedForAssociate($associate, $cfm);
 
-        $requireApproval = (bool) ($data['require_cfm_approval'] ?? false);
-        if (! $this->cfmIsInViewerHierarchy($viewer, $cfm)) {
-            $requireApproval = true;
-        }
+        $status = 'pending';
 
-        $status = $requireApproval ? 'pending' : 'active';
         $startedAt = ! empty($data['start_date']) ? Carbon::parse($data['start_date']) : now();
+        $notifyCfm = (bool) ($data['notify_cfm'] ?? true);
 
-        return DB::transaction(function () use ($viewer, $associate, $cfm, $data, $status, $startedAt): array {
+        return DB::transaction(function () use ($viewer, $associate, $cfm, $data, $status, $startedAt, $notifyCfm): array {
             $assignment = MentorAssignment::updateOrCreate(
                 [
                     'mentor_id' => $cfm->id,
@@ -247,10 +237,6 @@ class CfmManagementService
                     'completed_at' => ! empty($data['end_date']) ? Carbon::parse($data['end_date'])->toDateString() : null,
                 ]
             );
-
-            if ($status === 'active') {
-                $associate->update(['mentor_id' => $cfm->id]);
-            }
 
             $noteBody = trim(collect([
                 $data['reason'] ?? null,
@@ -274,9 +260,9 @@ class CfmManagementService
                 $cfmProfile->update(['last_mentor_activity_at' => now()]);
             }
 
-            $message = $status === 'pending'
-                ? "{$associate->name} was submitted for CFM approval with {$cfm->name}. The apprentice count will update once the assignment is approved."
-                : "{$associate->name} was assigned to {$cfm->name} for the Field Apprenticeship Program.";
+            $this->assignmentWorkflow->sendConfirmationRequest($assignment, $notifyCfm);
+
+            $message = "{$associate->name} was submitted to {$cfm->name}. A confirmation email was sent to the CFM. The trainee will appear once the assignment is confirmed.";
 
             return [
                 'message' => $message,
@@ -415,17 +401,54 @@ class CfmManagementService
             $calendarBusyness
         );
 
-        $apprenticeNames = User::query()
+        $apprenticeUsers = User::query()
             ->where('mentor_id', $cfm->id)
             ->with(['rank', 'apprenticeshipAssignments' => fn ($q) => $q->where('mentor_id', $cfm->id)->latest()->limit(1)])
             ->limit(8)
+            ->get();
+
+        $activeAssignments = MentorAssignment::query()
+            ->where('mentor_id', $cfm->id)
+            ->whereIn('apprentice_id', $apprenticeUsers->pluck('id'))
+            ->where('status', 'active')
+            ->latest('id')
             ->get()
-            ->map(fn (User $a) => [
+            ->unique('apprentice_id')
+            ->keyBy('apprentice_id');
+
+        $checklistPercents = $this->traineeChecklist->progressPercentsForAssignments(
+            $activeAssignments->pluck('id')
+        );
+
+        $apprenticeNames = $apprenticeUsers->map(function (User $a) use ($activeAssignments, $checklistPercents) {
+            $assignment = $activeAssignments->get($a->id);
+
+            return [
                 'id' => $a->id,
                 'name' => $a->name,
                 'rank' => $a->rank?->code ?? '—',
                 'status' => $a->apprenticeshipAssignments->first()?->status ?? 'active',
-            ]);
+                'assignmentId' => $assignment?->id,
+                'needsFirstContact' => $assignment && ! $assignment->first_contact_sent_at,
+                'checklistPercent' => $assignment ? ($checklistPercents[$assignment->id] ?? 0) : null,
+            ];
+        });
+
+        $pendingAssignmentRows = MentorAssignment::query()
+            ->where('mentor_id', $cfm->id)
+            ->where('status', 'pending')
+            ->with(['apprentice.rank', 'assignedBy'])
+            ->latest('id')
+            ->get()
+            ->map(fn (MentorAssignment $assignment) => [
+                'id' => $assignment->id,
+                'name' => $assignment->apprentice->name,
+                'rank' => $assignment->apprentice->rank?->code ?? '—',
+                'assignedBy' => $assignment->assignedBy?->name ?? '—',
+                'startedAt' => $assignment->started_at?->format('M j, Y') ?? '—',
+            ])
+            ->values()
+            ->all();
 
         return [
             'id' => $cfm->id,
@@ -474,8 +497,11 @@ class CfmManagementService
             'inMyHierarchy' => $inMyHierarchy,
             'limitedVisibility' => $profile->hierarchy_access === 'limited_visibility',
             'apprentices' => $apprenticeNames->values()->all(),
+            'pendingAssignmentRows' => $pendingAssignmentRows,
             'apprenticeBreakdown' => $this->apprenticeBreakdownFor($cfm->id),
             'calendarPreview' => $this->calendarPreview($cfm->id),
+            'shareCalendarWithApprentices' => (bool) ($profile->share_calendar_with_apprentices ?? true),
+            'shareCalendarWithAgencyOwner' => (bool) ($profile->share_calendar_with_agency_owner ?? false),
             'activityTimeline' => $this->activityTimeline($cfm),
             'assignmentHistory' => MentorAssignment::query()
                 ->where('mentor_id', $cfm->id)
@@ -531,6 +557,7 @@ class CfmManagementService
         return $this->hierarchy->descendantsQuery($viewer)
             ->whereNull('mentor_id')
             ->where('is_active', true)
+            ->whereDoesntHave('apprenticeshipAssignments', fn (Builder $query) => $query->where('status', 'pending'))
             ->with(['rank', 'profile', 'sponsor'])
             ->orderBy('name')
             ->limit(50)

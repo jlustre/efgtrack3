@@ -17,6 +17,7 @@
     <body class="font-sans text-gray-900 antialiased">
         @if (request()->routeIs('register.invitation')
             || request()->routeIs('login')
+            || request()->routeIs('fna.client.*')
             || request()->routeIs('password.request')
             || request()->routeIs('password.reset')
             || request()->routeIs('password.confirm')

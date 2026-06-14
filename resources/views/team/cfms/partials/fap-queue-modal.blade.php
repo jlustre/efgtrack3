@@ -38,8 +38,14 @@
                                 <span x-text="(associate.province && associate.province !== '—' ? associate.province + ', ' + (associate.country || 'Canada') + ' · ' : '') + associate.city + ' · ' + associate.timezone"></span>
                             </div>
                         </div>
-                        <div class="flex gap-2 shrink-0">
+                        <div class="flex gap-2 shrink-0 flex-wrap">
                             <a :href="associate.profileUrl" class="px-3 py-2 rounded-lg border border-gray-700 text-xs text-gray-300 hover:text-white hover:border-gray-600 transition">View</a>
+                            <button
+                                type="button"
+                                @click="selectAssociateForRecommendations(associate); showFapQueueModal = false"
+                                class="px-3 py-2 rounded-lg border border-amber-600/50 text-xs text-amber-300 hover:bg-amber-900/30 transition"
+                                :class="String(selectedRecommendationAssociateId) === String(associate.id) ? 'bg-amber-900/40' : ''"
+                            >View Matches</button>
                             <button type="button" @click="assignFromQueue(associate)" class="px-3 py-2 rounded-lg bg-amber-600 text-black text-xs font-semibold hover:bg-amber-500 transition">Assign CFM</button>
                         </div>
                     </div>

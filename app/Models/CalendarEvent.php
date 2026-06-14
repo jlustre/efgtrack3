@@ -49,6 +49,11 @@ class CalendarEvent extends Model
         return $this->belongsTo(Prospect::class, 'related_prospect_id');
     }
 
+    public function relatedFna(): BelongsTo
+    {
+        return $this->belongsTo(FnaRecord::class, 'related_fna_id');
+    }
+
     public function relatedApprentice(): BelongsTo
     {
         return $this->belongsTo(User::class, 'related_apprentice_id');

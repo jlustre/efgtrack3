@@ -13,6 +13,8 @@ class CfmMentorProfile extends Model
         'hierarchy_access',
         'max_apprentices',
         'manual_unavailable',
+        'share_calendar_with_apprentices',
+        'share_calendar_with_agency_owner',
         'fap_completion_rate',
         'calendar_busyness_percent',
         'avg_apprentice_progress',
@@ -31,6 +33,8 @@ class CfmMentorProfile extends Model
             'specialties' => 'array',
             'licensed_jurisdictions' => 'array',
             'manual_unavailable' => 'boolean',
+            'share_calendar_with_apprentices' => 'boolean',
+            'share_calendar_with_agency_owner' => 'boolean',
             'fap_completion_rate' => 'decimal:2',
             'last_mentor_activity_at' => 'datetime',
         ];

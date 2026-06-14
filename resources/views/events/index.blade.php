@@ -18,7 +18,7 @@
         $eventCard = 'rounded-md border px-2.5 py-2 text-left shadow-sm transition hover:shadow-md';
     @endphp
 
-    <div class="space-y-5" x-data="{ createOpen: @js($errors->any()), allDay: @js((bool) old('is_all_day')), recurring: @js((bool) old('is_recurring')), recurrenceEndType: @js(old('recurrence_end_type', 'never')), recurrenceFrequency: @js(old('recurrence_frequency', 'weekly')) }" x-on:keydown.escape.window="createOpen = false">
+    <div class="space-y-5" x-data="{ createOpen: @js($errors->any() && old('_form') !== 'calendar-category'), addCategoryOpen: @js(old('_form') === 'calendar-category'), allDay: @js((bool) old('is_all_day')), recurring: @js((bool) old('is_recurring')), recurrenceEndType: @js(old('recurrence_end_type', 'never')), recurrenceFrequency: @js(old('recurrence_frequency', 'weekly')) }" x-on:keydown.escape.window="createOpen = false; addCategoryOpen = false">
         @if (session('status'))
             <div class="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
                 {{ session('status') }}
@@ -49,7 +49,7 @@
             </div>
         </section>
 
-        <section class="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_20rem]">
+        <section class="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)]">
             <aside class="{{ $panel }} overflow-hidden">
                 <div class="border-b border-[#516070]/20 bg-[#F6F8FB] px-4 py-3">
                     <div class="flex items-center justify-between">
@@ -120,7 +120,18 @@
                     </form>
 
                     <div class="space-y-2">
-                        <p class="text-xs font-bold uppercase tracking-wide text-slate-500">My Calendars</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-xs font-bold uppercase tracking-wide text-slate-500">My Calendars</p>
+                            <button
+                                type="button"
+                                x-on:click="addCategoryOpen = true"
+                                class="inline-flex items-center gap-1 rounded-md border border-[#C8A24A]/50 bg-[#FFF9EA] px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wide text-[#0B1F3A] transition hover:bg-[#F7E8B8]"
+                                title="Add personal calendar"
+                            >
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+                                Add
+                            </button>
+                        </div>
                         <form id="calendar-filter-form" method="GET" action="{{ route('calendar.index') }}" class="hidden">
                             <input type="hidden" name="calendars_filter" value="1">
                             <input type="hidden" name="view" value="{{ $viewMode }}">
@@ -131,6 +142,23 @@
                                 @endif
                             @endforeach
                         </form>
+
+                        @if (($sharedMentorCalendars ?? collect())->isNotEmpty())
+                            <div class="space-y-2 border-t border-[#516070]/15 pt-4">
+                                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Shared Mentor Calendars</p>
+                                <div class="space-y-2">
+                                    @foreach ($sharedMentorCalendars as $mentor)
+                                        <div class="flex items-center justify-between rounded-md border border-[#C8A24A]/30 bg-[#FFF9EA] px-3 py-2 text-sm text-[#0B1F3A]">
+                                            <div class="min-w-0">
+                                                <p class="truncate font-semibold">{{ $mentor->name }}</p>
+                                                <p class="text-[0.65rem] font-medium uppercase tracking-wide text-slate-500">CFM Calendar</p>
+                                            </div>
+                                            <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-[0.6rem] font-bold uppercase text-[#0B1F3A]">Shared</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="space-y-2">
                             @foreach ($categories as $category)
@@ -147,12 +175,15 @@
                                         >
                                         <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $category->color }}"></span>
                                         <span class="truncate">{{ $category->name }}</span>
+                                        @if ($category->user_id)
+                                            <span class="rounded-full bg-white px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase text-slate-500">{{ $category->is_public ? 'Public' : 'Private' }}</span>
+                                        @endif
                                     </label>
 
                                     <div class="ml-2 flex items-center gap-1">
                                         <span class="mr-1 text-xs font-semibold text-slate-500">{{ $events->where('calendar_category_id', $category->id)->count() }}</span>
 
-                                        @can('manage organization calendar')
+                                        @if (($category->user_id && $category->user_id === auth()->id()) || ($category->user_id === null && auth()->user()->can('manage organization calendar')))
                                             <button type="button" x-on:click="editOpen = true" title="Customize calendar" class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#C8A24A]/40 bg-[#FFF9EA] text-[#0B1F3A] transition hover:bg-[#F7E8B8]">
                                                 <span class="sr-only">Customize {{ $category->name }}</span>
                                                 <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -171,10 +202,10 @@
                                                     </svg>
                                                 </button>
                                             </form>
-                                        @endcan
+                                        @endif
                                     </div>
 
-                                    @can('manage organization calendar')
+                                    @if (($category->user_id && $category->user_id === auth()->id()) || ($category->user_id === null && auth()->user()->can('manage organization calendar')))
                                         <div x-show="editOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
                                             <div class="w-full max-w-md rounded-xl border border-[#C8A24A]/50 bg-white shadow-xl" x-on:click.outside="editOpen = false">
                                                 <form method="POST" action="{{ route('calendar.categories.update', $category) }}">
@@ -204,6 +235,15 @@
                                                                 <input name="color" x-model="color" class="block w-full rounded-lg border-[#516070]/40 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]" placeholder="#C8A24A">
                                                             </div>
                                                         </div>
+                                                        @if ($category->user_id)
+                                                            <label class="flex items-start gap-2 text-sm text-[#0B1F3A]">
+                                                                <input type="checkbox" name="is_public" value="1" class="mt-1 rounded border-[#516070] text-[#C8A24A] focus:ring-[#C8A24A]" @checked(old('is_public', $category->is_public))>
+                                                                <span>
+                                                                    <span class="font-semibold">Share publicly</span>
+                                                                    <span class="mt-1 block text-xs text-slate-500">Other members can see this calendar when enabled.</span>
+                                                                </span>
+                                                            </label>
+                                                        @endif
                                                     </div>
                                                     <div class="flex justify-end gap-3 border-t border-slate-100 px-5 py-4">
                                                         <button type="button" x-on:click="editOpen = false" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
@@ -212,7 +252,7 @@
                                                 </form>
                                             </div>
                                         </div>
-                                    @endcan
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -220,6 +260,7 @@
                 </div>
             </aside>
 
+            <div class="min-w-0 space-y-4">
             <main class="{{ $panel }} min-w-0 overflow-hidden">
                 <div class="border-b border-[#516070]/20 bg-[#F6F8FB] px-4 py-3">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -359,7 +400,7 @@
                     <h2 class="text-sm font-semibold text-[#0B1F3A]">Upcoming Events</h2>
                 </div>
 
-                <div class="space-y-3 p-4">
+                <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     @forelse ($upcomingEvents as $event)
                         <a href="{{ route('calendar.events.show', $event) }}" class="block rounded-lg border p-3 transition hover:shadow-sm" style="background-color: {{ $event->display_color }}12; border-color: {{ $event->display_color }};">
                             <div class="flex items-start justify-between gap-2">
@@ -367,7 +408,7 @@
                                     <div class="truncate text-sm font-semibold text-[#0B1F3A]">{{ $event->title }}</div>
                                     <div class="mt-1 text-xs font-medium text-slate-500">{{ $event->starts_at->format('M j, g:i A') }}</div>
                                 </div>
-                                <span class="h-3 w-3 rounded-full" style="background-color: {{ $event->display_color }}"></span>
+                                <span class="h-3 w-3 shrink-0 rounded-full" style="background-color: {{ $event->display_color }}"></span>
                             </div>
                             <div class="mt-2 flex flex-wrap gap-1.5">
                                 <span class="rounded-full bg-white px-2 py-1 text-[0.65rem] font-semibold text-slate-600">{{ $event->type?->name ?? 'Event' }}</span>
@@ -375,12 +416,13 @@
                             </div>
                         </a>
                     @empty
-                        <div class="rounded-lg border border-dashed border-[#516070]/30 bg-[#F8FAFC] px-4 py-6 text-sm text-slate-500">
+                        <div class="rounded-lg border border-dashed border-[#516070]/30 bg-[#F8FAFC] px-4 py-6 text-sm text-slate-500 sm:col-span-2 lg:col-span-3 xl:col-span-4">
                             Nothing upcoming yet.
                         </div>
                     @endforelse
                 </div>
             </aside>
+            </div>
         </section>
 
         <button type="button" x-on:click="createOpen = true" class="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-[#C8A24A] text-[#0B1F3A] shadow-lg ring-4 ring-white lg:hidden" title="Create event">
@@ -388,5 +430,53 @@
         </button>
 
         @include('events.partials.create-event-modal')
+
+        <div x-show="addCategoryOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+            <div class="w-full max-w-md rounded-xl border border-[#C8A24A]/50 bg-white shadow-xl" x-on:click.outside="addCategoryOpen = false">
+                <form method="POST" action="{{ route('calendar.categories.store') }}">
+                    @csrf
+                    <input type="hidden" name="_form" value="calendar-category">
+                    <input type="hidden" name="return_to" value="{{ url()->full() }}">
+                    <div class="border-b border-slate-100 px-5 py-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wide text-[#C8A24A]">My Calendars</p>
+                                <h3 class="text-lg font-semibold text-[#0B1F3A]">Add Calendar Category</h3>
+                            </div>
+                            <button type="button" x-on:click="addCategoryOpen = false" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close add calendar modal">
+                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
+                            </button>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-500">Personal calendars are private by default and only visible to you unless you mark them public.</p>
+                    </div>
+                    <div class="space-y-4 px-5 py-5">
+                        <div>
+                            <label for="new-calendar-name" class="block text-sm font-semibold text-[#0B1F3A]">Name</label>
+                            <input id="new-calendar-name" name="name" value="{{ old('name') }}" required class="mt-2 block w-full rounded-lg border-[#516070]/40 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]" placeholder="Example: Client Follow-ups">
+                            @error('name') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="new-calendar-color" class="block text-sm font-semibold text-[#0B1F3A]">Color</label>
+                            <div class="mt-2 flex items-center gap-3">
+                                <input id="new-calendar-color" type="color" name="color" value="{{ old('color', '#C8A24A') }}" class="h-10 w-14 rounded border border-[#516070]/40 bg-white p-1">
+                                <input value="{{ old('color', '#C8A24A') }}" class="block w-full rounded-lg border-[#516070]/40 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]" placeholder="#C8A24A" readonly>
+                            </div>
+                            @error('color') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                        <label class="flex items-start gap-2 text-sm text-[#0B1F3A]">
+                            <input type="checkbox" name="is_public" value="1" class="mt-1 rounded border-[#516070] text-[#C8A24A] focus:ring-[#C8A24A]" @checked(old('is_public'))>
+                            <span>
+                                <span class="font-semibold">Share publicly</span>
+                                <span class="mt-1 block text-xs text-slate-500">Let other members see this calendar category on their calendar page.</span>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="flex justify-end gap-3 border-t border-slate-100 px-5 py-4">
+                        <button type="button" x-on:click="addCategoryOpen = false" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-[#C8A24A] px-4 py-2 text-sm font-bold text-[#0B1F3A] hover:bg-[#D8B75F]">Create Calendar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </x-app-layout>

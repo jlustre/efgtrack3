@@ -25,6 +25,10 @@
                 <div class="text-sm font-semibold text-[#0B1F3A]">Ranks & Teams</div>
                 <p class="mt-2 text-sm text-slate-600">Adjust FA defaults, rank paths, and team placement.</p>
             </a>
+            <a href="{{ route('admin.management.resource.index', 'email-templates') }}" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#C8A24A]">
+                <div class="text-sm font-semibold text-[#0B1F3A]">Email Templates</div>
+                <p class="mt-2 text-sm text-slate-600">Edit transactional email copy, subjects, and activation status.</p>
+            </a>
         </div>
     </section>
 </x-app-layout>

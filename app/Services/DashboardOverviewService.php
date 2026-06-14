@@ -1,0 +1,480 @@
+<?php
+
+namespace App\Services;
+
+use App\Http\Controllers\TaskController;
+use App\Models\CalendarEvent;
+use App\Models\OnboardingStep;
+use App\Models\Rank;
+use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class DashboardOverviewService
+{
+    public function __construct(
+        private readonly DashboardStatsService $stats,
+        private readonly ProfileCompletionService $profileCompletion,
+        private readonly TaskController $tasks,
+    ) {}
+
+    public function forUser(User $user): array
+    {
+        $user->loadMissing(['profile', 'rank', 'team', 'mentor', 'sponsor']);
+
+        return [
+            'onboarding' => $this->onboarding($user),
+            'licensing' => $this->licensing($user),
+            'fap' => $this->fap($user),
+            'training' => $this->training($user),
+            'communications' => $this->communications($user),
+            'performance' => $this->performance($user),
+            'career' => $this->career($user),
+            'upcoming_events' => $this->upcomingEvents($user),
+        ];
+    }
+
+    /**
+     * @return array{percent: int, completed: int, total: int, next_steps: list<array{title: string, status: string}>, route: string}
+     */
+    private function onboarding(User $user): array
+    {
+        $steps = OnboardingStep::query()
+            ->applicableToCountry($user->profile?->country)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        return $this->checklistOverview(
+            $user,
+            $steps,
+            'user_onboarding_progress',
+            'onboarding_step_id',
+            $this->stats->onboardingPercent($user),
+            'onboarding.index'
+        );
+    }
+
+    /**
+     * @return array{percent: int, completed: int, total: int, next_steps: list<array{title: string, status: string}>, route: string}
+     */
+    private function licensing(User $user): array
+    {
+        $steps = DB::table('licensing_steps')
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        return $this->checklistOverview(
+            $user,
+            $steps,
+            'user_licensing_progress',
+            'licensing_step_id',
+            $this->stats->licensingPercent($user),
+            'licensing.index'
+        );
+    }
+
+    /**
+     * @return array{percent: int, completed: int, total: int, next_steps: list<array{title: string, status: string}>, route: string}
+     */
+    private function fap(User $user): array
+    {
+        $steps = DB::table('apprenticeship_steps')
+            ->join('apprenticeship_programs', 'apprenticeship_programs.id', '=', 'apprenticeship_steps.apprenticeship_program_id')
+            ->where('apprenticeship_steps.is_active', true)
+            ->whereNull('apprenticeship_steps.deleted_at')
+            ->where('apprenticeship_programs.is_active', true)
+            ->whereNull('apprenticeship_programs.deleted_at')
+            ->orderBy('apprenticeship_steps.sort_order')
+            ->orderBy('apprenticeship_steps.title')
+            ->get(['apprenticeship_steps.id', 'apprenticeship_steps.title']);
+
+        return $this->checklistOverview(
+            $user,
+            $steps,
+            'user_apprenticeship_progress',
+            'apprenticeship_step_id',
+            $this->stats->apprenticeshipPercent($user),
+            'apprenticeship.index'
+        );
+    }
+
+    /**
+     * @return array{
+     *     percent: int,
+     *     completed: int,
+     *     total: int,
+     *     assessments_count: int|null,
+     *     next_steps: list<array{title: string, status: string}>,
+     *     route: string,
+     *     cfm_training: array{show: bool, percent: int, completed: int, total: int, route: string|null}|null
+     * }
+     */
+    private function training(User $user): array
+    {
+        $lessonIds = $this->publishedTrainingLessonIds();
+
+        $progress = $lessonIds === []
+            ? collect()
+            : DB::table('training_progress')
+                ->where('user_id', $user->id)
+                ->whereIn('training_lesson_id', $lessonIds)
+                ->get(['training_lesson_id', 'status'])
+                ->keyBy('training_lesson_id');
+
+        $lessons = DB::table('training_lessons')
+            ->join('training_modules', 'training_modules.id', '=', 'training_lessons.training_module_id')
+            ->whereIn('training_lessons.id', $lessonIds)
+            ->orderBy('training_modules.sort_order')
+            ->orderBy('training_lessons.sort_order')
+            ->get(['training_lessons.id', 'training_lessons.title']);
+
+        $completed = $lessons->filter(
+            fn (object $lesson): bool => ($progress->get($lesson->id)?->status ?? 'not_started') === 'completed'
+        )->count();
+
+        $total = $lessons->count();
+        $percent = $this->stats->trainingPercent($user);
+
+        $nextSteps = $lessons
+            ->filter(fn (object $lesson): bool => ($progress->get($lesson->id)?->status ?? 'not_started') !== 'completed')
+            ->take(3)
+            ->map(fn (object $lesson): array => [
+                'title' => $lesson->title,
+                'status' => $this->statusLabel($progress->get($lesson->id)?->status),
+            ])
+            ->values()
+            ->all();
+
+        $assessmentsCount = null;
+        if (Schema::hasTable('assessments')) {
+            $assessmentsCount = (int) DB::table('assessments')
+                ->whereNull('deleted_at')
+                ->count();
+        }
+
+        $cfmTraining = null;
+        if (! $this->stats->userIsCfm($user)) {
+            $cfmOverview = $this->cfmTrainingOverview($user);
+            if ($cfmOverview['total'] > 0) {
+                $cfmTraining = [
+                    'show' => true,
+                    'percent' => $cfmOverview['percent'],
+                    'completed' => $cfmOverview['completed'],
+                    'total' => $cfmOverview['total'],
+                    'route' => 'cfm-training.index',
+                ];
+            }
+        }
+
+        return [
+            'percent' => $percent,
+            'completed' => $completed,
+            'total' => $total,
+            'assessments_count' => $assessmentsCount,
+            'next_steps' => $nextSteps,
+            'route' => 'training.index',
+            'cfm_training' => $cfmTraining,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     mentor: array{name: string, email: string|null, assigned: bool},
+     *     sponsor: array{name: string|null},
+     *     team_name: string|null,
+     *     open_tasks: int,
+     *     tasks_route: string,
+     *     announcements: list<array{title: string, meta: string}>,
+     *     announcements_route: string,
+     *     team_route: string
+     * }
+     */
+    private function communications(User $user): array
+    {
+        $announcements = DB::table('announcements')
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->whereNull('deleted_at')
+            ->orderByDesc('published_at')
+            ->limit(3)
+            ->get(['title', 'published_at'])
+            ->map(fn (object $row): array => [
+                'title' => $row->title,
+                'meta' => 'Posted '.$this->relativeTime($row->published_at),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'mentor' => [
+                'name' => $user->mentor?->name ?? 'Unassigned',
+                'email' => $user->mentor?->email,
+                'assigned' => $user->mentor !== null,
+            ],
+            'sponsor' => [
+                'name' => $user->sponsor?->name,
+            ],
+            'team_name' => $user->team?->name,
+            'open_tasks' => $this->tasks->openTaskCountFor($user),
+            'tasks_route' => 'tasks.index',
+            'announcements' => $announcements,
+            'announcements_route' => 'announcements.index',
+            'team_route' => 'team.index',
+        ];
+    }
+
+    /**
+     * @return array{
+     *     profile_percent: int,
+     *     prospects: int,
+     *     recruits: int,
+     *     production: string,
+     *     profile_route: string
+     * }
+     */
+    private function performance(User $user): array
+    {
+        return [
+            'profile_percent' => $this->profileCompletion->percent($user),
+            'prospects' => $this->stats->prospectCount($user),
+            'recruits' => $this->stats->recruitCount($user),
+            'production' => '$'.number_format($this->stats->annualProductionTotal($user)),
+            'profile_route' => 'profile.edit',
+        ];
+    }
+
+    /**
+     * @return array{
+     *     current_rank: array{code: string|null, name: string|null},
+     *     next_rank: array{code: string|null, name: string|null}|null,
+     *     percent: int,
+     *     requirements: list<array{title: string, status: string}>,
+     *     route: string
+     * }
+     */
+    private function career(User $user): array
+    {
+        $currentRank = $user->rank;
+
+        $nextRank = null;
+        if ($currentRank !== null) {
+            $nextRank = Rank::query()
+                ->where('is_active', true)
+                ->where('sort_order', '>', $currentRank->sort_order)
+                ->orderBy('sort_order')
+                ->first();
+        }
+
+        if ($nextRank === null) {
+            return [
+                'current_rank' => [
+                    'code' => $currentRank?->code,
+                    'name' => $currentRank?->name,
+                ],
+                'next_rank' => null,
+                'percent' => 100,
+                'requirements' => [],
+                'route' => 'rank-advancement.index',
+            ];
+        }
+
+        $requirements = DB::table('rank_requirements')
+            ->where('rank_id', $nextRank->id)
+            ->whereNull('deleted_at')
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        $progress = DB::table('user_rank_progress')
+            ->where('user_id', $user->id)
+            ->whereIn('rank_requirement_id', $requirements->pluck('id'))
+            ->get(['rank_requirement_id', 'status'])
+            ->keyBy('rank_requirement_id');
+
+        $completed = $requirements->filter(
+            fn (object $requirement): bool => ($progress->get($requirement->id)?->status ?? 'not_started') === 'completed'
+        )->count();
+
+        $total = $requirements->count();
+        $percent = $total > 0 ? (int) round(($completed / $total) * 100) : 0;
+
+        $requirementItems = $requirements
+            ->take(4)
+            ->map(fn (object $requirement): array => [
+                'title' => $requirement->title,
+                'status' => $this->statusLabel($progress->get($requirement->id)?->status),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'current_rank' => [
+                'code' => $currentRank?->code,
+                'name' => $currentRank?->name,
+            ],
+            'next_rank' => [
+                'code' => $nextRank->code,
+                'name' => $nextRank->name,
+            ],
+            'percent' => $percent,
+            'requirements' => $requirementItems,
+            'route' => 'rank-advancement.index',
+        ];
+    }
+
+    /**
+     * @return array{items: list<array{title: string, date_label: string, time_label: string, url: string|null}>, route: string|null, note: string|null}
+     */
+    private function upcomingEvents(User $user): array
+    {
+        if (! $user->can('view calendar')) {
+            return [
+                'items' => [],
+                'route' => null,
+                'note' => 'Calendar access is not enabled for your account.',
+            ];
+        }
+
+        $events = CalendarEvent::query()
+            ->where('starts_at', '>=', now())
+            ->where(function ($query) use ($user): void {
+                $query->where('organizer_id', $user->id)
+                    ->orWhereHas('attendees', fn ($query) => $query->where('user_id', $user->id));
+            })
+            ->orderBy('starts_at')
+            ->limit(3)
+            ->get(['id', 'title', 'starts_at', 'is_all_day']);
+
+        return [
+            'items' => $events->map(fn (CalendarEvent $event): array => [
+                'title' => $event->title,
+                'date_label' => $event->starts_at->format('M d'),
+                'time_label' => $event->is_all_day ? 'All day' : $event->starts_at->format('g:i A'),
+                'url' => route('calendar.events.show', $event),
+            ])->all(),
+            'route' => 'events.index',
+            'note' => null,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, object>|iterable<int, object>  $steps
+     * @return array{percent: int, completed: int, total: int, next_steps: list<array{title: string, status: string}>, route: string}
+     */
+    private function checklistOverview(
+        User $user,
+        iterable $steps,
+        string $progressTable,
+        string $foreignKey,
+        int $percent,
+        string $route,
+    ): array {
+        $steps = collect($steps);
+        $stepIds = $steps->pluck('id');
+
+        $progress = $stepIds->isEmpty()
+            ? collect()
+            : DB::table($progressTable)
+                ->where('user_id', $user->id)
+                ->whereIn($foreignKey, $stepIds)
+                ->get([$foreignKey, 'status'])
+                ->keyBy($foreignKey);
+
+        $completed = $steps->filter(
+            fn (object $step): bool => ($progress->get($step->id)?->status ?? 'not_started') === 'completed'
+        )->count();
+
+        $nextSteps = $steps
+            ->filter(fn (object $step): bool => ($progress->get($step->id)?->status ?? 'not_started') !== 'completed')
+            ->take(3)
+            ->map(fn (object $step): array => [
+                'title' => $step->title,
+                'status' => $this->statusLabel($progress->get($step->id)?->status),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'percent' => $percent,
+            'completed' => $completed,
+            'total' => $steps->count(),
+            'next_steps' => $nextSteps,
+            'route' => $route,
+        ];
+    }
+
+    /**
+     * @return array{percent: int, completed: int, total: int}
+     */
+    private function cfmTrainingOverview(User $user): array
+    {
+        $moduleIds = DB::table('cfm_training_modules')
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->pluck('id');
+
+        if ($moduleIds->isEmpty()) {
+            return ['percent' => 0, 'completed' => 0, 'total' => 0];
+        }
+
+        $completed = DB::table('cfm_training_progress')
+            ->where('user_id', $user->id)
+            ->whereIn('cfm_training_module_id', $moduleIds)
+            ->where('status', 'completed')
+            ->count();
+
+        $total = $moduleIds->count();
+
+        return [
+            'percent' => (int) round(($completed / $total) * 100),
+            'completed' => $completed,
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function publishedTrainingLessonIds(): array
+    {
+        return DB::table('training_lessons')
+            ->join('training_modules', 'training_modules.id', '=', 'training_lessons.training_module_id')
+            ->join('training_categories', 'training_categories.id', '=', 'training_modules.training_category_id')
+            ->where('training_modules.is_published', true)
+            ->whereNull('training_modules.deleted_at')
+            ->whereNull('training_lessons.deleted_at')
+            ->whereNull('training_categories.deleted_at')
+            ->pluck('training_lessons.id')
+            ->all();
+    }
+
+    private function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            'completed' => 'Completed',
+            'pending_confirmation' => 'Pending review',
+            'rejected' => 'Needs revision',
+            'ready_for_review' => 'Ready for review',
+            'submitted' => 'Submitted',
+            'approved' => 'Approved',
+            'in_progress' => 'In progress',
+            'pending' => 'Pending',
+            default => 'Not started',
+        };
+    }
+
+    private function relativeTime(?string $timestamp): string
+    {
+        if ($timestamp === null) {
+            return 'recently';
+        }
+
+        return \Carbon\Carbon::parse($timestamp)->diffForHumans();
+    }
+}

@@ -30,8 +30,8 @@ class UpdateCfmPortalProfileRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:50'],
             'city' => ['nullable', 'string', 'max:120'],
             'province' => ['nullable', 'string', 'max:120'],
-            'country' => ['nullable', 'string', Rule::in(LocationOptions::countries())],
-            'timezone' => ['nullable', 'string', Rule::in(array_keys(LocationOptions::timezones()))],
+            'country' => ['nullable', 'string', 'max:120'],
+            'timezone' => ['nullable', 'string', 'max:120'],
             'mentor_bio' => ['nullable', 'string', 'max:2000'],
             'languages' => ['nullable', 'string', 'max:500'],
             'specialties' => ['nullable', 'string', 'max:500'],
@@ -46,9 +46,23 @@ class UpdateCfmPortalProfileRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $country = $this->input('country');
             $province = $this->input('province');
+            $timezone = $this->input('timezone');
 
-            if (filled($province) && ! LocationOptions::isValidProvince($country, $province)) {
-                $validator->errors()->add('province', 'Select a valid province or state for the chosen country.');
+            if (filled($country) && LocationOptions::resolveCountryReference($country) === null) {
+                $validator->errors()->add('country', 'Select a valid country.');
+            }
+
+            if (filled($timezone) && LocationOptions::resolveTimezoneReference($timezone) === null) {
+                $validator->errors()->add('timezone', 'Select a valid timezone.');
+            }
+
+            if (filled($province)) {
+                $countryId = LocationOptions::resolveCountryReference($country);
+                $countryName = is_string($country) && ! is_numeric($country) ? $country : null;
+
+                if (LocationOptions::resolveStateProvinceReference($province, $countryId, $countryName) === null) {
+                    $validator->errors()->add('province', 'Select a valid province or state for the chosen country.');
+                }
             }
 
             foreach ($this->input('licensed_jurisdictions', []) as $index => $key) {

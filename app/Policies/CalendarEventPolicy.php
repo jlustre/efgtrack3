@@ -4,9 +4,11 @@ namespace App\Policies;
 
 use App\Models\CalendarEvent;
 use App\Models\User;
+use App\Services\CalendarShareService;
 
 class CalendarEventPolicy
 {
+    public function __construct(private readonly CalendarShareService $calendarShare) {}
     public function viewAny(User $user): bool
     {
         return $user->hasAnyPermission(['view calendar', 'view shared calendar events', 'manage organization calendar']);
@@ -16,6 +18,13 @@ class CalendarEventPolicy
     {
         if ($event->organizer_id === $user->id || $user->hasAnyPermission(['manage organization calendar', 'view private events'])) {
             return true;
+        }
+
+        if ($event->organizer_id !== $user->id) {
+            $organizer = $event->organizer;
+            if ($organizer && $this->calendarShare->canViewCfmCalendar($user, $organizer)) {
+                return $event->visibility !== 'private';
+            }
         }
 
         if ($event->visibility === 'private') {

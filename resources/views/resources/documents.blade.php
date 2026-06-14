@@ -1,3 +1,287 @@
 <x-app-layout>
-    <x-page-placeholder title="Documents" subtitle="Document library scaffold for onboarding packets, forms, scripts, guides, and compliance resources." />
+    @php
+        $categories = $library['categories'];
+        $categoryCounts = $library['categoryCounts'];
+        $filters = $library['filters'];
+        $stats = $library['stats'];
+        $featured = $library['featured'];
+        $documents = $library['documents'];
+        $activeCategory = $filters['category'];
+        $chipClass = fn (bool $active = false) => 'inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition '
+            .($active
+                ? 'border-[#0B1F3A] bg-[#0B1F3A] text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-[#C8A24A] hover:bg-[#FFF9EA]');
+    @endphp
+
+    <section
+        class="space-y-6"
+        x-data="{
+            viewMode: 'table',
+            showPreview: false,
+            previewLoading: false,
+            previewError: null,
+            previewData: null,
+            previewView: 'rtf',
+            init() {
+                const saved = localStorage.getItem('efg-documents-view');
+                this.viewMode = saved === 'cards' ? 'cards' : 'table';
+            },
+            setView(mode) {
+                this.viewMode = mode;
+                localStorage.setItem('efg-documents-view', mode);
+            },
+            async openPreview(documentId) {
+                this.showPreview = true;
+                this.previewLoading = true;
+                this.previewError = null;
+                this.previewData = null;
+                this.previewView = 'rtf';
+
+                const url = new URL(window.location.href);
+                url.searchParams.set('document', documentId);
+                window.history.replaceState({}, '', url);
+
+                try {
+                    const response = await fetch(@js(url('/resources/documents')) + '/' + documentId + '/preview', {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    if (! response.ok) {
+                        throw new Error('Failed to load document preview');
+                    }
+
+                    this.previewData = await response.json();
+                    this.previewView = this.previewData.default_view || 'rtf';
+                } catch (error) {
+                    this.previewError = 'Could not load this document preview. Please try again.';
+                } finally {
+                    this.previewLoading = false;
+                }
+            },
+            closePreview() {
+                this.showPreview = false;
+                this.previewLoading = false;
+                this.previewError = null;
+                this.previewData = null;
+                this.previewView = 'rtf';
+
+                const url = new URL(window.location.href);
+                url.searchParams.delete('document');
+                window.history.replaceState({}, '', url);
+            },
+        }"
+        x-init="@if ($previewDocumentId) $nextTick(() => openPreview(@js($previewDocumentId))) @endif"
+    >
+        @if (session('status') === 'document-seeder-updated')
+            <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                <p class="font-semibold">Document seeder updated</p>
+                <p class="mt-1">
+                    Exported {{ (int) session('seeder_count', 0) }} document{{ (int) session('seeder_count', 0) === 1 ? '' : 's' }}
+                    to <code class="rounded bg-white/70 px-1 py-0.5 text-xs">database/seeders/ResourceDocumentSeeder.php</code>.
+                    Run <code class="rounded bg-white/70 px-1 py-0.5 text-xs">php artisan migrate:fresh --seed</code> to restore them.
+                    Regenerate stored PDFs from Admin Management after seeding if needed.
+                </p>
+            </div>
+        @endif
+
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+            <div class="border-b border-slate-100 bg-[#0B1F3A] px-6 py-6 text-white">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Resource Library</p>
+                        <h1 class="mt-2 text-2xl font-semibold">Documents</h1>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-200">
+                            Onboarding packets, forms, scripts, guides, and compliance resources to support your field development.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 text-sm">
+                        <div class="rounded-md bg-white/10 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wide text-slate-300">Published</div>
+                            <div class="mt-1 text-xl font-semibold">{{ $stats['total'] }}</div>
+                        </div>
+                        <div class="rounded-md bg-white/10 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wide text-slate-300">Featured</div>
+                            <div class="mt-1 text-xl font-semibold">{{ $stats['featured'] }}</div>
+                        </div>
+                        <div class="rounded-md bg-white/10 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wide text-slate-300">Categories</div>
+                            <div class="mt-1 text-xl font-semibold">{{ $stats['categories'] }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 border-b border-slate-100 bg-white/80 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('resources.documents', request()->except('category', 'page')) }}" class="{{ $chipClass(! $activeCategory) }}">
+                        All documents
+                        <span class="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[0.65rem]">{{ $stats['total'] }}</span>
+                    </a>
+                    @foreach ($categories as $key => $category)
+                        @php($count = (int) ($categoryCounts[$key] ?? 0))
+                        @if ($count > 0)
+                            <a
+                                href="{{ route('resources.documents', array_merge(request()->except('page'), ['category' => $key])) }}"
+                                class="{{ $chipClass($activeCategory === $key) }}"
+                            >
+                                {{ $category['label'] }}
+                                <span class="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[0.65rem]">{{ $count }}</span>
+                            </a>
+                        @endif
+                    @endforeach
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    @include('resources.partials.library-view-toggle')
+
+                    @if ($canUpdateDocumentSeeder)
+                        <form method="POST" action="{{ route('resources.documents.update-seeder') }}">
+                            @csrf
+                            <button
+                                type="submit"
+                                class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]"
+                            >
+                                Update document seeder
+                            </button>
+                        </form>
+                    @endif
+
+                    @if ($canManageDocuments)
+                        <a
+                            href="{{ route('admin.management.resource.index', 'resources') }}"
+                            class="inline-flex items-center justify-center rounded-md border border-[#C8A24A] bg-[#FFF9EA] px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#F7E8B8]"
+                        >
+                            Manage documents
+                        </a>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <form method="GET" class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_auto]">
+            @if ($activeCategory)
+                <input type="hidden" name="category" value="{{ $activeCategory }}">
+            @endif
+            <label class="sr-only" for="document-search">Search documents</label>
+            <input
+                id="document-search"
+                name="search"
+                value="{{ $filters['search'] }}"
+                placeholder="Search by title or description"
+                class="rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+            >
+            <button class="rounded-md bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#13345f]">
+                Search
+            </button>
+        </form>
+
+        @if ($featured->isNotEmpty() && ! $activeCategory && ! filled($filters['search']))
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-[#0B1F3A]">Featured documents</h2>
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Start here</span>
+                </div>
+                <div x-show="viewMode === 'table'" x-cloak>
+                    @include('resources.partials.document-table', [
+                        'documents' => $featured,
+                        'categories' => $categories,
+                        'showFeaturedBadge' => true,
+                    ])
+                </div>
+
+                <div x-show="viewMode === 'cards'" x-cloak class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    @foreach ($featured as $document)
+                        @include('resources.partials.document-card', ['document' => $document, 'categories' => $categories, 'featured' => true])
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        <div class="grid gap-6 xl:grid-cols-[16rem_minmax(0,1fr)]">
+            <aside class="hidden xl:block">
+                <div class="sticky top-24 space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                    <h2 class="text-sm font-semibold text-[#0B1F3A]">Browse by category</h2>
+                    <nav class="space-y-2">
+                        <a href="{{ route('resources.documents', request()->except('category', 'page')) }}" class="block rounded-md px-3 py-2 text-sm font-medium {{ ! $activeCategory ? 'bg-[#0B1F3A] text-white' : 'text-slate-600 hover:bg-slate-50' }}">
+                            All documents
+                        </a>
+                        @foreach ($categories as $key => $category)
+                            @php($count = (int) ($categoryCounts[$key] ?? 0))
+                            @if ($count > 0)
+                                <a
+                                    href="{{ route('resources.documents', array_merge(request()->except('page'), ['category' => $key])) }}"
+                                    class="block rounded-md px-3 py-2 text-sm {{ $activeCategory === $key ? 'bg-[#FFF9EA] font-semibold text-[#0B1F3A]' : 'text-slate-600 hover:bg-slate-50' }}"
+                                >
+                                    <span class="font-medium">{{ $category['label'] }}</span>
+                                    <span class="mt-0.5 block text-xs text-slate-500">{{ $category['description'] }}</span>
+                                </a>
+                            @endif
+                        @endforeach
+                    </nav>
+                </div>
+            </aside>
+
+            <div class="space-y-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-[#0B1F3A]">
+                            @if ($activeCategory)
+                                {{ $categories[$activeCategory]['label'] ?? 'Documents' }}
+                            @else
+                                All documents
+                            @endif
+                        </h2>
+                        @if ($activeCategory)
+                            <p class="mt-1 text-sm text-slate-600">{{ $categories[$activeCategory]['description'] ?? '' }}</p>
+                        @endif
+                    </div>
+                    <div class="flex items-center gap-3">
+                        @include('resources.partials.library-view-toggle')
+                        <span class="text-sm font-medium text-slate-500">{{ $documents->total() }} result{{ $documents->total() === 1 ? '' : 's' }}</span>
+                    </div>
+                </div>
+
+                @if ($documents->count() > 0)
+                    <div x-show="viewMode === 'table'" x-cloak>
+                        @include('resources.partials.document-table', [
+                            'documents' => $documents,
+                            'categories' => $categories,
+                        ])
+                    </div>
+
+                    <div x-show="viewMode === 'cards'" x-cloak class="grid gap-4 md:grid-cols-2">
+                        @foreach ($documents as $document)
+                            @include('resources.partials.document-card', ['document' => $document, 'categories' => $categories, 'featured' => false])
+                        @endforeach
+                    </div>
+
+                    <div class="border-t border-slate-200 pt-4">
+                        {{ $documents->links() }}
+                    </div>
+                @else
+                    <div class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
+                        <h3 class="text-lg font-semibold text-[#0B1F3A]">No documents found</h3>
+                        <p class="mt-2 text-sm text-slate-600">
+                            @if (filled($filters['search']) || $activeCategory)
+                                Try clearing your filters or searching with a different keyword.
+                            @else
+                                Published documents will appear here once they are added in Admin Management.
+                            @endif
+                        </p>
+                        @if (filled($filters['search']) || $activeCategory)
+                            <a href="{{ route('resources.documents') }}" class="mt-4 inline-flex rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] hover:bg-[#D8B75F]">
+                                Clear filters
+                            </a>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        @include('resources.partials.document-preview-modal')
+    </section>
 </x-app-layout>

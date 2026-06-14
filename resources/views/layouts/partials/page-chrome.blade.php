@@ -31,15 +31,23 @@
         const hideLoader = function () {
             if (loader) {
                 loader.classList.add('hidden');
+                loader.style.display = 'none';
                 loader.setAttribute('aria-hidden', 'true');
             }
         };
 
-        if (document.readyState === 'complete') {
+        const scheduleHideLoader = function () {
             hideLoader();
+            window.setTimeout(hideLoader, 8000);
+        };
+
+        if (document.readyState === 'interactive' || document.readyState === 'complete') {
+            scheduleHideLoader();
         } else {
-            window.addEventListener('load', hideLoader, { once: true });
+            document.addEventListener('DOMContentLoaded', scheduleHideLoader, { once: true });
         }
+
+        window.addEventListener('load', hideLoader, { once: true });
 
         if (! goTop) {
             return;
