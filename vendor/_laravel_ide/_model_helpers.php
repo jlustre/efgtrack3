@@ -693,7 +693,45 @@ namespace App\Models {
 	/**
 	 * App\Models\AssociateParticipationAgreement
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property string|null $pdf_path
+	 * @property string $status
+	 * @property \Illuminate\Support\Carbon|null $associate_signed_at
+	 * @property string|null $associate_signature
+	 * @property boolean $acknowledgment_accepted
+	 * @property string|null $sponsor_name
+	 * @property string|null $country
+	 * @property string|null $state_province
+	 * @property string|null $city
+	 * @property string|null $address
+	 * @property string|null $associate_id
+	 * @property string|null $phone
+	 * @property string $email
+	 * @property string $full_name
+	 * @property \Illuminate\Support\Carbon $effective_date
+	 * @property int $user_id
+	 * @property int $id
 	 * @property-read \App\Models\User $user
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereEffectiveDate($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereFullName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereEmail($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement wherePhone($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereAssociateId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereAddress($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereCity($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereStateProvince($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereCountry($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereSponsorName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereAcknowledgmentAccepted($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereAssociateSignature($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereAssociateSignedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement wherePdfPath($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<AssociateParticipationAgreement>|AssociateParticipationAgreement query()
@@ -5616,12 +5654,14 @@ namespace App\Models {
 	 * @property \Illuminate\Support\Carbon|null $deleted_at
 	 * @property \Illuminate\Support\Carbon|null $updated_at
 	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property boolean $is_public
 	 * @property boolean $is_active
 	 * @property int $sort_order
 	 * @property string|null $icon
 	 * @property string $color
 	 * @property string $slug
 	 * @property string $name
+	 * @property int|null $user_id
 	 * @property int $id
 	 * @property-read \App\Models\User $owner
 	 * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CalendarEventType> $eventTypes
@@ -5629,12 +5669,14 @@ namespace App\Models {
 	 * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CalendarEvent> $events
 	 * @property-read int|null $events_count
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereUserId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereName($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereSlug($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereColor($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereIcon($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereSortOrder($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereIsActive($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereIsPublic($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereCreatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarCategory>|CalendarCategory whereDeletedAt($value)
@@ -9442,6 +9484,8 @@ namespace App\Models {
 	 * @property bool $avg_apprentice_progress
 	 * @property bool $calendar_busyness_percent
 	 * @property float $fap_completion_rate
+	 * @property boolean $share_calendar_with_agency_owner
+	 * @property boolean $share_calendar_with_apprentices
 	 * @property boolean $manual_unavailable
 	 * @property bool $max_apprentices
 	 * @property string $hierarchy_access
@@ -9455,6 +9499,8 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmMentorProfile>|CfmMentorProfile whereHierarchyAccess($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmMentorProfile>|CfmMentorProfile whereMaxApprentices($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmMentorProfile>|CfmMentorProfile whereManualUnavailable($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmMentorProfile>|CfmMentorProfile whereShareCalendarWithApprentices($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmMentorProfile>|CfmMentorProfile whereShareCalendarWithAgencyOwner($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmMentorProfile>|CfmMentorProfile whereFapCompletionRate($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmMentorProfile>|CfmMentorProfile whereCalendarBusynessPercent($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmMentorProfile>|CfmMentorProfile whereAvgApprenticeProgress($value)
@@ -10477,8 +10523,34 @@ namespace App\Models {
 	/**
 	 * App\Models\CfmTraineeChecklistItem
 	 *
+	 * @property \Illuminate\Support\Carbon|null $deleted_at
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property boolean $is_active
+	 * @property boolean $is_required
+	 * @property int $sort_order
+	 * @property string $slug
+	 * @property string $title
+	 * @property string $section_title
+	 * @property string|null $phase_target
+	 * @property string $phase_title
+	 * @property bool $phase_number
+	 * @property int $id
 	 * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CfmTraineeChecklistProgress> $progressRecords
 	 * @property-read int|null $progress_records_count
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem wherePhaseNumber($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem wherePhaseTitle($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem wherePhaseTarget($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereSectionTitle($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereTitle($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereSlug($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereSortOrder($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereIsRequired($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereIsActive($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereUpdatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem whereDeletedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistItem>|CfmTraineeChecklistItem query()
@@ -10801,9 +10873,27 @@ namespace App\Models {
 	/**
 	 * App\Models\CfmTraineeChecklistProgress
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property string|null $notes
+	 * @property int|null $completed_by
+	 * @property \Illuminate\Support\Carbon|null $completed_at
+	 * @property string $status
+	 * @property int $cfm_trainee_checklist_item_id
+	 * @property int $mentor_assignment_id
+	 * @property int $id
 	 * @property-read \App\Models\MentorAssignment $assignment
 	 * @property-read \App\Models\CfmTraineeChecklistItem $item
 	 * @property-read \App\Models\User $completedByUser
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereMentorAssignmentId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereCfmTraineeChecklistItemId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereCompletedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereCompletedBy($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereNotes($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<CfmTraineeChecklistProgress>|CfmTraineeChecklistProgress query()
@@ -18384,10 +18474,16 @@ namespace App\Models {
 	 * @property \Illuminate\Support\Carbon|null $deleted_at
 	 * @property \Illuminate\Support\Carbon|null $updated_at
 	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property boolean $is_featured
 	 * @property boolean $is_published
+	 * @property \Illuminate\Support\Carbon|null $pdf_generated_at
+	 * @property string|null $file_format
 	 * @property string|null $file_path
 	 * @property string|null $url
+	 * @property int $sort_order
+	 * @property string $category
 	 * @property string $type
+	 * @property string|null $content
 	 * @property string|null $description
 	 * @property string $title
 	 * @property int|null $created_by
@@ -18397,10 +18493,16 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereCreatedBy($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereTitle($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereDescription($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereContent($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereType($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereCategory($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereSortOrder($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereUrl($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereFilePath($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereFileFormat($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource wherePdfGeneratedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereIsPublished($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereIsFeatured($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereCreatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<PortalResource>|PortalResource whereDeletedAt($value)
@@ -21966,11 +22068,33 @@ namespace App\Models {
 	/**
 	 * App\Models\ProspectFunnel
 	 *
+	 * @property \Illuminate\Support\Carbon|null $deleted_at
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property int $sort_order
+	 * @property boolean $is_active
+	 * @property boolean $is_default
+	 * @property string|null $description
+	 * @property string $name
+	 * @property string $key
+	 * @property int|null $user_id
+	 * @property int $id
 	 * @property-read \App\Models\User $owner
 	 * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ProspectFunnelStage> $stages
 	 * @property-read int|null $stages_count
 	 * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Prospect> $prospects
 	 * @property-read int|null $prospects_count
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereKey($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereDescription($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereIsDefault($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereIsActive($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereSortOrder($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereUpdatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel whereDeletedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnel>|ProspectFunnel query()
@@ -22293,8 +22417,30 @@ namespace App\Models {
 	/**
 	 * App\Models\ProspectFunnelStage
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property array|null $auto_task_template
+	 * @property boolean $is_terminal
+	 * @property float $conversion_weight
+	 * @property int $sort_order
+	 * @property string $slug
+	 * @property string $name
+	 * @property int|null $pipeline_stage_id
+	 * @property int $prospect_funnel_id
+	 * @property int $id
 	 * @property-read \App\Models\ProspectFunnel $funnel
 	 * @property-read \App\Models\PipelineStage $pipelineStage
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereProspectFunnelId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage wherePipelineStageId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereSlug($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereSortOrder($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereConversionWeight($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereIsTerminal($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereAutoTaskTemplate($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectFunnelStage>|ProspectFunnelStage query()
@@ -25346,10 +25492,30 @@ namespace App\Models {
 	/**
 	 * App\Models\ProspectStageHistory
 	 *
+	 * @property \Illuminate\Support\Carbon $created_at
+	 * @property array|null $metadata
+	 * @property string $change_source
+	 * @property int $changed_by
+	 * @property int|null $to_funnel_id
+	 * @property int|null $from_funnel_id
+	 * @property int|null $to_stage_id
+	 * @property int|null $from_stage_id
+	 * @property string $prospect_id
+	 * @property int $id
 	 * @property-read \App\Models\Prospect $prospect
 	 * @property-read \App\Models\PipelineStage $fromStage
 	 * @property-read \App\Models\PipelineStage $toStage
 	 * @property-read \App\Models\User $changedBy
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereProspectId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereFromStageId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereToStageId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereFromFunnelId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereToFunnelId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereChangedBy($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereChangeSource($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereMetadata($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory whereCreatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectStageHistory>|ProspectStageHistory query()
