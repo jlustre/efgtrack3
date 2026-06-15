@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TaskSuggestion;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Support\ProfileLocationSql;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -399,10 +400,14 @@ class TaskController extends Controller
 
     private function pendingChecklistTasks(User $user, array $config): Collection
     {
-        return DB::table($config['progress_table'])
+        $query = DB::table($config['progress_table'])
             ->join('users', 'users.id', '=', $config['progress_table'].'.user_id')
             ->join($config['step_table'], $config['step_table'].'.id', '=', $config['progress_table'].'.'.$config['foreign_key'])
-            ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
+            ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id');
+
+        ProfileLocationSql::joinMemberCountry($query);
+
+        return $query
             ->where($config['progress_table'].'.status', 'pending_confirmation')
             ->whereNull('users.deleted_at')
             ->whereNull($config['step_table'].'.deleted_at')
@@ -416,7 +421,7 @@ class TaskController extends Controller
                 'users.email as member_email',
                 'users.sponsor_id',
                 'users.mentor_id',
-                'profiles.country as member_country',
+                ProfileLocationSql::memberCountrySelect(),
                 $config['step_table'].'.title',
                 $config['step_table'].'.description',
                 $config['step_table'].'.notified_parties'

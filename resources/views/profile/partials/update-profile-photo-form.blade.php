@@ -1,21 +1,4 @@
-<section
-    x-data="{
-        previewUrl: @js($user->profilePhotoUrl()),
-        currentUrl: @js($user->profilePhotoUrl()),
-        onFileSelected(event) {
-            const file = event.target.files?.[0];
-            if (! file) {
-                this.previewUrl = this.currentUrl;
-                return;
-            }
-            this.previewUrl = URL.createObjectURL(file);
-        },
-        clearPreview() {
-            this.previewUrl = this.currentUrl;
-            this.$refs.photoInput.value = '';
-        },
-    }"
->
+<section x-data="profilePhotoUpload(@js($user->profilePhotoUrl()), @js($user->initials()))">
     <header>
         <h2 class="text-lg font-medium text-gray-900">
             {{ __('Update Profile Photo') }}
@@ -28,13 +11,21 @@
 
     <div class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
         <div class="flex flex-col items-center gap-2">
-            <div class="overflow-hidden rounded-full">
-                <template x-if="previewUrl">
-                    <img :src="previewUrl" alt="Profile photo preview" class="h-24 w-24 object-cover">
-                </template>
-                <template x-if="! previewUrl">
-                    <x-user-avatar :user="$user" size="lg" :ring="true" class="!h-24 !w-24 !text-xl" />
-                </template>
+            <div class="relative h-24 w-24 overflow-hidden rounded-full border border-[#C8A24A]/50 bg-[#0B1F3A]">
+                <img
+                    x-show="previewUrl && ! imageFailed"
+                    x-cloak
+                    :src="previewUrl"
+                    alt="Profile photo preview"
+                    class="h-24 w-24 object-cover"
+                    x-on:error="onImageError()"
+                >
+                <span
+                    x-show="! previewUrl || imageFailed"
+                    x-cloak
+                    x-text="initials"
+                    class="flex h-24 w-24 items-center justify-center text-xl font-bold text-[#C8A24A]"
+                ></span>
             </div>
             <p class="text-xs text-slate-500">Preview</p>
         </div>
@@ -57,9 +48,9 @@
                         accept="image/jpeg,image/png,image/webp"
                         class="mt-1 block w-full text-sm text-slate-600 file:mr-4 file:rounded-md file:border-0 file:bg-[#0B1F3A] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#C8A24A] hover:file:bg-[#132F55]"
                         x-ref="photoInput"
-                        @change="onFileSelected($event)"
+                        x-on:change="onFileSelected($event)"
                     >
-                    <x-input-error :messages="$errors->profilePhoto->get('photo')" class="mt-2" />
+                    <x-input-error :messages="$errors->getBag('profilePhoto')->get('photo')" class="mt-2" />
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
@@ -69,7 +60,7 @@
                         class="text-sm font-medium text-slate-600 hover:text-[#0B1F3A]"
                         x-show="$refs.photoInput?.files?.length"
                         x-cloak
-                        @click="clearPreview()"
+                        x-on:click="clearPreview()"
                     >
                         {{ __('Clear selection') }}
                     </button>

@@ -5,6 +5,8 @@ import cfmManagement from './cfm-management';
 import profileTableFilter from './profile-table-filter';
 import orgChartBoard from './org-chart-board';
 import downlineHierarchyTable from './downline-hierarchy-table';
+import profilePhotoUpload from './profile-photo-upload';
+import prospectActivitiesModal from './prospect-activities-modal';
 
 window.Alpine = Alpine;
 
@@ -13,5 +15,7 @@ Alpine.data('cfmManagement', cfmManagement);
 Alpine.data('profileTableFilter', profileTableFilter);
 Alpine.data('orgChartBoard', orgChartBoard);
 Alpine.data('downlineHierarchyTable', downlineHierarchyTable);
+Alpine.data('profilePhotoUpload', profilePhotoUpload);
+Alpine.data('prospectActivitiesModal', prospectActivitiesModal);
 
 Alpine.start();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Http\Requests\UpdateProfileInviteLinkRequest;
 use App\Http\Requests\UpdateProfilePhotoRequest;
 use App\Mail\InvitationLinkMail;
 use App\Models\EmailTemplate;
@@ -102,7 +103,6 @@ class ProfileController extends Controller
                 'timezone' => $validated['timezone'] ?? null,
                 'best_contact_time' => $validated['best_contact_time'] ?? null,
                 'license_number' => $validated['license_number'] ?? null,
-                'efg_associate_id' => $validated['efg_associate_id'] ?? null,
                 'bio' => $validated['bio'] ?? null,
             ]
         );
@@ -111,6 +111,25 @@ class ProfileController extends Controller
             'type' => 'success',
             'message' => 'Your profile was updated successfully.',
         ]);
+    }
+
+    public function updateInviteLink(UpdateProfileInviteLinkRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        $request->user()->profile()->updateOrCreate(
+            ['user_id' => $request->user()->id],
+            [
+                'efg_associate_id' => filled($validated['efg_associate_id'] ?? null)
+                    ? $validated['efg_associate_id']
+                    : null,
+                'efg_invite_link' => filled($validated['efg_invite_link'] ?? null)
+                    ? $validated['efg_invite_link']
+                    : null,
+            ],
+        );
+
+        return Redirect::route('profile.edit')->with('status', 'efg-invite-link-saved');
     }
 
     public function updatePhoto(UpdateProfilePhotoRequest $request): RedirectResponse

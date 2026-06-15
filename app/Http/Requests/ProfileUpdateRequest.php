@@ -34,12 +34,6 @@ class ProfileUpdateRequest extends FormRequest
             'timezone' => ['nullable', 'string', Rule::in(array_keys(LocationOptions::timezones()))],
             'best_contact_time' => ['nullable', 'string', Rule::in(array_keys(LocationOptions::contactTimes()))],
             'license_number' => ['nullable', 'string', 'max:100'],
-            'efg_associate_id' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('profiles', 'efg_associate_id')->ignore($this->user()->profile?->id),
-            ],
             'bio' => ['nullable', 'string', 'max:1000'],
         ];
     }

@@ -236,7 +236,7 @@ class DownlineController extends Controller
                 });
             })
             ->when($request->filled('rank_id'), fn (Builder $query) => $query->where('users.rank_id', $request->integer('rank_id')))
-            ->when($request->filled('country'), fn (Builder $query) => $query->whereHas('profile', fn (Builder $query) => $query->where('country', $request->string('country'))))
+            ->when($request->filled('country'), fn (Builder $query) => $query->whereHas('profile.countryRecord', fn (Builder $query) => $query->where('name', $request->string('country'))))
             ->when($request->filled('status'), fn (Builder $query) => $query->where('users.is_active', $request->string('status') === 'active'))
             ->when($request->filled('joined_from'), fn (Builder $query) => $query->whereDate('users.joined_at', '>=', $request->date('joined_from')))
             ->when($request->filled('joined_to'), fn (Builder $query) => $query->whereDate('users.joined_at', '<=', $request->date('joined_to')))
@@ -370,10 +370,11 @@ class DownlineController extends Controller
         return \DB::table('user_hierarchy_paths')
             ->join('users', 'users.id', '=', 'user_hierarchy_paths.descendant_id')
             ->leftJoin('profiles', 'users.id', '=', 'profiles.user_id')
+            ->leftJoin('countries as profile_countries', 'profile_countries.id', '=', 'profiles.country_id')
             ->where('user_hierarchy_paths.ancestor_id', $root->id)
             ->where('user_hierarchy_paths.depth', '>', 0)
             ->whereNull('users.deleted_at')
-            ->selectRaw('COALESCE(profiles.country, "Global") as label, COUNT(users.id) as total')
+            ->selectRaw('COALESCE(profile_countries.name, "Global") as label, COUNT(users.id) as total')
             ->groupBy('label')
             ->orderByDesc('total')
             ->limit(6)
@@ -397,11 +398,12 @@ class DownlineController extends Controller
             'ranks' => \DB::table('ranks')->whereNull('deleted_at')->where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name']),
             'countries' => $countryQuery
                 ->leftJoin('profiles', 'users.id', '=', 'profiles.user_id')
-                ->whereNotNull('profiles.country')
+                ->leftJoin('countries', 'countries.id', '=', 'profiles.country_id')
+                ->whereNotNull('countries.name')
                 ->whereNull('users.deleted_at')
                 ->distinct()
-                ->orderBy('profiles.country')
-                ->pluck('profiles.country'),
+                ->orderBy('countries.name')
+                ->pluck('countries.name'),
         ];
     }
 }

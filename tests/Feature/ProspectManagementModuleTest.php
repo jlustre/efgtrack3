@@ -178,6 +178,52 @@ class ProspectManagementModuleTest extends TestCase
         $this->assertSoftDeleted('prospects', ['id' => $prospect->id]);
     }
 
+    public function test_member_can_create_own_prospect(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            ProspectLookupSeeder::class,
+        ]);
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+
+        $this->actingAs($user)
+            ->get(route('team.prospects.create'))
+            ->assertOk()
+            ->assertSee('Add Prospect')
+            ->assertSee('Create Prospect')
+            ->assertDontSee('Prospect Form Scaffold');
+
+        $sourceId = DB::table('prospect_sources')->where('slug', 'warm-market')->value('id');
+
+        $this->actingAs($user)
+            ->post(route('team.prospects.store'), [
+                'first_name' => 'Jamie',
+                'last_name' => 'Prospect',
+                'email' => 'jamie.prospect@example.com',
+                'phone' => '6045550101',
+                'city' => 'Toronto',
+                'occupation' => 'Teacher',
+                'status' => 'active',
+                'interest_level' => 'warm',
+                'priority' => 'medium',
+                'prospect_source_id' => $sourceId,
+                'notes_summary' => 'Met at networking event.',
+            ])
+            ->assertRedirect();
+
+        $prospect = Prospect::query()->where('owner_id', $user->id)->firstOrFail();
+
+        $this->assertSame('Jamie', $prospect->first_name);
+        $this->assertSame($user->id, $prospect->owner_id);
+
+        $this->actingAs($user)
+            ->get(route('team.prospects.records.show', $prospect))
+            ->assertOk()
+            ->assertSee('Jamie Prospect');
+    }
+
     public function test_prospect_shortcut_pages_render_module_tables(): void
     {
         $this->seed([
@@ -191,21 +237,35 @@ class ProspectManagementModuleTest extends TestCase
         $owner = User::where('email', 'prospects@efgtrack.com')->firstOrFail();
 
         foreach ([
-            'create' => 'Recent Prospects',
-            'pipeline' => 'Pipeline Prospect Table',
-            'follow-ups' => 'Follow-Up Table',
-            'appointments' => 'Appointment Table',
-            'shared-with-me' => 'Shared With Me Table',
-            'shared-by-me' => 'Shared By Me Table',
-            'access-manager' => 'Access Manager Table',
-            'import' => 'Import Batch Table',
-            'settings' => 'Pipeline Stages',
-        ] as $screen => $expectedText) {
-            $this->actingAs($owner)
-                ->get(route('team.prospects.screen', $screen))
-                ->assertOk()
-                ->assertSee($expectedText)
-                ->assertSee('<table', false);
+            'create' => route('team.prospects.create'),
+            'pipeline' => route('team.prospects.screen', 'pipeline'),
+            'follow-ups' => route('team.prospects.screen', 'follow-ups'),
+            'appointments' => route('team.prospects.screen', 'appointments'),
+            'shared-with-me' => route('team.prospects.screen', 'shared-with-me'),
+            'shared-by-me' => route('team.prospects.screen', 'shared-by-me'),
+            'access-manager' => route('team.prospects.screen', 'access-manager'),
+            'import' => route('team.prospects.screen', 'import'),
+            'settings' => route('team.prospects.screen', 'settings'),
+        ] as $screen => $url) {
+            $expectedText = match ($screen) {
+                'create' => 'Create Prospect',
+                'pipeline' => 'Pipeline Prospect Table',
+                'follow-ups' => 'Follow-Up Table',
+                'appointments' => 'Appointment Table',
+                'shared-with-me' => 'Shared With Me Table',
+                'shared-by-me' => 'Shared By Me Table',
+                'access-manager' => 'Access Manager Table',
+                'import' => 'Import Batch Table',
+                'settings' => 'Pipeline Stages',
+            };
+
+            $response = $this->actingAs($owner)->get($url);
+
+            if ($screen === 'create') {
+                $response->assertOk()->assertSee($expectedText);
+            } else {
+                $response->assertOk()->assertSee($expectedText)->assertSee('<table', false);
+            }
         }
     }
 
@@ -266,5 +326,84 @@ class ProspectManagementModuleTest extends TestCase
             ]);
 
         $this->assertFalse($sharedUser->fresh()->can('view', $prospect->fresh()));
+    }
+
+    public function test_prospect_activities_can_be_managed_from_api(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            ProspectLookupSeeder::class,
+        ]);
+
+        $owner = User::factory()->create();
+        $owner->assignRole('member');
+
+        $stageId = DB::table('pipeline_stages')->where('slug', 'new-lead')->value('id');
+        $sourceId = DB::table('prospect_sources')->where('slug', 'warm-market')->value('id');
+
+        $prospect = Prospect::create([
+            'owner_id' => $owner->id,
+            'prospect_source_id' => $sourceId,
+            'pipeline_stage_id' => $stageId,
+            'first_name' => 'Activity',
+            'last_name' => 'Prospect',
+            'email' => 'activity.prospect@example.com',
+            'interest_level' => 'warm',
+            'priority' => 'medium',
+        ]);
+
+        $this->actingAs($owner)
+            ->getJson(route('team.prospects.activities.index', $prospect))
+            ->assertOk()
+            ->assertJson(['activities' => []]);
+
+        $create = $this->actingAs($owner)
+            ->postJson(route('team.prospects.activities.store', $prospect), [
+                'activity_type' => 'call',
+                'subject' => 'Intro call',
+                'notes' => 'Discussed career opportunity.',
+                'occurred_at' => now()->toIso8601String(),
+                'outcome' => 'Interested',
+                'next_action' => 'Send invite link',
+                'next_follow_up_at' => now()->addDays(2)->toIso8601String(),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('activity.subject', 'Intro call');
+
+        $activityId = $create->json('activity.id');
+
+        $this->assertDatabaseHas('prospect_activities', [
+            'id' => $activityId,
+            'prospect_id' => $prospect->id,
+            'subject' => 'Intro call',
+        ]);
+
+        $prospect->refresh();
+        $this->assertNotNull($prospect->last_contacted_at);
+        $this->assertNotNull($prospect->next_follow_up_at);
+
+        $this->actingAs($owner)
+            ->patchJson(route('team.prospects.activities.update', [$prospect, $activityId]), [
+                'activity_type' => 'email',
+                'subject' => 'Follow-up email',
+                'notes' => 'Sent overview deck.',
+                'occurred_at' => now()->toIso8601String(),
+                'outcome' => 'Opened',
+                'next_action' => 'Schedule meeting',
+                'next_follow_up_at' => now()->addDays(3)->toIso8601String(),
+            ])
+            ->assertOk()
+            ->assertJsonPath('activity.subject', 'Follow-up email');
+
+        $this->actingAs($owner)
+            ->get(route('team.prospects'))
+            ->assertOk()
+            ->assertSee('Activities', false);
+
+        $this->actingAs($owner)
+            ->deleteJson(route('team.prospects.activities.destroy', [$prospect, $activityId]))
+            ->assertOk();
+
+        $this->assertSoftDeleted('prospect_activities', ['id' => $activityId]);
     }
 }

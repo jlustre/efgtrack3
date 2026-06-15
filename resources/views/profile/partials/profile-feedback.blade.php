@@ -15,7 +15,16 @@
     </div>
 @endif
 
-@if ($errors->any() && ! $profileFeedback)
+@if ($errors->getBag('profilePhoto')->isNotEmpty() && ! $profileFeedback)
+    <div id="member-profile-feedback" class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p class="font-semibold text-red-900">Could not save profile photo</p>
+        <ul class="mt-2 list-disc list-inside space-y-1">
+            @foreach ($errors->getBag('profilePhoto')->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@elseif ($errors->any() && ! $profileFeedback)
     <div id="member-profile-feedback" class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
         <p class="font-semibold text-red-900">Could not save profile</p>
         <ul class="mt-2 list-disc list-inside space-y-1">

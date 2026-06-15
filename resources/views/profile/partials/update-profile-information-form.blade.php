@@ -127,12 +127,6 @@
             </div>
 
             <div>
-                <x-input-label for="efg_associate_id" :value="__('EFG Associate ID')" />
-                <x-text-input id="efg_associate_id" name="efg_associate_id" type="text" class="mt-1 block w-full" :value="old('efg_associate_id', $user->profile?->efg_associate_id)" />
-                <x-input-error class="mt-2" :messages="$errors->get('efg_associate_id')" />
-            </div>
-
-            <div>
                 <x-input-label for="city" :value="__('City')" />
                 <x-text-input id="city" name="city" type="text" class="mt-1 block w-full" :value="old('city', $user->profile?->city)" />
                 <x-input-error class="mt-2" :messages="$errors->get('city')" />

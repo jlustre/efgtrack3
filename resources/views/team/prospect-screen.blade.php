@@ -40,50 +40,7 @@
         </div>
 
         @if ($screenKey === 'create')
-            <div class="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
-                <div class="rounded-lg border border-slate-400 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-6 shadow-sm">
-                    <h2 class="text-lg font-semibold text-[#0B1F3A]">Prospect Form Scaffold</h2>
-                    <div class="mt-5 grid gap-4 md:grid-cols-2">
-                        @foreach (['First Name', 'Last Name', 'Email', 'Phone', 'City', 'Occupation'] as $label)
-                            <label class="block">
-                                <span class="text-sm font-semibold text-slate-700">{{ $label }}</span>
-                                <input type="text" disabled class="mt-1 block w-full rounded-lg border-slate-300 bg-white/80 text-sm shadow-sm" placeholder="Livewire field">
-                            </label>
-                        @endforeach
-                    </div>
-                    <div class="mt-4 grid gap-4 md:grid-cols-3">
-                        <label class="block">
-                            <span class="text-sm font-semibold text-slate-700">Source</span>
-                            <select disabled class="mt-1 block w-full rounded-lg border-slate-300 bg-white/80 text-sm shadow-sm">
-                                @foreach ($sources as $source)
-                                    <option>{{ $source->name }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="block">
-                            <span class="text-sm font-semibold text-slate-700">Stage</span>
-                            <select disabled class="mt-1 block w-full rounded-lg border-slate-300 bg-white/80 text-sm shadow-sm">
-                                @foreach ($pipelineStages as $stage)
-                                    <option>{{ $stage->name }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="block">
-                            <span class="text-sm font-semibold text-slate-700">Priority</span>
-                            <select disabled class="mt-1 block w-full rounded-lg border-slate-300 bg-white/80 text-sm shadow-sm">
-                                <option>Medium</option>
-                                <option>High</option>
-                                <option>Urgent</option>
-                            </select>
-                        </label>
-                    </div>
-                    <div class="mt-5 rounded-lg border border-dashed border-slate-400 bg-white/70 p-4 text-sm text-slate-600">
-                        Save actions will be wired when the Prospect CRUD Livewire components are built.
-                    </div>
-                </div>
-
-                @include('team.partials.prospect-prospect-table', ['rows' => $prospects, 'title' => 'Recent Prospects'])
-            </div>
+            {{-- Create route redirects to team.prospects.create --}}
         @elseif ($screenKey === 'pipeline')
             @include('team.partials.prospect-prospect-table', ['rows' => $prospects, 'title' => 'Pipeline Prospect Table'])
         @elseif ($screenKey === 'follow-ups')

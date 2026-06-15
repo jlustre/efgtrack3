@@ -307,7 +307,7 @@ class ProspectManagementController extends Controller
         ]);
     }
 
-    public function placeholder(Request $request, string $screen): View
+    public function placeholder(Request $request, string $screen): View|RedirectResponse
     {
         abort_unless(in_array($screen, [
             'create',
@@ -321,11 +321,48 @@ class ProspectManagementController extends Controller
             'settings',
         ], true), 404);
 
+        if ($screen === 'create') {
+            return redirect()->route('team.prospects.create');
+        }
+
         return view('team.prospect-screen', [
             'screen' => str($screen)->replace('-', ' ')->title(),
             'screenKey' => $screen,
             ...$this->screenData($request),
         ]);
+    }
+
+    public function create(Request $request): View
+    {
+        $this->authorize('create', Prospect::class);
+
+        return view('team.prospect-record', [
+            'mode' => 'create',
+            'prospect' => new Prospect([
+                'status' => 'active',
+                'interest_level' => 'warm',
+                'priority' => 'medium',
+            ]),
+            ...$this->prospectFormOptions(),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $this->authorize('create', Prospect::class);
+
+        $validated = $this->validatedProspectData($request);
+
+        $prospect = Prospect::create([
+            ...$validated,
+            'owner_id' => $request->user()->id,
+            'status' => 'active',
+            'is_archived' => false,
+        ]);
+
+        return redirect()
+            ->route('team.prospects.records.show', $prospect)
+            ->with('status', 'Prospect created.');
     }
 
     public function show(Prospect $prospect): View
@@ -354,22 +391,7 @@ class ProspectManagementController extends Controller
     {
         $this->authorize('update', $prospect);
 
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:60'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'string', 'max:60'],
-            'interest_level' => ['required', 'in:cold,warm,hot'],
-            'priority' => ['required', 'in:low,medium,high,urgent'],
-            'pipeline_stage_id' => ['nullable', 'exists:pipeline_stages,id'],
-            'prospect_source_id' => ['nullable', 'exists:prospect_sources,id'],
-            'next_follow_up_at' => ['nullable', 'date'],
-            'notes_summary' => ['nullable', 'string'],
-        ]);
-
-        $prospect->update($validated);
+        $prospect->update($this->validatedProspectData($request));
 
         return redirect()
             ->route('team.prospects.records.show', $prospect)
@@ -408,6 +430,42 @@ class ProspectManagementController extends Controller
             'pipelineStages' => DB::table('pipeline_stages')->whereNull('user_id')->where('is_active', true)->orderBy('sort_order')->get(),
             'sources' => DB::table('prospect_sources')->where('is_active', true)->orderBy('sort_order')->get(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedProspectData(Request $request): array
+    {
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:60'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'occupation' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', 'string', 'max:60'],
+            'interest_level' => ['required', 'in:cold,warm,hot'],
+            'priority' => ['required', 'in:low,medium,high,urgent'],
+            'pipeline_stage_id' => ['nullable', 'exists:pipeline_stages,id'],
+            'prospect_source_id' => ['nullable', 'exists:prospect_sources,id'],
+            'next_follow_up_at' => ['nullable', 'date'],
+            'notes_summary' => ['nullable', 'string'],
+        ]);
+
+        if (blank($validated['pipeline_stage_id'] ?? null)) {
+            $validated['pipeline_stage_id'] = DB::table('pipeline_stages')
+                ->whereNull('user_id')
+                ->where('is_active', true)
+                ->where('slug', 'new-lead')
+                ->value('id');
+        }
+
+        if (blank($validated['prospect_source_id'] ?? null)) {
+            unset($validated['prospect_source_id']);
+        }
+
+        return $validated;
     }
 
     private function screenData(Request $request): array

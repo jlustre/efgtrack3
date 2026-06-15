@@ -10,7 +10,11 @@
         ];
     @endphp
 
-    <section class="space-y-6">
+    <section
+        class="space-y-6"
+        x-data="prospectActivitiesModal()"
+        data-activity-types='@json(\App\Models\ProspectActivity::TYPES)'
+    >
         <div class="overflow-hidden rounded-lg border border-slate-400 bg-gradient-to-br from-white via-slate-50 to-[#FFF9EA] shadow-sm">
             <div class="flex flex-col gap-4 bg-[#0B1F3A] px-6 py-6 text-white lg:flex-row lg:items-end lg:justify-between">
                 <div>
@@ -20,7 +24,7 @@
                         Manage prospects, follow-ups, communication history, appointments, conversion pipeline, and controlled sharing with mentors or leaders.
                     </p>
                 </div>
-                <a href="{{ route('team.prospects.screen', 'create') }}" class="inline-flex items-center justify-center rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm transition hover:bg-[#D8B85F]">
+                <a href="{{ route('team.prospects.create') }}" class="inline-flex items-center justify-center rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm transition hover:bg-[#D8B85F]">
                     Add Prospect
                 </a>
             </div>
@@ -158,7 +162,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">All Prospects</h2>
                     <p class="mt-1 text-sm text-slate-600">Complete prospect list across active, archived, converted, and inactive statuses.</p>
                 </div>
-                <a href="{{ route('team.prospects.screen', 'create') }}" class="inline-flex items-center justify-center rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-3 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm transition hover:bg-[#D8B85F]">
+                <a href="{{ route('team.prospects.create') }}" class="inline-flex items-center justify-center rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-3 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm transition hover:bg-[#D8B85F]">
                     Add Prospect
                 </a>
             </div>
@@ -256,27 +260,36 @@
                                 <td class="px-4 py-3 text-slate-600">{{ str($prospect->priority)->title() }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $prospect->next_follow_up_at?->format('M j, g:i A') ?? 'Not scheduled' }}</td>
                                 <td class="px-4 py-3">
-                                    <div class="flex justify-end gap-2">
-                                        <a href="{{ route('team.prospects.records.show', $prospect) }}" title="View prospect" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] hover:text-[#0B1F3A]">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <button
+                                            type="button"
+                                            title="Activities"
+                                            class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-[#C8A24A]"
+                                            x-on:click="openFor({ id: @js($prospect->id), name: @js(trim($prospect->first_name.' '.$prospect->last_name)) })"
+                                        >
+                                            <span class="sr-only">Activities</span>
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
+                                        </button>
+                                        <a href="{{ route('team.prospects.records.show', $prospect) }}" title="View prospect" class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
                                             <span class="sr-only">View prospect</span>
                                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                         </a>
-                                        <a href="{{ route('team.prospects.records.edit', $prospect) }}" title="Edit prospect" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] hover:text-[#0B1F3A]">
+                                        <a href="{{ route('team.prospects.records.edit', $prospect) }}" title="Edit prospect" class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
                                             <span class="sr-only">Edit prospect</span>
                                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
                                         </a>
-                                        <form method="POST" action="{{ route('team.prospects.records.archive', $prospect) }}">
+                                        <form method="POST" action="{{ route('team.prospects.records.archive', $prospect) }}" class="inline">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" title="Archive prospect" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] hover:text-[#0B1F3A]">
+                                            <button type="submit" title="Archive prospect" class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
                                                 <span class="sr-only">Archive prospect</span>
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 8v13H3V8"></path><path d="M1 3h22v5H1z"></path><path d="M10 12h4"></path></svg>
                                             </button>
                                         </form>
-                                        <form method="POST" action="{{ route('team.prospects.records.destroy', $prospect) }}">
+                                        <form method="POST" action="{{ route('team.prospects.records.destroy', $prospect) }}" class="inline" onsubmit="return confirm('Delete this prospect?');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" title="Delete prospect" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-white text-red-600 transition hover:bg-red-50">
+                                            <button type="submit" title="Delete prospect" class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-red-600">
                                                 <span class="sr-only">Delete prospect</span>
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                                             </button>
@@ -754,7 +767,7 @@
                         ['Access Manager', 'Grant, expire, revoke, and audit prospect sharing permissions.', 'access-manager'],
                         ['Prospect Import', 'CSV preview, duplicate detection, merge/skip/create workflows.', 'import'],
                     ] as [$title, $description, $screen])
-                        <a href="{{ route('team.prospects.screen', $screen) }}" class="rounded-lg border border-slate-400 bg-white/80 p-5 shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <a href="{{ $screen === 'create' ? route('team.prospects.create') : route('team.prospects.screen', $screen) }}" class="rounded-lg border border-slate-400 bg-white/80 p-5 shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <h3 class="font-semibold text-[#0B1F3A]">{{ $title }}</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-600">{{ $description }}</p>
                         </a>
@@ -803,5 +816,7 @@
                 </div>
             </aside>
         </div>
+
+        @include('team.partials.prospect-activities-modal')
     </section>
 </x-app-layout>

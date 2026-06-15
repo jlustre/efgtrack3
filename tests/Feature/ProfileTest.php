@@ -152,7 +152,6 @@ class ProfileTest extends TestCase
                 'timezone' => 'Canada Eastern Time',
                 'best_contact_time' => 'Morning (8am – 12pm)',
                 'license_number' => 'LIC-123',
-                'efg_associate_id' => 'EFG-2001',
                 'bio' => 'Building a strong financial services team.',
             ]);
 
@@ -179,7 +178,6 @@ class ProfileTest extends TestCase
         $this->assertSame('Canada Eastern Time', $user->profile->timezone);
         $this->assertSame('Morning (8am – 12pm)', $user->profile->best_contact_time);
         $this->assertSame('LIC-123', $user->profile->license_number);
-        $this->assertSame('EFG-2001', $user->profile->efg_associate_id);
     }
 
     public function test_profile_update_shows_validation_errors_on_profile_tab(): void
@@ -222,6 +220,32 @@ class ProfileTest extends TestCase
             ->assertRedirect(route('profile.edit', ['tab' => 'profile']));
 
         $this->assertNotNull($user->refresh()->email_verified_at);
+    }
+
+    public function test_member_can_save_experior_invite_link_on_profile(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->patch(route('profile.invite-link.update'), [
+                'efg_associate_id' => 'EFG-2001',
+                'efg_invite_link' => 'https://experiorfinancial.com/invite/abc123',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertDatabaseHas('profiles', [
+            'user_id' => $user->id,
+            'efg_associate_id' => 'EFG-2001',
+            'efg_invite_link' => 'https://experiorfinancial.com/invite/abc123',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('EFG Details')
+            ->assertSee('EFG-2001')
+            ->assertSee('https://experiorfinancial.com/invite/abc123');
     }
 
     public function test_member_can_create_invitation_link_from_profile(): void

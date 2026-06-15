@@ -72,6 +72,11 @@ class Prospect extends Model
         return $this->hasMany(ProspectCommunication::class);
     }
 
+    public function activities(): HasMany
+    {
+        return $this->hasMany(ProspectActivity::class);
+    }
+
     public function appointments(): HasMany
     {
         return $this->hasMany(ProspectAppointment::class);

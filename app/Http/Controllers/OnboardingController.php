@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\OnboardingStep;
+use App\Support\ProfileLocationSql;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -153,10 +154,14 @@ class OnboardingController extends Controller
 
     private function confirmationItemsFor(User $user)
     {
-        return DB::table('user_onboarding_progress')
+        $query = DB::table('user_onboarding_progress')
             ->join('users', 'users.id', '=', 'user_onboarding_progress.user_id')
             ->join('onboarding_steps', 'onboarding_steps.id', '=', 'user_onboarding_progress.onboarding_step_id')
-            ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
+            ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id');
+
+        ProfileLocationSql::joinMemberCountry($query);
+
+        return $query
             ->where('user_onboarding_progress.status', 'pending_confirmation')
             ->whereNull('users.deleted_at')
             ->whereNull('onboarding_steps.deleted_at')
@@ -170,7 +175,7 @@ class OnboardingController extends Controller
                 'users.email as member_email',
                 'users.sponsor_id',
                 'users.mentor_id',
-                'profiles.country as member_country',
+                ProfileLocationSql::memberCountrySelect(),
                 'onboarding_steps.title',
                 'onboarding_steps.description',
                 'onboarding_steps.notified_parties'
