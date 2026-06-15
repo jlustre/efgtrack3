@@ -15,6 +15,12 @@
         x-data="prospectActivitiesModal()"
         data-activity-types='@json(\App\Models\ProspectActivity::TYPES)'
     >
+        @if (session('prospect_quick_log_status'))
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+                {{ session('prospect_quick_log_status') }}
+            </div>
+        @endif
+
         <div class="overflow-hidden rounded-lg border border-slate-400 bg-gradient-to-br from-white via-slate-50 to-[#FFF9EA] shadow-sm">
             <div class="flex flex-col gap-4 bg-[#0B1F3A] px-6 py-6 text-white lg:flex-row lg:items-end lg:justify-between">
                 <div>
@@ -27,6 +33,11 @@
                 <a href="{{ route('team.prospects.create') }}" class="inline-flex items-center justify-center rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm transition hover:bg-[#D8B85F]">
                     Add Prospect
                 </a>
+                @can('export prospects')
+                    <a href="{{ route('team.prospects.export') }}" class="inline-flex items-center justify-center rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
+                        Export CSV
+                    </a>
+                @endcan
             </div>
 
             <div class="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-7">
@@ -56,7 +67,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $pipelineSummary->sum('prospect_count') }}</span>
-                        <a href="{{ route('team.prospects.screen', 'pipeline') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Open Board</a>
+                        <a href="{{ route('team.prospects.pipeline') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Open Board</a>
                         <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <span class="sr-only">Toggle Pipeline Summary</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -99,7 +110,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $followUpsTable->count() }}</span>
-                        <a href="{{ route('team.prospects.screen', 'follow-ups') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">View All</a>
+                        <a href="{{ route('team.prospects.follow-ups') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">View All</a>
                         <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <span class="sr-only">Toggle Follow-Up Center</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -229,67 +240,116 @@
                 </div>
             </form>
 
-            <div class="mt-5 overflow-x-auto rounded-lg border border-slate-300 bg-white/85">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <div
+                x-data="{
+                    panning: false,
+                    panStartX: 0,
+                    panScrollLeft: 0,
+                    isInteractiveTarget(target) {
+                        return target instanceof Element && Boolean(target.closest('a, button, input, select, textarea, label, [role=\'button\']'));
+                    },
+                    startPan(event) {
+                        if (event.button !== 0 || this.isInteractiveTarget(event.target)) {
+                            return;
+                        }
+
+                        this.panning = true;
+                        this.panStartX = event.clientX;
+                        this.panScrollLeft = $el.scrollLeft;
+                        $el.classList.add('cursor-grabbing', 'select-none');
+                        $el.classList.remove('cursor-grab');
+                    },
+                    pan(event) {
+                        if (! this.panning) {
+                            return;
+                        }
+
+                        if (event.cancelable) {
+                            event.preventDefault();
+                        }
+
+                        $el.scrollLeft = this.panScrollLeft - (event.clientX - this.panStartX);
+                    },
+                    endPan() {
+                        if (! this.panning) {
+                            return;
+                        }
+
+                        this.panning = false;
+                        $el.classList.remove('cursor-grabbing', 'select-none');
+                        $el.classList.add('cursor-grab');
+                    },
+                }"
+                x-on:mousedown="startPan($event)"
+                x-on:mousemove.window="pan($event)"
+                x-on:mouseup.window="endPan()"
+                x-on:mouseleave.window="endPan()"
+                class="mt-5 cursor-grab overflow-x-auto rounded-lg border border-slate-300 bg-white/85"
+            >
+                <table class="min-w-full divide-y divide-slate-200 text-xs">
                     <thead class="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th class="px-4 py-3">Prospect</th>
-                            <th class="px-4 py-3">Contact</th>
-                            <th class="px-4 py-3">Stage</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Interest</th>
-                            <th class="px-4 py-3">Priority</th>
-                            <th class="px-4 py-3">Next Follow-Up</th>
-                            <th class="px-4 py-3 text-right">Actions</th>
+                            <th class="px-3 py-2">Prospect</th>
+                            <th class="px-3 py-2">Contact</th>
+                            <th class="px-3 py-2">Stage</th>
+                            <th class="px-3 py-2">Status</th>
+                            <th class="px-3 py-2">Interest</th>
+                            <th class="px-3 py-2">Priority</th>
+                            <th class="px-3 py-2">Next Follow-Up</th>
+                            <th class="px-3 py-2 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">
                         @forelse ($allProspects as $prospect)
                             <tr>
-                                <td class="px-4 py-3">
+                                <td class="px-3 py-2">
                                     <div class="font-semibold text-[#0B1F3A]">{{ $prospect->first_name }} {{ $prospect->last_name }}</div>
-                                    <div class="text-xs text-slate-500">{{ $prospect->city ?? 'City not set' }}</div>
+                                    <div class="text-slate-500">{{ $prospect->city ?? 'City not set' }}</div>
                                 </td>
-                                <td class="px-4 py-3 text-slate-600">
+                                <td class="px-3 py-2 text-slate-600">
                                     <div>{{ $prospect->email ?? 'Email not set' }}</div>
-                                    <div class="text-xs text-slate-500">{{ $prospect->phone ?? 'Phone not set' }}</div>
+                                    <div class="text-slate-500">{{ $prospect->phone ?? 'Phone not set' }}</div>
                                 </td>
-                                <td class="px-4 py-3 text-slate-600">{{ $prospect->stage?->name ?? 'No Stage' }}</td>
-                                <td class="px-4 py-3 text-slate-600">{{ str($prospect->status)->title() }}</td>
-                                <td class="px-4 py-3 text-slate-600">{{ str($prospect->interest_level)->title() }}</td>
-                                <td class="px-4 py-3 text-slate-600">{{ str($prospect->priority)->title() }}</td>
-                                <td class="px-4 py-3 text-slate-600">{{ $prospect->next_follow_up_at?->format('M j, g:i A') ?? 'Not scheduled' }}</td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center justify-end gap-1">
+                                <td class="px-3 py-2 text-slate-600">{{ $prospect->stage?->name ?? 'No Stage' }}</td>
+                                <td class="px-3 py-2 text-slate-600">{{ str($prospect->status)->title() }}</td>
+                                <td class="px-3 py-2 text-slate-600">{{ str($prospect->interest_level)->title() }}</td>
+                                <td class="px-3 py-2 text-slate-600">{{ str($prospect->priority)->title() }}</td>
+                                <td class="px-3 py-2 text-slate-600">{{ $prospect->next_follow_up_at?->format('M j, g:i A') ?? 'Not scheduled' }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="flex justify-end gap-1">
+                                        <a href="{{ route('team.prospects.records.show', $prospect) }}" title="View prospect" class="inline-flex items-center justify-center p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
+                                            <span class="sr-only">View prospect</span>
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                        </a>
                                         <button
                                             type="button"
                                             title="Activities"
-                                            class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-[#C8A24A]"
+                                            class="inline-flex items-center justify-center p-0.5 text-slate-500 transition hover:text-[#C8A24A]"
                                             x-on:click="openFor({ id: @js($prospect->id), name: @js(trim($prospect->first_name.' '.$prospect->last_name)) })"
                                         >
                                             <span class="sr-only">Activities</span>
                                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
                                         </button>
-                                        <a href="{{ route('team.prospects.records.show', $prospect) }}" title="View prospect" class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
-                                            <span class="sr-only">View prospect</span>
-                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                        <a href="{{ route('team.prospects.records.activity', $prospect) }}" title="View activity history" class="inline-flex items-center justify-center p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
+                                            <span class="sr-only">View activity history</span>
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 3v18h18"></path><path d="M7 16l4-4 4 4 4-6"></path></svg>
                                         </a>
-                                        <a href="{{ route('team.prospects.records.edit', $prospect) }}" title="Edit prospect" class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
+                                        <a href="{{ route('team.prospects.records.edit', $prospect) }}" title="Edit prospect" class="inline-flex items-center justify-center p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
                                             <span class="sr-only">Edit prospect</span>
                                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
                                         </a>
-                                        <form method="POST" action="{{ route('team.prospects.records.archive', $prospect) }}" class="inline">
+                                        <form method="POST" action="{{ route('team.prospects.records.archive', $prospect) }}">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" title="Archive prospect" class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
+                                            <button type="submit" title="Archive prospect" class="inline-flex items-center justify-center p-0.5 text-slate-500 transition hover:text-[#C8A24A]">
                                                 <span class="sr-only">Archive prospect</span>
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 8v13H3V8"></path><path d="M1 3h22v5H1z"></path><path d="M10 12h4"></path></svg>
                                             </button>
                                         </form>
-                                        <form method="POST" action="{{ route('team.prospects.records.destroy', $prospect) }}" class="inline" onsubmit="return confirm('Delete this prospect?');">
+                                        <form method="POST" action="{{ route('team.prospects.records.destroy', $prospect) }}">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" title="Delete prospect" class="inline-flex shrink-0 p-0.5 text-slate-500 transition hover:text-red-600">
+                                            <button type="submit" title="Delete prospect" class="inline-flex items-center justify-center p-0.5 text-red-600 transition hover:text-red-700">
                                                 <span class="sr-only">Delete prospect</span>
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                                             </button>
@@ -314,7 +374,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Hot Prospects</h2>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $hotProspects->count() }}</span>
-                        <a href="{{ route('team.prospects.screen', 'pipeline') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Pipeline</a>
+                        <a href="{{ route('team.prospects.pipeline') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Pipeline</a>
                         <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <span class="sr-only">Toggle Hot Prospects</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -371,7 +431,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Appointment Calendar</h2>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $appointmentsTable->count() }}</span>
-                        <a href="{{ route('team.prospects.screen', 'appointments') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Calendar</a>
+                        <a href="{{ route('team.prospects.appointments') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Calendar</a>
                         <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <span class="sr-only">Toggle Appointment Calendar</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -598,7 +658,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Shared With Me</h2>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $sharedWithMe->count() }}</span>
-                        <a href="{{ route('team.prospects.screen', 'shared-with-me') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Open</a>
+                        <a href="{{ route('team.prospects.shared-with-me') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Open</a>
                         <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <span class="sr-only">Toggle Shared With Me</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -648,7 +708,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Shared By Me</h2>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $sharedByMe->count() }}</span>
-                        <a href="{{ route('team.prospects.screen', 'shared-by-me') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Manage</a>
+                        <a href="{{ route('team.prospects.shared-by-me') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Manage</a>
                         <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <span class="sr-only">Toggle Shared By Me</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -698,7 +758,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Import & Duplicates</h2>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $importsTable->count() }}</span>
-                        <a href="{{ route('team.prospects.screen', 'import') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Import</a>
+                        <a href="{{ route('team.prospects.import') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Import</a>
                         <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <span class="sr-only">Toggle Import And Duplicates</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -760,14 +820,16 @@
                 </div>
                 <div class="grid gap-4 p-6 md:grid-cols-2">
                     @foreach ([
-                        ['Add Prospect', 'Create personal prospects with source, tags, interests, and privacy defaults.', 'create'],
-                        ['Pipeline Board', 'Kanban board for lead status, priority, interest level, and conversion flow.', 'pipeline'],
-                        ['Follow-Up Center', 'Daily follow-ups, overdue tasks, next actions, and completion tracking.', 'follow-ups'],
-                        ['Appointment Calendar', 'Scheduled calls, Zoom links, reminders, no-shows, and reschedules.', 'appointments'],
-                        ['Access Manager', 'Grant, expire, revoke, and audit prospect sharing permissions.', 'access-manager'],
-                        ['Prospect Import', 'CSV preview, duplicate detection, merge/skip/create workflows.', 'import'],
-                    ] as [$title, $description, $screen])
-                        <a href="{{ $screen === 'create' ? route('team.prospects.create') : route('team.prospects.screen', $screen) }}" class="rounded-lg border border-slate-400 bg-white/80 p-5 shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        ['Add Prospect', 'Create personal prospects with source, tags, interests, and privacy defaults.', route('team.prospects.create')],
+                        ['Pipeline Board', 'Kanban board for lead status, priority, interest level, and conversion flow.', route('team.prospects.pipeline')],
+                        ['Follow-Up Center', 'Daily follow-ups, overdue tasks, next actions, and completion tracking.', route('team.prospects.follow-ups')],
+                        ['Appointment Calendar', 'Scheduled calls, Zoom links, reminders, no-shows, and reschedules.', route('team.prospects.appointments')],
+                        ['Analytics & Goals', 'Funnel conversion charts, activity trends, and period goal tracking.', route('team.prospects.analytics')],
+                        ['Access Manager', 'Grant, expire, revoke, and audit prospect sharing permissions.', route('team.prospects.access-manager')],
+                        ['AI Coach', 'Deterministic recommendations for stalled leads, hot prospects, and overdue follow-ups.', route('team.prospects.ai-coach')],
+                        ['Prospect Import', 'CSV preview, duplicate detection, merge/skip/create workflows.', route('team.prospects.import')],
+                    ] as [$title, $description, $url])
+                        <a href="{{ $url }}" class="rounded-lg border border-slate-400 bg-white/80 p-5 shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
                             <h3 class="font-semibold text-[#0B1F3A]">{{ $title }}</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-600">{{ $description }}</p>
                         </a>
@@ -776,6 +838,8 @@
             </div>
 
             <aside class="space-y-6">
+                <livewire:prospects.prospect-goals-panel :compact="true" />
+
                 <div class="rounded-lg border border-slate-400 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-5 shadow-sm">
                     <h2 class="text-base font-semibold text-[#0B1F3A]">Privacy Rules</h2>
                     <div class="mt-4 space-y-3 text-sm leading-6 text-slate-600">
@@ -819,4 +883,10 @@
 
         @include('team.partials.prospect-activities-modal')
     </section>
+
+    @include('prospects.partials.mobile-quick-actions')
+
+    <livewire:prospects.log-activity-modal />
+    <livewire:prospects.log-communication-modal />
+    <livewire:prospects.prospect-quick-log-modal />
 </x-app-layout>

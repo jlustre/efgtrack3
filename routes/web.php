@@ -1,18 +1,25 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\AssociateParticipationAgreementController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CfmAssignmentConfirmationController;
 use App\Http\Controllers\CfmManagementController;
 use App\Http\Controllers\CfmPortalController;
+use App\Http\Controllers\CfmTraineeChecklistController;
 use App\Http\Controllers\DownlineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\FnaManagementController;
 use App\Http\Controllers\ProspectActivityController;
 use App\Http\Controllers\ProspectManagementController;
+use App\Http\Controllers\ResourceDocumentsController;
+use App\Http\Controllers\ResourceLinksController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TrackerChecklistController;
 use Illuminate\Support\Facades\Route;
@@ -36,10 +43,23 @@ Route::get('/book/invite/{token}', [BookingController::class, 'invite'])->name('
 Route::get('/book/mentor/{mentorSlug}', [BookingController::class, 'publicPage'])->name('bookings.mentor');
 Route::get('/book/{username}/{eventTypeSlug?}', [BookingController::class, 'publicPage'])->name('bookings.public');
 
+Route::prefix('fna/client')->name('fna.client.')->group(function (): void {
+    Route::get('/invite/{token}', \App\Livewire\Fna\Client\FnaClientPortalGate::class)->name('invite');
+    Route::get('/invite/{token}/wizard', \App\Livewire\Fna\Client\FnaClientPortalWizard::class)->name('wizard');
+    Route::get('/return', \App\Livewire\Fna\Client\FnaClientPortalReturn::class)->name('return');
+});
+
+Route::get('/cfm/assignments/{assignment}/confirm', [CfmAssignmentConfirmationController::class, 'show'])
+    ->middleware('signed')
+    ->name('cfm.assignments.confirm');
+
 Route::middleware(['auth', 'verified', 'active'])->group(function () {
-    Route::view('/dashboard', 'dashboard')
+    Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('permission:view dashboard')
         ->name('dashboard');
+    Route::get('/dashboard/stats/{type}/members', [DashboardController::class, 'statDetails'])
+        ->middleware('permission:view dashboard')
+        ->name('dashboard.stat-details');
 
     Route::view('/search', 'search.index')->name('search.index');
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding.index');
@@ -57,6 +77,11 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::patch('/cfm-training-progress/{progress}/review', [TrackerChecklistController::class, 'reviewCfmTraining'])->name('cfm-training.review');
     Route::get('/cfm/portal', [CfmPortalController::class, 'index'])->middleware('cfm.portal')->name('cfm.portal');
     Route::patch('/cfm/portal/profile', [CfmPortalController::class, 'updateProfile'])->middleware('cfm.portal')->name('cfm.portal.profile.update');
+    Route::patch('/cfm/portal/calendar-sharing', [CfmPortalController::class, 'updateCalendarSharing'])->middleware('cfm.portal')->name('cfm.portal.calendar-sharing.update');
+    Route::post('/cfm/portal/assignments/{assignment}/confirm', [CfmPortalController::class, 'confirmAssignment'])->middleware('cfm.portal')->name('cfm.portal.assignments.confirm');
+    Route::post('/cfm/portal/assignments/{assignment}/first-contact', [CfmPortalController::class, 'sendFirstContact'])->middleware('cfm.portal')->name('cfm.portal.assignments.first-contact');
+    Route::get('/cfm/portal/trainees/{assignment}/checklist', [CfmTraineeChecklistController::class, 'show'])->middleware('cfm.portal')->name('cfm.portal.trainees.checklist');
+    Route::patch('/cfm/portal/trainees/{assignment}/checklist/{item}', [CfmTraineeChecklistController::class, 'update'])->middleware('cfm.portal')->name('cfm.portal.trainees.checklist.update');
     Route::view('/training', 'training.index')->name('training.index');
     Route::view('/assessments', 'assessments.index')->name('assessments.index');
     Route::view('/rank-advancement', 'rank-advancement.index')->name('rank-advancement.index');
@@ -66,6 +91,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/team/table', [DownlineController::class, 'table'])->middleware('permission:view team table')->name('team.table');
     Route::get('/team/hierarchy', [DownlineController::class, 'hierarchyTable'])->middleware('permission:view team tree')->name('team.hierarchy');
     Route::get('/team/member/{user}', [DownlineController::class, 'member'])->middleware('permission:view own team')->name('team.member');
+    Route::get('/team/member/{user}/profile', [ProfileController::class, 'showMember'])->middleware('permission:view own team')->name('team.member.profile');
     Route::get('/team/member/{user}/tree', [DownlineController::class, 'tree'])->middleware('permission:view team tree')->name('team.member.tree');
     Route::get('/team/member/{user}/hierarchy', [DownlineController::class, 'hierarchyTable'])->middleware('permission:view team tree')->name('team.member.hierarchy');
     Route::get('/team/member/{user}/org-chart', [DownlineController::class, 'orgChart'])->middleware('permission:view org chart')->name('team.member.org-chart');
@@ -79,8 +105,8 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::view('/team/downlines', 'team.downlines')->middleware('permission:view team')->name('team.downlines');
     Route::get('/team/prospects', [ProspectManagementController::class, 'index'])->middleware('permission:manage prospects')->name('team.prospects');
     Route::get('/team/prospects/create', [ProspectManagementController::class, 'create'])->middleware('permission:manage prospects')->name('team.prospects.create');
-    Route::post('/team/prospects', [ProspectManagementController::class, 'store'])->middleware('permission:manage prospects')->name('team.prospects.store');
     Route::get('/team/prospects/records/{prospect}', [ProspectManagementController::class, 'show'])->middleware('permission:manage prospects')->name('team.prospects.records.show');
+    Route::get('/team/prospects/records/{prospect}/activity', [ProspectManagementController::class, 'activity'])->middleware('permission:manage prospects')->name('team.prospects.records.activity');
     Route::get('/team/prospects/records/{prospect}/edit', [ProspectManagementController::class, 'edit'])->middleware('permission:manage prospects')->name('team.prospects.records.edit');
     Route::patch('/team/prospects/records/{prospect}', [ProspectManagementController::class, 'update'])->middleware('permission:manage prospects')->name('team.prospects.records.update');
     Route::patch('/team/prospects/records/{prospect}/archive', [ProspectManagementController::class, 'archive'])->middleware('permission:manage prospects')->name('team.prospects.records.archive');
@@ -89,12 +115,62 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::post('/team/prospects/records/{prospect}/activities', [ProspectActivityController::class, 'store'])->middleware('permission:manage prospects')->name('team.prospects.activities.store');
     Route::patch('/team/prospects/records/{prospect}/activities/{activity}', [ProspectActivityController::class, 'update'])->middleware('permission:manage prospects')->name('team.prospects.activities.update');
     Route::delete('/team/prospects/records/{prospect}/activities/{activity}', [ProspectActivityController::class, 'destroy'])->middleware('permission:manage prospects')->name('team.prospects.activities.destroy');
+    Route::get('/team/prospects/pipeline', [ProspectManagementController::class, 'pipeline'])->middleware('permission:manage prospects')->name('team.prospects.pipeline');
+    Route::get('/team/prospects/follow-ups', [ProspectManagementController::class, 'followUps'])->middleware('permission:manage prospects')->name('team.prospects.follow-ups');
+    Route::get('/team/prospects/appointments', [ProspectManagementController::class, 'appointments'])->middleware('permission:manage prospects')->name('team.prospects.appointments');
+    Route::get('/team/prospects/access-manager', [ProspectManagementController::class, 'accessManager'])->middleware('permission:manage prospects')->name('team.prospects.access-manager');
+    Route::get('/team/prospects/shared-with-me', [ProspectManagementController::class, 'sharedWithMe'])->middleware('permission:manage prospects')->name('team.prospects.shared-with-me');
+    Route::get('/team/prospects/shared-by-me', [ProspectManagementController::class, 'sharedByMe'])->middleware('permission:manage prospects')->name('team.prospects.shared-by-me');
+    Route::get('/team/prospects/analytics', [ProspectManagementController::class, 'analytics'])->middleware('permission:manage prospects')->name('team.prospects.analytics');
+    Route::get('/team/prospects/ai-coach', [ProspectManagementController::class, 'aiCoach'])->middleware('permission:manage prospects')->name('team.prospects.ai-coach');
+    Route::get('/team/prospects/import', [ProspectManagementController::class, 'import'])->middleware('permission:import prospects')->name('team.prospects.import');
+    Route::get('/team/prospects/export', [ProspectManagementController::class, 'export'])->middleware('permission:export prospects')->name('team.prospects.export');
     Route::get('/team/prospects/{screen}', [ProspectManagementController::class, 'placeholder'])->middleware('permission:manage prospects')->name('team.prospects.screen');
+
+    Route::prefix('team/fna')->name('team.fna.')->group(function (): void {
+        Route::middleware('permission:manage fna records')->group(function (): void {
+            Route::get('/', [FnaManagementController::class, 'dashboard'])->name('dashboard');
+            Route::get('/records', [FnaManagementController::class, 'index'])->name('index');
+            Route::get('/records/create', [FnaManagementController::class, 'create'])->name('create');
+            Route::post('/records', [FnaManagementController::class, 'store'])->name('store');
+            Route::get('/records/{fnaRecord}', [FnaManagementController::class, 'show'])->name('show');
+            Route::get('/records/{fnaRecord}/edit', [FnaManagementController::class, 'edit'])->name('edit');
+            Route::get('/records/{fnaRecord}/wizard', [FnaManagementController::class, 'wizard'])->name('wizard');
+            Route::get('/dime-calculator', [FnaManagementController::class, 'dimeCalculator'])->name('dime');
+            Route::get('/records/{fnaRecord}/export', [FnaManagementController::class, 'export'])
+                ->middleware('permission:export fna records')
+                ->name('export');
+            Route::get('/records/{fnaRecord}/export/download', [FnaManagementController::class, 'exportDownload'])
+                ->middleware('permission:export fna records')
+                ->name('export.download');
+        });
+
+        Route::get('/cfm/review-queue', [FnaManagementController::class, 'cfmReviewQueue'])
+            ->middleware('permission:review trainee fna records')
+            ->name('cfm.review-queue');
+
+        Route::get('/reports/agency', [FnaManagementController::class, 'agencyReports'])
+            ->middleware('permission:view fna agency reports')
+            ->name('reports.agency');
+    });
+
+    Route::get('/team/prospects/records/{prospect}/fna', [FnaManagementController::class, 'prospectFnas'])
+        ->middleware('permission:manage prospects')
+        ->name('team.prospects.records.fna');
+
     Route::view('/resources', 'resources.index')->name('resources.index');
-    Route::view('/resources/documents', 'resources.documents')->name('resources.documents');
+    Route::get('/resources/documents', [ResourceDocumentsController::class, 'index'])->name('resources.documents');
+    Route::get('/resources/documents/{portalResource}/preview', [ResourceDocumentsController::class, 'preview'])->name('resources.documents.preview');
+    Route::get('/resources/documents/{portalResource}/view', [ResourceDocumentsController::class, 'view'])->name('resources.documents.view');
+    Route::get('/resources/documents/{portalResource}/download', [ResourceDocumentsController::class, 'download'])->name('resources.documents.download');
+    Route::post('/resources/documents/update-seeder', [ResourceDocumentsController::class, 'updateSeeder'])->name('resources.documents.update-seeder');
+    Route::get('/resources/forms/associate-participation-agreement', [AssociateParticipationAgreementController::class, 'show'])->name('resources.forms.associate-participation-agreement');
+    Route::post('/resources/forms/associate-participation-agreement', [AssociateParticipationAgreementController::class, 'store'])->name('resources.forms.associate-participation-agreement.store');
+    Route::get('/resources/forms/associate-participation-agreement/download', [AssociateParticipationAgreementController::class, 'downloadPdf'])->name('resources.forms.associate-participation-agreement.download');
     Route::view('/resources/videos', 'resources.videos')->name('resources.videos');
     Route::view('/resources/recorded-webinars', 'resources.recorded-webinars')->name('resources.recorded-webinars');
-    Route::view('/resources/zoom-links', 'resources.zoom-links')->name('resources.zoom-links');
+    Route::redirect('/resources/zoom-links', '/resources/links');
+    Route::get('/resources/links', [ResourceLinksController::class, 'index'])->name('resources.links');
     Route::get('/events', [CalendarController::class, 'agenda'])->middleware('permission:view calendar')->name('events.index');
     Route::get('/calendar', [CalendarController::class, 'index'])->middleware('permission:view calendar')->name('calendar.index');
     Route::post('/calendar', [CalendarController::class, 'store'])->middleware('permission:create calendar events')->name('calendar.store');
@@ -103,8 +179,9 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/calendar/day', [CalendarController::class, 'day'])->middleware('permission:view calendar')->name('calendar.day');
     Route::get('/calendar/agenda', [CalendarController::class, 'agenda'])->middleware('permission:view calendar')->name('calendar.agenda');
     Route::get('/calendar/events/{event}', [CalendarController::class, 'show'])->middleware('permission:view calendar')->name('calendar.events.show');
-    Route::patch('/calendar/categories/{category}', [CalendarController::class, 'updateCategory'])->middleware('permission:manage organization calendar')->name('calendar.categories.update');
-    Route::delete('/calendar/categories/{category}', [CalendarController::class, 'destroyCategory'])->middleware('permission:manage organization calendar')->name('calendar.categories.destroy');
+    Route::post('/calendar/categories', [CalendarController::class, 'storeCategory'])->middleware('permission:view calendar')->name('calendar.categories.store');
+    Route::patch('/calendar/categories/{category}', [CalendarController::class, 'updateCategory'])->middleware('permission:view calendar')->name('calendar.categories.update');
+    Route::delete('/calendar/categories/{category}', [CalendarController::class, 'destroyCategory'])->middleware('permission:view calendar')->name('calendar.categories.destroy');
     Route::get('/calendar/settings', [CalendarController::class, 'settings'])->middleware('permission:view calendar')->name('calendar.settings');
     Route::get('/calendar/export', [CalendarController::class, 'export'])->middleware('permission:view calendar')->name('calendar.export');
     Route::get('/bookings', [BookingController::class, 'dashboard'])->middleware('permission:view booking dashboard')->name('bookings.dashboard');
@@ -123,6 +200,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/invite-link', [ProfileController::class, 'updateInviteLink'])->name('profile.invite-link.update');
     Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
     Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
     Route::patch('/profile/invite-link', [ProfileController::class, 'updateInviteLink'])->name('profile.invite-link.update');
@@ -157,6 +235,8 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
                 Route::patch('/{resource}/{record}/status', [AdminManagementController::class, 'toggleStatus'])->name('status');
                 Route::delete('/{resource}/{record}', [AdminManagementController::class, 'destroy'])->name('destroy');
                 Route::patch('/{resource}/{record}/restore', [AdminManagementController::class, 'restore'])->name('restore');
+                Route::get('/resources/{record}/view-pdf', [AdminManagementController::class, 'viewResourcePdf'])->name('resources.view-pdf');
+                Route::post('/resources/{record}/generate-pdf', [AdminManagementController::class, 'generateResourcePdf'])->name('resources.generate-pdf');
             });
             Route::view('/roles', 'admin.roles.index')->middleware('permission:manage roles')->name('roles.index');
             Route::view('/ranks', 'admin.ranks.index')->middleware('role:super-admin|admin|agency-owner')->name('ranks.index');

@@ -89,13 +89,13 @@
                     Notify associate
                 </label>
                 <label class="flex items-center gap-2">
-                    <input type="hidden" name="require_cfm_approval" value="0">
-                    <input type="checkbox" name="require_cfm_approval" value="1" x-model="assignForm.requireApproval" class="rounded border-gray-600 bg-gray-800 text-amber-500" @checked(old('require_cfm_approval', false))>
-                    Require CFM approval
+                    <input type="hidden" name="require_cfm_approval" value="1">
+                    <input type="checkbox" value="1" class="rounded border-gray-600 bg-gray-800 text-amber-500" checked disabled>
+                    Require CFM confirmation
                 </label>
             </div>
 
-            <p class="text-xs text-gray-500">If you assign to an external hierarchy CFM, or check Require CFM approval, the assignment is saved as pending and the apprentice count will not increase until approved.</p>
+            <p class="text-xs text-gray-500">Assignments are saved as pending. The CFM receives a confirmation email and must accept before the member becomes an active trainee.</p>
 
             <div x-show="assignCfmId" x-text="getWorkloadWarning()" class="text-sm text-amber-300 bg-amber-900/20 border border-amber-500/20 p-3 rounded-lg"></div>
 

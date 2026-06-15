@@ -19,4 +19,10 @@ class FollowUpPolicy
     {
         return $this->canAccessProspect($user, $followUp->prospect, 'can_schedule_followups');
     }
+
+    public function update(User $user, ProspectFollowUp $followUp): bool
+    {
+        return (int) $followUp->assigned_user_id === $user->id
+            || $this->canAccessProspect($user, $followUp->prospect, 'can_schedule_followups');
+    }
 }

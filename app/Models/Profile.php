@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\ProfileLocationService;
 use App\Services\ProfilePhotoService;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -32,6 +33,9 @@ class Profile extends Model
     protected function casts(): array
     {
         return [
+            'country_id' => 'integer',
+            'state_province_id' => 'integer',
+            'timezone_id' => 'integer',
             'recruited_at' => 'date',
             'is_efg_active_associate' => 'boolean',
         ];
@@ -57,39 +61,19 @@ class Profile extends Model
         return $this->belongsTo(Timezone::class, 'timezone_id');
     }
 
-    public function getCountryAttribute(): ?string
+    protected function country(): Attribute
     {
-        if ($this->country_id === null) {
-            return null;
-        }
-
-        return $this->relationLoaded('countryRecord')
-            ? $this->countryRecord?->name
-            : $this->countryRecord()->value('name');
+        return Attribute::get(fn (): ?string => $this->countryRecord?->name);
     }
 
-    public function getProvinceAttribute(): ?string
+    protected function province(): Attribute
     {
-        if ($this->state_province_id === null) {
-            return null;
-        }
-
-        return $this->relationLoaded('stateProvince')
-            ? $this->stateProvince?->name
-            : $this->stateProvince()->value('name');
+        return Attribute::get(fn (): ?string => $this->stateProvince?->name);
     }
 
-    public function getTimezoneAttribute(): ?string
+    protected function timezone(): Attribute
     {
-        if ($this->timezone_id === null) {
-            return null;
-        }
-
-        $record = $this->relationLoaded('timezoneRecord')
-            ? $this->timezoneRecord
-            : $this->timezoneRecord()->first(['code', 'name']);
-
-        return $record?->code ?? $record?->name;
+        return Attribute::get(fn (): ?string => $this->timezoneRecord?->code ?? $this->timezoneRecord?->name);
     }
 
     public function fill(array $attributes)

@@ -75,15 +75,26 @@ class ProspectActivityController extends Controller
      */
     private function validatedActivityData(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'activity_type' => ['required', 'string', 'in:'.implode(',', array_keys(ProspectActivity::TYPES))],
             'subject' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
             'occurred_at' => ['required', 'date'],
-            'outcome' => ['nullable', 'string', 'max:255'],
+            'outcome' => ['nullable', 'string', 'max:80'],
             'next_action' => ['nullable', 'string', 'max:1000'],
             'next_follow_up_at' => ['nullable', 'date'],
         ]);
+
+        $metadata = is_array($validated['metadata'] ?? null) ? $validated['metadata'] : [];
+
+        if (filled($validated['subject'] ?? null)) {
+            $metadata['subject'] = $validated['subject'];
+        }
+
+        unset($validated['subject']);
+        $validated['metadata'] = $metadata;
+
+        return $validated;
     }
 
     private function syncProspectContactFields(Prospect $prospect, ProspectActivity $activity): void
@@ -101,6 +112,10 @@ class ProspectActivityController extends Controller
             $updates['next_follow_up_at'] = $activity->next_follow_up_at;
         }
 
+        if ($activity->occurred_at) {
+            $updates['last_activity_at'] = $activity->occurred_at;
+        }
+
         if ($updates !== []) {
             $prospect->update($updates);
         }
@@ -115,7 +130,7 @@ class ProspectActivityController extends Controller
             'id' => $activity->id,
             'activity_type' => $activity->activity_type,
             'activity_type_label' => ProspectActivity::TYPES[$activity->activity_type] ?? str($activity->activity_type)->title(),
-            'subject' => $activity->subject,
+            'subject' => $activity->metadata['subject'] ?? null,
             'notes' => $activity->notes,
             'occurred_at' => $activity->occurred_at?->toIso8601String(),
             'occurred_at_label' => $activity->occurred_at?->format('M j, Y g:i A'),

@@ -1,0 +1,58 @@
+<?php
+
+namespace Tests\Feature\Prospects;
+
+use App\Livewire\Prospects\ProspectQuickLogModal;
+use App\Models\Prospect;
+use App\Models\User;
+use Database\Seeders\ProspectFunnelSeeder;
+use Database\Seeders\ProspectLookupSeeder;
+use Database\Seeders\RankSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\TeamSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class ProspectQuickLogModalTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_quick_activity_pills_update_activity_type(): void
+    {
+        $this->seed([
+            RankSeeder::class,
+            RolePermissionSeeder::class,
+            TeamSeeder::class,
+            ProspectLookupSeeder::class,
+            ProspectFunnelSeeder::class,
+        ]);
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+
+        $prospect = Prospect::create([
+            'owner_id' => $user->id,
+            'pipeline_stage_id' => DB::table('pipeline_stages')->where('slug', 'new-lead')->value('id'),
+            'first_name' => 'Pill',
+            'last_name' => 'Test',
+            'status' => 'active',
+            'interest_level' => 'warm',
+            'priority' => 'medium',
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(ProspectQuickLogModal::class)
+            ->dispatch('open-prospect-quick-log-modal', prospectId: $prospect->id)
+            ->assertSet('show', true)
+            ->assertSet('activity_type', 'phone_call')
+            ->call('setQuickActivity', 'email')
+            ->assertSet('activity_type', 'email')
+            ->assertSet('activeTab', 'activity')
+            ->call('setQuickActivity', 'presentation')
+            ->assertSet('activity_type', 'presentation')
+            ->call('setQuickActivity', 'follow_up')
+            ->assertSet('activity_type', 'follow_up');
+    }
+}

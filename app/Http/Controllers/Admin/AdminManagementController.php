@@ -3,16 +3,27 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Rules\UrlOrRelativePath;
+use App\Models\PortalResource;
+use App\Services\DocumentLinkSyncService;
+use App\Services\ResourcePdfService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminManagementController extends Controller
 {
+    public function __construct(
+        private readonly ResourcePdfService $resourcePdf,
+        private readonly DocumentLinkSyncService $documentLinkSync,
+    ) {}
+
     public function index(): View
     {
         abort_unless($this->canViewManagementIndex(), 403);
@@ -51,8 +62,9 @@ class AdminManagementController extends Controller
             'records' => $records,
             'filters' => compact('search', 'trashed'),
             'canManage' => $this->canManageResource($resource),
-            'canUpdateSeeder' => $this->canManageResource($resource) && $this->isChecklistResource($resource),
-            'options' => $this->formOptions(),
+            'canDeleteRecords' => $this->canDeleteResourceRecords($resource),
+            'canUpdateSeeder' => $this->canManageResource($resource) && $this->isSeederUpdatableResource($resource),
+            'options' => ($config['use_inline_modals'] ?? true) ? $this->formOptionsFor($config) : [],
         ]);
     }
 
@@ -65,7 +77,7 @@ class AdminManagementController extends Controller
             'resource' => $resource,
             'config' => $config,
             'record' => null,
-            'options' => $this->formOptions(),
+            'options' => $this->formOptionsFor($config),
         ]);
     }
 
@@ -89,9 +101,12 @@ class AdminManagementController extends Controller
 
         $id = DB::table($config['table'])->insertGetId($validated);
 
+        $pdfStatus = $this->syncResourcePdf($resource, $id, (bool) $request->boolean('generate_pdf'));
+        $this->syncDocumentLinks($resource, $id);
+
         return redirect()
             ->route('admin.management.edit', [$resource, $id])
-            ->with('status', 'record-created');
+            ->with('status', $pdfStatus ?: 'record-created');
     }
 
     public function show(string $resource, int $record): View
@@ -120,7 +135,9 @@ class AdminManagementController extends Controller
             'resource' => $resource,
             'config' => $config,
             'record' => $row,
-            'options' => $this->formOptions(),
+            'options' => $this->formOptionsFor($config),
+            'canUpdateRecord' => $this->canUpdateResourceRecord($resource, $row),
+            'canDeleteRecord' => $this->canDeleteResourceRecords($resource),
         ]);
     }
 
@@ -128,6 +145,12 @@ class AdminManagementController extends Controller
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
+
+        $existing = DB::table($config['table'])->where('id', $record)->firstOrFail();
+
+        if ($response = $this->denyPortalResourceUpdate($resource, $existing)) {
+            return $response;
+        }
 
         $validated = $this->validatedData($request, $config, $record);
 
@@ -139,9 +162,56 @@ class AdminManagementController extends Controller
 
         DB::table($config['table'])->where('id', $record)->update($validated);
 
+        $pdfStatus = $this->syncResourcePdf(
+            $resource,
+            $record,
+            (bool) $request->boolean('generate_pdf'),
+        );
+        $this->syncDocumentLinks($resource, $record);
+
         return redirect()
             ->route('admin.management.edit', [$resource, $record])
-            ->with('status', 'record-updated');
+            ->with('status', $pdfStatus ?: 'record-updated');
+    }
+
+    public function generateResourcePdf(int $record): RedirectResponse
+    {
+        abort_unless($this->canManageResource('resources'), 403);
+
+        $portalResource = PortalResource::query()->findOrFail($record);
+
+        if ($response = $this->denyPortalResourceUpdate('resources', $portalResource)) {
+            return $response;
+        }
+
+        $this->resourcePdf->generate($portalResource);
+
+        $this->documentLinkSync->syncAll();
+
+        return redirect()
+            ->route('admin.management.edit', ['resources', $record])
+            ->with('status', 'resource-pdf-generated');
+    }
+
+    public function viewResourcePdf(int $record): BinaryFileResponse
+    {
+        abort_unless($this->canViewResource('resources'), 403);
+
+        $portalResource = \App\Models\PortalResource::query()->findOrFail($record);
+        abort_unless($portalResource->hasDownloadableFile() && $portalResource->hasPdfPreview(), 404);
+
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($portalResource->file_path), 404);
+
+        $filename = basename($portalResource->file_path) ?: str($portalResource->title)->slug().'.pdf';
+
+        return response()->file(
+            $disk->path($portalResource->file_path),
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            ],
+        );
     }
 
     public function toggleStatus(string $resource, int $record): RedirectResponse
@@ -165,13 +235,14 @@ class AdminManagementController extends Controller
     public function updateSeeder(string $resource): RedirectResponse
     {
         $this->resourceConfig($resource);
-        abort_unless($this->canManageResource($resource) && $this->isChecklistResource($resource), 403);
+        abort_unless($this->canManageResource($resource) && $this->isSeederUpdatableResource($resource), 403);
 
         $seederContent = match ($resource) {
             'onboarding-steps' => $this->buildOnboardingStepSeeder(),
             'licensing-steps' => $this->buildLicensingStepSeeder(),
             'apprenticeship-steps' => $this->buildFieldApprenticeshipProgramSeeder(),
             'cfm-training-modules' => $this->buildCfmTrainingModuleSeeder(),
+            'email-templates' => $this->buildEmailTemplateSeeder(),
         };
 
         File::put($this->seederPath($resource), $seederContent);
@@ -185,6 +256,7 @@ class AdminManagementController extends Controller
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
+        abort_unless($this->canDeleteResourceRecords($resource), 403);
 
         DB::table($config['table'])->where('id', $record)->update([
             'deleted_at' => now(),
@@ -200,6 +272,7 @@ class AdminManagementController extends Controller
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
+        abort_unless($this->canDeleteResourceRecords($resource), 403);
 
         DB::table($config['table'])->where('id', $record)->update([
             'deleted_at' => null,
@@ -228,6 +301,40 @@ class AdminManagementController extends Controller
         return $request->validate($rules);
     }
 
+    private function syncResourcePdf(string $resource, int $recordId, bool $forceGenerate): ?string
+    {
+        if ($resource !== 'resources') {
+            return null;
+        }
+
+        if (! $forceGenerate) {
+            return null;
+        }
+
+        $generated = $this->resourcePdf->generateIfEligible($recordId);
+
+        return $generated ? 'resource-pdf-generated' : null;
+    }
+
+    private function syncDocumentLinks(string $resource, int $recordId): void
+    {
+        if ($resource !== 'resources') {
+            return;
+        }
+
+        $portalResource = PortalResource::query()->find($recordId);
+
+        if (! $portalResource || ! in_array($portalResource->type, ['document', 'file'], true)) {
+            return;
+        }
+
+        if (blank($portalResource->content)) {
+            return;
+        }
+
+        $this->documentLinkSync->syncAll();
+    }
+
     private function resourceConfig(string $resource): array
     {
         $resources = $this->resources();
@@ -247,8 +354,26 @@ class AdminManagementController extends Controller
         return auth()->user()->hasAnyRole(['super-admin', 'admin']);
     }
 
+    private function canManageResource(string $resource): bool
+    {
+        if ($resource === 'resources') {
+            return auth()->user()->canManageDocuments();
+        }
+
+        if (auth()->user()->hasAnyRole(['super-admin', 'admin'])) {
+            return true;
+        }
+
+        return $this->isChecklistResource($resource)
+            && auth()->user()->hasRole('agency-owner');
+    }
+
     private function canViewResource(string $resource): bool
     {
+        if ($resource === 'resources') {
+            return auth()->user()->canManageDocuments();
+        }
+
         if (auth()->user()->hasAnyRole(['super-admin', 'admin'])) {
             return true;
         }
@@ -257,14 +382,33 @@ class AdminManagementController extends Controller
             && auth()->user()->hasAnyRole(['agency-owner', 'team-leader', 'certified-field-mentor', 'trainer']);
     }
 
-    private function canManageResource(string $resource): bool
+    private function canDeleteResourceRecords(string $resource): bool
     {
-        if (auth()->user()->hasAnyRole(['super-admin', 'admin'])) {
-            return true;
+        if ($resource === 'resources') {
+            return auth()->user()->canDeleteDocuments();
         }
 
-        return $this->isChecklistResource($resource)
-            && auth()->user()->hasRole('agency-owner');
+        return $this->canManageResource($resource);
+    }
+
+    private function canUpdateResourceRecord(string $resource, object $record): bool
+    {
+        if ($resource === 'resources') {
+            return auth()->user()->canUpdateDocument($record);
+        }
+
+        return $this->canManageResource($resource);
+    }
+
+    private function denyPortalResourceUpdate(string $resource, object $record): ?RedirectResponse
+    {
+        if ($resource !== 'resources' || $this->canUpdateResourceRecord($resource, $record)) {
+            return null;
+        }
+
+        return redirect()
+            ->back()
+            ->with('error', 'You can only update documents that you created. Contact an administrator if this record needs changes.');
     }
 
     private function isChecklistResource(string $resource): bool
@@ -275,6 +419,11 @@ class AdminManagementController extends Controller
             'apprenticeship-steps',
             'cfm-training-modules',
         ], true);
+    }
+
+    private function isSeederUpdatableResource(string $resource): bool
+    {
+        return $this->isChecklistResource($resource) || $resource === 'email-templates';
     }
 
     private function hasColumn(string $table, string $column): bool
@@ -293,6 +442,7 @@ class AdminManagementController extends Controller
             'licensing-steps' => database_path('seeders/LicensingStepSeeder.php'),
             'apprenticeship-steps' => database_path('seeders/FieldApprenticeshipProgramSeeder.php'),
             'cfm-training-modules' => database_path('seeders/CfmTrainingModuleSeeder.php'),
+            'email-templates' => database_path('seeders/EmailTemplateSeeder.php'),
         };
     }
 
@@ -556,6 +706,54 @@ class CfmTrainingModuleSeeder extends Seeder
 PHP;
     }
 
+    private function buildEmailTemplateSeeder(): string
+    {
+        $templates = DB::table('email_templates')
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->get(['key', 'name', 'subject', 'body', 'is_active'])
+            ->map(fn ($template) => [
+                'key' => $template->key,
+                'name' => $template->name,
+                'subject' => $template->subject,
+                'body' => $template->body,
+                'is_active' => (bool) $template->is_active,
+            ])
+            ->all();
+
+        $exportedTemplates = $this->exportPhpArray($templates, 2);
+
+        return <<<PHP
+<?php
+
+namespace Database\\Seeders;
+
+use App\\Models\\EmailTemplate;
+use Illuminate\\Database\\Seeder;
+
+class EmailTemplateSeeder extends Seeder
+{
+    public function run(): void
+    {
+        \$templates = {$exportedTemplates};
+
+        foreach (\$templates as \$template) {
+            EmailTemplate::updateOrCreate(
+                ['key' => \$template['key']],
+                [
+                    'name' => \$template['name'],
+                    'subject' => \$template['subject'],
+                    'body' => \$template['body'],
+                    'is_active' => \$template['is_active'],
+                ]
+            );
+        }
+    }
+}
+
+PHP;
+    }
+
     private function exportPhpArray(array $value, int $indent = 0): string
     {
         $export = var_export($value, true);
@@ -571,22 +769,62 @@ PHP;
         return preg_replace('/^/m', $spaces, $export);
     }
 
-    private function formOptions(): array
+    private function formOptionsFor(array $config): array
     {
-        return [
-            'users' => DB::table('users')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name', 'email']),
-            'teams' => DB::table('teams')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
-            'training_categories' => DB::table('training_categories')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
-            'training_modules' => DB::table('training_modules')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
-            'assessments' => DB::table('assessments')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
-            'questions' => DB::table('questions')->whereNull('deleted_at')->orderBy('question')->get(['id', 'question']),
-            'ranks' => DB::table('ranks')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'code', 'name']),
-            'apprenticeship_programs' => DB::table('apprenticeship_programs')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
-            'calendar_categories' => DB::table('calendar_categories')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name']),
-            'calendar_event_types' => DB::table('calendar_event_types')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name']),
-            'booking_event_types' => DB::table('booking_event_types')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
-            'availability_schedules' => DB::table('availability_schedules')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
-        ];
+        $types = collect($config['fields'])->pluck('type')->unique()->all();
+        $needs = fn (string ...$fieldTypes): bool => array_intersect($types, $fieldTypes) !== [];
+
+        $options = [];
+
+        if ($needs('user')) {
+            $options['users'] = DB::table('users')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name', 'email']);
+        }
+
+        if ($needs('team')) {
+            $options['teams'] = DB::table('teams')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']);
+        }
+
+        if ($needs('training_category')) {
+            $options['training_categories'] = DB::table('training_categories')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']);
+        }
+
+        if ($needs('training_module', 'training_module_optional')) {
+            $options['training_modules'] = DB::table('training_modules')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']);
+        }
+
+        if ($needs('assessment')) {
+            $options['assessments'] = DB::table('assessments')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']);
+        }
+
+        if ($needs('question')) {
+            $options['questions'] = DB::table('questions')->whereNull('deleted_at')->orderBy('question')->get(['id', 'question']);
+        }
+
+        if ($needs('rank')) {
+            $options['ranks'] = DB::table('ranks')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'code', 'name']);
+        }
+
+        if ($needs('apprenticeship_program')) {
+            $options['apprenticeship_programs'] = DB::table('apprenticeship_programs')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']);
+        }
+
+        if ($needs('calendar_category')) {
+            $options['calendar_categories'] = DB::table('calendar_categories')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name']);
+        }
+
+        if ($needs('calendar_event_type')) {
+            $options['calendar_event_types'] = DB::table('calendar_event_types')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name']);
+        }
+
+        if ($needs('booking_event_type')) {
+            $options['booking_event_types'] = DB::table('booking_event_types')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']);
+        }
+
+        if ($needs('availability_schedule')) {
+            $options['availability_schedules'] = DB::table('availability_schedules')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']);
+        }
+
+        return $options;
     }
 
     private function resources(): array
@@ -729,18 +967,22 @@ PHP;
             'resources' => [
                 'table' => 'resources',
                 'label' => 'Resources',
-                'description' => 'Manage resource links, files, and published status.',
+                'description' => 'Create and edit document library entries with rich content, then generate PDF files for members to download.',
                 'uses_creator' => true,
-                'order_by' => 'title',
-                'search' => ['title', 'description', 'type', 'url'],
-                'columns' => ['title', 'type', 'is_published'],
+                'use_inline_modals' => false,
+                'order_by' => 'sort_order',
+                'search' => ['title', 'description', 'type', 'url', 'category'],
+                'columns' => ['title', 'type', 'category', 'is_published', 'sort_order'],
                 'fields' => [
                     ['name' => 'title', 'label' => 'Title', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
-                    ['name' => 'type', 'label' => 'Type', 'type' => 'select', 'options' => ['link' => 'Link', 'file' => 'File', 'video' => 'Video', 'document' => 'Document'], 'rules' => ['required', 'string', 'max:100']],
-                    ['name' => 'url', 'label' => 'URL', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
-                    ['name' => 'file_path', 'label' => 'File Path', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'description', 'label' => 'Summary', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
+                    ['name' => 'type', 'label' => 'Type', 'type' => 'select', 'options' => ['document' => 'Document', 'file' => 'File', 'link' => 'Link', 'video' => 'Video'], 'rules' => ['required', 'string', 'max:100']],
+                    ['name' => 'category', 'label' => 'Category', 'type' => 'select', 'options' => \App\Support\ResourceDocumentCategories::optionsForSelect(), 'rules' => ['required', 'string', 'max:100']],
+                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'content', 'label' => 'Document Content', 'type' => 'rich_text', 'rows' => 18, 'help' => 'Compose the document body here. Use Generate PDF to convert this content into a downloadable PDF for the document library.', 'rules' => ['nullable', 'string']],
+                    ['name' => 'url', 'label' => 'External URL (optional)', 'type' => 'text', 'help' => 'Optional fallback link. Enter a full URL or a site-relative path such as resources/documents/welcome-packet.pdf.', 'rules' => ['nullable', 'string', 'max:255', new UrlOrRelativePath()]],
                     ['name' => 'is_published', 'label' => 'Published', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                    ['name' => 'is_featured', 'label' => 'Featured', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
                 ],
             ],
             'events' => [
@@ -926,15 +1168,34 @@ PHP;
             'email-templates' => [
                 'table' => 'email_templates',
                 'label' => 'Email Templates',
-                'description' => 'Manage database-backed email copy and activation.',
+                'description' => 'Manage transactional email subjects and body copy. Use merge tokens such as {{ member_name }} in subject and body; inactive templates are not sent.',
+                'use_inline_modals' => false,
                 'order_by' => 'name',
                 'search' => ['key', 'name', 'subject'],
                 'columns' => ['key', 'name', 'subject', 'is_active'],
+                'token_reference' => [
+                    'app_name',
+                    'member_name',
+                    'member_email',
+                    'sponsor_name',
+                    'agency_owner_name',
+                    'cfm_name',
+                    'cfm_email',
+                    'assigned_by_name',
+                    'confirmation_url',
+                    'dashboard_url',
+                    'profile_url',
+                    'registration_link',
+                    'registration_code',
+                    'expires_at',
+                    'cfm_portal_url',
+                    'first_contact_url',
+                ],
                 'fields' => [
-                    ['name' => 'key', 'label' => 'Key', 'type' => 'text', 'rules' => ['required', 'string', 'max:255'], 'unique' => true],
+                    ['name' => 'key', 'label' => 'Key', 'type' => 'text', 'help' => 'Stable slug used in code (lowercase, underscores).', 'rules' => ['required', 'string', 'max:255'], 'unique' => true],
                     ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
                     ['name' => 'subject', 'label' => 'Subject', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'body', 'label' => 'Body', 'type' => 'textarea', 'rules' => ['required', 'string']],
+                    ['name' => 'body', 'label' => 'Body', 'type' => 'rich_text', 'rows' => 14, 'help' => 'Use the editor for HTML formatting (paragraphs, lists, links). Merge tokens such as {{ member_name }} still work.', 'rules' => ['required', 'string']],
                     ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
                 ],
             ],
@@ -974,7 +1235,7 @@ PHP;
 
     private function stepResource(string $table, string $label, string $description, bool $countryAware = false): array
     {
-        $columns = ['title', 'responsible_parties', 'notified_parties', 'is_active', 'sort_order', 'is_required'];
+        $columns = ['title', 'responsible_parties', 'notified_parties', 'sort_order', 'is_required'];
         $fields = [
             ['name' => 'title', 'label' => 'Title', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
             ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
@@ -1006,6 +1267,7 @@ PHP;
             'table' => $table,
             'label' => $label,
             'description' => $description,
+            'use_inline_modals' => false,
             'order_by' => 'sort_order',
             'search' => $countryAware ? ['title', 'description', 'country'] : ['title', 'description'],
             'columns' => $columns,

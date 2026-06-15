@@ -6,6 +6,7 @@ use App\Models\MentorAssignment;
 use App\Models\User;
 use Database\Seeders\CfmManagementSeeder;
 use Database\Seeders\CfmTrainingModuleSeeder;
+use Database\Seeders\EmailTemplateSeeder;
 use Database\Seeders\FieldApprenticeshipProgramSeeder;
 use Database\Seeders\LicensingStepSeeder;
 use Database\Seeders\OnboardingStepSeeder;
@@ -25,6 +26,7 @@ class CfmAssignmentTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
             TeamSeeder::class,
             OnboardingStepSeeder::class,
             LicensingStepSeeder::class,
@@ -47,16 +49,29 @@ class CfmAssignmentTest extends TestCase
                 'notes' => 'Seeded assignment test',
             ])
             ->assertOk()
-            ->assertJsonPath('status', 'active');
+            ->assertJsonPath('status', 'pending');
 
         $associate->refresh();
-        $this->assertSame($cfm->id, $associate->mentor_id);
+        $this->assertNull($associate->mentor_id);
 
         $this->assertDatabaseHas('mentor_assignments', [
             'mentor_id' => $cfm->id,
             'apprentice_id' => $associate->id,
-            'status' => 'active',
+            'status' => 'pending',
         ]);
+    }
+
+    private function confirmAssignmentFor(User $cfm, User $associate): void
+    {
+        $assignment = MentorAssignment::query()
+            ->where('mentor_id', $cfm->id)
+            ->where('apprentice_id', $associate->id)
+            ->where('status', 'pending')
+            ->firstOrFail();
+
+        $this->actingAs($cfm)
+            ->post(route('cfm.portal.assignments.confirm', $assignment))
+            ->assertRedirect(route('cfm.portal'));
     }
 
     public function test_assignment_requires_cfm_approval_when_requested(): void
@@ -64,6 +79,7 @@ class CfmAssignmentTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
             TeamSeeder::class,
             OnboardingStepSeeder::class,
             LicensingStepSeeder::class,
@@ -101,6 +117,7 @@ class CfmAssignmentTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
             TeamSeeder::class,
             OnboardingStepSeeder::class,
             LicensingStepSeeder::class,
@@ -123,6 +140,8 @@ class CfmAssignmentTest extends TestCase
             ->assertRedirect(route('team.cfms'))
             ->assertSessionHas('status');
 
+        $this->confirmAssignmentFor($cfm, $associate);
+
         $associate->refresh();
         $this->assertSame($cfm->id, $associate->mentor_id);
     }
@@ -132,6 +151,7 @@ class CfmAssignmentTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
             TeamSeeder::class,
             OnboardingStepSeeder::class,
             LicensingStepSeeder::class,
@@ -163,6 +183,7 @@ class CfmAssignmentTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
             TeamSeeder::class,
             OnboardingStepSeeder::class,
             LicensingStepSeeder::class,
@@ -183,6 +204,8 @@ class CfmAssignmentTest extends TestCase
             ])
             ->assertOk();
 
+        $this->confirmAssignmentFor($maria, $associate);
+
         $associate->refresh();
         $this->assertSame($maria->id, $associate->mentor_id);
     }
@@ -192,6 +215,7 @@ class CfmAssignmentTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
             TeamSeeder::class,
             OnboardingStepSeeder::class,
             LicensingStepSeeder::class,
@@ -212,6 +236,8 @@ class CfmAssignmentTest extends TestCase
             ])
             ->assertOk();
 
+        $this->confirmAssignmentFor($james, $associate);
+
         $associate->refresh();
         $this->assertSame($james->id, $associate->mentor_id);
     }
@@ -221,6 +247,7 @@ class CfmAssignmentTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
             TeamSeeder::class,
             OnboardingStepSeeder::class,
             LicensingStepSeeder::class,

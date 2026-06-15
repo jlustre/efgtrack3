@@ -16,6 +16,9 @@ export function initPageChrome() {
 
     const hideLoading = () => {
         overlay?.classList.add('hidden');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
         overlay?.setAttribute('aria-hidden', 'true');
     };
 
@@ -39,11 +42,18 @@ export function initPageChrome() {
         }
     };
 
-    if (document.readyState === 'complete') {
+    const scheduleHideLoading = () => {
         hideLoading();
+        window.setTimeout(hideLoading, 8000);
+    };
+
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        scheduleHideLoading();
     } else {
-        window.addEventListener('load', hideLoading, { once: true });
+        document.addEventListener('DOMContentLoaded', scheduleHideLoading, { once: true });
     }
+
+    window.addEventListener('load', hideLoading, { once: true });
 
     window.addEventListener('pageshow', (event) => {
         if (event.persisted) {

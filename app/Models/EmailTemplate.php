@@ -31,16 +31,29 @@ class EmailTemplate extends Model
 
     public function renderBody(array $tokens): string
     {
-        return $this->render($this->body, $tokens);
+        $body = $this->body;
+
+        if (! $this->containsHtmlTags($body)) {
+            return nl2br($this->render($body, $tokens));
+        }
+
+        return $this->render($body, $tokens);
     }
 
     private function render(string $content, array $tokens): string
     {
         foreach ($tokens as $token => $value) {
-            $content = str_replace('{{ '.$token.' }}', $value, $content);
-            $content = str_replace('{{'.$token.'}}', $value, $content);
+            $escaped = e($value);
+
+            $content = str_replace('{{ '.$token.' }}', $escaped, $content);
+            $content = str_replace('{{'.$token.'}}', $escaped, $content);
         }
 
         return $content;
+    }
+
+    private function containsHtmlTags(string $content): bool
+    {
+        return $content !== strip_tags($content);
     }
 }

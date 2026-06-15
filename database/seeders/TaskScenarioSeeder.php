@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Rank;
 use App\Models\User;
+use App\Support\LocationOptions;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +14,12 @@ class TaskScenarioSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+        ]);
+
         $teamId = $this->teamId();
         $ranks = Rank::query()->pluck('id', 'code');
 
@@ -149,7 +156,7 @@ class TaskScenarioSeeder extends Seeder
     private function teamId(): int
     {
         DB::table('teams')->updateOrInsert(
-            ['name' => 'Elite Financial Growth Team'],
+            ['name' => 'Wealth Legacy Alliance'],
             [
                 'description' => 'Demo team seeded for task-center scenarios.',
                 'is_active' => true,
@@ -159,7 +166,7 @@ class TaskScenarioSeeder extends Seeder
             ]
         );
 
-        return (int) DB::table('teams')->where('name', 'Elite Financial Growth Team')->value('id');
+        return (int) DB::table('teams')->where('name', 'Wealth Legacy Alliance')->value('id');
     }
 
     private function user(string $email, string $name, string $role, ?int $rankId, int $teamId, array $attributes = []): User
@@ -201,7 +208,7 @@ class TaskScenarioSeeder extends Seeder
     {
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-            array_merge([
+            LocationOptions::profileAttributesForStorage(array_merge([
                 'phone' => '555-0100',
                 'city' => 'Vancouver',
                 'province' => 'British Columbia',
@@ -210,7 +217,7 @@ class TaskScenarioSeeder extends Seeder
                 'efg_associate_id' => 'EFG-DEMO-'.$user->id,
                 'is_efg_active_associate' => true,
                 'recruited_at' => now()->subDays(6)->toDateString(),
-            ], $overrides)
+            ], $overrides))
         );
     }
 

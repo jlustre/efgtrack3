@@ -86,6 +86,19 @@ class DownlineHierarchyService
             return User::query();
         }
 
+        return $this->hierarchyMembersQuery($viewer);
+    }
+
+    /**
+     * Members included in dashboard stat cards and detail modals — always limited to the viewer's hierarchy.
+     */
+    public function dashboardMembersQuery(User $viewer): Builder
+    {
+        return $this->hierarchyMembersQuery($viewer);
+    }
+
+    private function hierarchyMembersQuery(User $viewer): Builder
+    {
         $query = $this->descendantsQuery($viewer, includeSelf: true);
 
         if ($viewer->hasPermissionTo('view direct downline') && ! $viewer->hasPermissionTo('view full downline')) {
@@ -201,8 +214,12 @@ class DownlineHierarchyService
             ->groupBy('sponsor_id')
             ->map(fn (Collection $group) => $group->sortBy('name')->values());
 
+        $memberIds = $members->keys()->all();
+        $totalDownlineByMember = $this->totalDownlineCountsFor($memberIds);
+        $directRecruitsByMember = $this->directRecruitsCountsFor($memberIds);
+
         $rows = [];
-        $walk = function (int $memberId, int $depth) use (&$walk, &$rows, $members, $childrenBySponsor, $root): void {
+        $walk = function (int $memberId, int $depth) use (&$walk, &$rows, $members, $childrenBySponsor, $root, $totalDownlineByMember, $directRecruitsByMember): void {
             /** @var User $member */
             $member = $members->get($memberId);
             if (! $member) {
@@ -211,7 +228,6 @@ class DownlineHierarchyService
 
             $branchDepth = (int) ($member->branch_depth ?? $member->getAttribute('branch_depth') ?? $depth);
             $childGroup = $childrenBySponsor->get($memberId, collect());
-            $metrics = $this->memberMetrics($member);
 
             $rows[] = [
                 'id' => $member->id,
@@ -222,8 +238,8 @@ class DownlineHierarchyService
                 'rank' => $member->rank?->code ?? 'FA',
                 'sponsor' => $member->sponsor?->name ?? '—',
                 'country' => $member->profile?->country ?? 'Global',
-                'direct_recruits' => (int) ($member->direct_recruits_count ?? $metrics['direct_recruits']),
-                'total_downline' => $metrics['total_downline'],
+                'direct_recruits' => (int) ($member->direct_recruits_count ?? $directRecruitsByMember[$member->id] ?? 0),
+                'total_downline' => (int) ($totalDownlineByMember[$member->id] ?? 0),
                 'is_active' => (bool) $member->is_active,
                 'has_children' => $childGroup->isNotEmpty(),
                 'member_url' => route('team.member', $member),
@@ -238,5 +254,44 @@ class DownlineHierarchyService
         $walk($root->id, 0);
 
         return $rows;
+    }
+
+    /**
+     * @param  list<int>  $userIds
+     * @return array<int, int>
+     */
+    private function totalDownlineCountsFor(array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        return DB::table('user_hierarchy_paths')
+            ->select('ancestor_id', DB::raw('COUNT(*) as count'))
+            ->whereIn('ancestor_id', $userIds)
+            ->where('depth', '>', 0)
+            ->groupBy('ancestor_id')
+            ->pluck('count', 'ancestor_id')
+            ->map(fn ($count) => (int) $count)
+            ->all();
+    }
+
+    /**
+     * @param  list<int>  $userIds
+     * @return array<int, int>
+     */
+    private function directRecruitsCountsFor(array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        return User::query()
+            ->select('sponsor_id', DB::raw('COUNT(*) as count'))
+            ->whereIn('sponsor_id', $userIds)
+            ->groupBy('sponsor_id')
+            ->pluck('count', 'sponsor_id')
+            ->map(fn ($count) => (int) $count)
+            ->all();
     }
 }

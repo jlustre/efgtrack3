@@ -43,13 +43,13 @@ class CfmPortalService
         DB::transaction(function () use ($cfm, $data): void {
             $cfm->profile()->updateOrCreate(
                 ['user_id' => $cfm->id],
-                [
+                LocationOptions::profileAttributesForStorage([
                     'phone' => $data['phone'] ?? null,
                     'city' => $data['city'] ?? null,
                     'province' => $data['province'] ?? null,
                     'country' => $data['country'] ?? null,
                     'timezone' => $data['timezone'] ?? null,
-                ]
+                ])
             );
 
             $mentorProfile = CfmMentorProfile::firstOrCreate(

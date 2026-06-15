@@ -26,7 +26,12 @@ class MemberUplineService
 
     public function agencyOwnerName(User $user): string
     {
-        return $this->resolveAgencyOwner($user)?->name ?? '—';
+        return $this->agencyOwner($user)?->name ?? '—';
+    }
+
+    public function agencyOwner(User $user): ?User
+    {
+        return $this->resolveAgencyOwner($user);
     }
 
     private function resolveAgencyOwner(User $user): ?User

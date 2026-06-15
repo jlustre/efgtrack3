@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Policies\AppointmentPolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+#[UsePolicy(AppointmentPolicy::class)]
 class ProspectAppointment extends Model
 {
     use SoftDeletes;
@@ -37,5 +40,10 @@ class ProspectAppointment extends Model
     public function type(): BelongsTo
     {
         return $this->belongsTo(AppointmentType::class, 'appointment_type_id');
+    }
+
+    public function calendarEvent(): BelongsTo
+    {
+        return $this->belongsTo(CalendarEvent::class, 'calendar_event_id');
     }
 }

@@ -18,6 +18,8 @@ class Timezone extends Model
     protected function casts(): array
     {
         return [
+            'country_id' => 'integer',
+            'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];
     }

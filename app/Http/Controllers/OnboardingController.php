@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\OnboardingStep;
-use App\Support\ProfileLocationSql;
+use App\Models\User;
+use App\Support\ProfileLocationQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +14,11 @@ class OnboardingController extends Controller
 {
     public function index(Request $request): View
     {
-        $user = $request->user()->loadMissing(['profile', 'sponsor', 'mentor']);
+        $user = $request->user()->loadMissing([
+            'profile.countryRecord',
+            'sponsor',
+            'mentor',
+        ]);
         $country = $user->profile?->country;
 
         $steps = OnboardingStep::query()
@@ -82,7 +86,7 @@ class OnboardingController extends Controller
     {
         abort_if($step->trashed() || ! $step->is_active, 404);
 
-        $country = $request->user()->profile?->country;
+        $country = $request->user()->loadMissing('profile.countryRecord')->profile?->country;
         $isApplicable = OnboardingStep::query()
             ->whereKey($step->id)
             ->applicableToCountry($country)
@@ -154,14 +158,11 @@ class OnboardingController extends Controller
 
     private function confirmationItemsFor(User $user)
     {
-        $query = DB::table('user_onboarding_progress')
+        return DB::table('user_onboarding_progress')
             ->join('users', 'users.id', '=', 'user_onboarding_progress.user_id')
             ->join('onboarding_steps', 'onboarding_steps.id', '=', 'user_onboarding_progress.onboarding_step_id')
-            ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id');
-
-        ProfileLocationSql::joinMemberCountry($query);
-
-        return $query
+            ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
+            ->tap(fn ($query) => ProfileLocationQuery::joinCountry($query))
             ->where('user_onboarding_progress.status', 'pending_confirmation')
             ->whereNull('users.deleted_at')
             ->whereNull('onboarding_steps.deleted_at')
@@ -175,7 +176,7 @@ class OnboardingController extends Controller
                 'users.email as member_email',
                 'users.sponsor_id',
                 'users.mentor_id',
-                ProfileLocationSql::memberCountrySelect(),
+                ProfileLocationQuery::memberCountrySelect(),
                 'onboarding_steps.title',
                 'onboarding_steps.description',
                 'onboarding_steps.notified_parties'

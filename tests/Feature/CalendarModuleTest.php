@@ -94,7 +94,7 @@ class CalendarModuleTest extends TestCase
                 'description' => 'Review prospect goals and prepare next steps.',
                 'starts_at' => now()->addDays(2)->setTime(14, 0)->format('Y-m-d H:i:s'),
                 'ends_at' => now()->addDays(2)->setTime(15, 0)->format('Y-m-d H:i:s'),
-                'timezone' => 'America/Vancouver',
+                'timezone' => 'PST',
                 'visibility' => 'shared_team',
                 'status' => 'scheduled',
                 'location' => 'Virtual',
@@ -150,7 +150,7 @@ class CalendarModuleTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('name="category_ids[]"', false)
-            ->assertSee('New Associate Fast Start Training')
+            ->assertSee('New Associate Fast Start')
             ->assertDontSee('Licensing Milestone Review');
 
         $this->assertSame(
@@ -161,7 +161,7 @@ class CalendarModuleTest extends TestCase
         $this->actingAs($user)
             ->get(route('calendar.index'))
             ->assertOk()
-            ->assertSee('New Associate Fast Start Training')
+            ->assertSee('New Associate Fast Start')
             ->assertDontSee('Licensing Milestone Review');
     }
 
@@ -179,7 +179,13 @@ class CalendarModuleTest extends TestCase
             ->assertOk();
 
         $preference = UserCalendarPreference::where('user_id', $user->id)->firstOrFail();
-        $defaultIds = CalendarCategory::where('is_active', true)->orderBy('sort_order')->pluck('id')->values()->all();
+        $defaultIds = CalendarCategory::query()
+            ->where('is_active', true)
+            ->whereNull('user_id')
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->values()
+            ->all();
 
         $this->assertSame($defaultIds, $preference->visible_calendar_categories);
         $this->assertSame('month', $preference->default_view);
@@ -218,6 +224,158 @@ class CalendarModuleTest extends TestCase
             ->assertRedirect(route('calendar.index'));
 
         $this->assertSoftDeleted('calendar_categories', ['id' => $category->id]);
+    }
+
+    public function test_member_can_create_personal_calendar_category(): void
+    {
+        $this->seedCalendar();
+
+        $user = User::where('email', 'calendar-member@efgtrack.com')->firstOrFail();
+
+        $this->actingAs($user)
+            ->post(route('calendar.categories.store'), [
+                'name' => 'Client Follow-ups',
+                'color' => '#AABBCC',
+                'return_to' => route('calendar.index'),
+            ])
+            ->assertRedirect(route('calendar.index'));
+
+        $category = CalendarCategory::where('name', 'Client Follow-ups')->firstOrFail();
+
+        $this->assertSame($user->id, $category->user_id);
+        $this->assertFalse($category->is_public);
+        $this->assertContains($category->id, UserCalendarPreference::where('user_id', $user->id)->firstOrFail()->visible_calendar_categories);
+
+        $this->actingAs($user)
+            ->get(route('calendar.index'))
+            ->assertOk()
+            ->assertSee('Client Follow-ups')
+            ->assertSee('Private');
+    }
+
+    public function test_private_calendar_category_is_hidden_from_other_users(): void
+    {
+        $this->seedCalendar();
+
+        $owner = User::where('email', 'calendar-member@efgtrack.com')->firstOrFail();
+        $other = User::where('email', 'calendar-leader@efgtrack.com')->firstOrFail();
+
+        $category = CalendarCategory::create([
+            'user_id' => $owner->id,
+            'name' => 'Secret Pipeline',
+            'slug' => 'u'.$owner->id.'-secret-pipeline',
+            'color' => '#112233',
+            'icon' => 'calendar',
+            'sort_order' => 910,
+            'is_active' => true,
+            'is_public' => false,
+        ]);
+
+        $this->actingAs($other)
+            ->get(route('calendar.index'))
+            ->assertOk()
+            ->assertDontSee('Secret Pipeline');
+
+        $this->assertFalse(
+            CalendarCategory::query()->visibleTo($other)->whereKey($category->id)->exists()
+        );
+    }
+
+    public function test_public_calendar_category_is_visible_to_other_users(): void
+    {
+        $this->seedCalendar();
+
+        $owner = User::where('email', 'calendar-member@efgtrack.com')->firstOrFail();
+        $other = User::where('email', 'calendar-leader@efgtrack.com')->firstOrFail();
+
+        CalendarCategory::create([
+            'user_id' => $owner->id,
+            'name' => 'Shared Coaching',
+            'slug' => 'u'.$owner->id.'-shared-coaching',
+            'color' => '#445566',
+            'icon' => 'calendar',
+            'sort_order' => 920,
+            'is_active' => true,
+            'is_public' => true,
+        ]);
+
+        $this->actingAs($other)
+            ->get(route('calendar.index'))
+            ->assertOk()
+            ->assertSee('Shared Coaching')
+            ->assertSee('Public');
+    }
+
+    public function test_member_can_update_and_delete_own_calendar_category(): void
+    {
+        $this->seedCalendar();
+
+        $user = User::where('email', 'calendar-member@efgtrack.com')->firstOrFail();
+
+        $category = CalendarCategory::create([
+            'user_id' => $user->id,
+            'name' => 'My Tasks',
+            'slug' => 'u'.$user->id.'-my-tasks',
+            'color' => '#778899',
+            'icon' => 'calendar',
+            'sort_order' => 930,
+            'is_active' => true,
+            'is_public' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('calendar.categories.update', $category), [
+                'name' => 'My Priorities',
+                'color' => '#99AABB',
+                'is_public' => '1',
+                'return_to' => route('calendar.index'),
+            ])
+            ->assertRedirect(route('calendar.index'));
+
+        $category->refresh();
+        $this->assertSame('My Priorities', $category->name);
+        $this->assertTrue($category->is_public);
+
+        $this->actingAs($user)
+            ->delete(route('calendar.categories.destroy', $category), [
+                'return_to' => route('calendar.index'),
+            ])
+            ->assertRedirect(route('calendar.index'));
+
+        $this->assertSoftDeleted('calendar_categories', ['id' => $category->id]);
+    }
+
+    public function test_member_cannot_manage_another_users_calendar_category(): void
+    {
+        $this->seedCalendar();
+
+        $owner = User::where('email', 'calendar-member@efgtrack.com')->firstOrFail();
+        $other = User::where('email', 'calendar-leader@efgtrack.com')->firstOrFail();
+
+        $category = CalendarCategory::create([
+            'user_id' => $owner->id,
+            'name' => 'Owner Only',
+            'slug' => 'u'.$owner->id.'-owner-only',
+            'color' => '#AABBCC',
+            'icon' => 'calendar',
+            'sort_order' => 940,
+            'is_active' => true,
+            'is_public' => false,
+        ]);
+
+        $this->actingAs($other)
+            ->patch(route('calendar.categories.update', $category), [
+                'name' => 'Hijacked',
+                'color' => '#000000',
+                'return_to' => route('calendar.index'),
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($other)
+            ->delete(route('calendar.categories.destroy', $category), [
+                'return_to' => route('calendar.index'),
+            ])
+            ->assertForbidden();
     }
 
     private function seedCalendar(): void

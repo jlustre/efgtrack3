@@ -8,49 +8,52 @@ use Illuminate\Support\Facades\DB;
 
 class TimezoneSeeder extends Seeder
 {
+    /**
+     * @return array<string, string|null>
+     */
+    private function timezoneCountries(): array
+    {
+        return [
+            'PST' => null,
+            'MST' => null,
+            'CST' => null,
+            'EST' => null,
+            'HST' => null,
+            'Halifax Time' => 'Canada',
+            'Canada Pacific Time' => 'Canada',
+            'Canada Mountain Time' => 'Canada',
+            'Canada Central Time' => 'Canada',
+            'Canada Eastern Time' => 'Canada',
+            'Philippines Time' => 'Philippines',
+            'Mexico Pacific Time' => 'Mexico',
+            'Mexico Mountain Time' => 'Mexico',
+            'Mexico Central Time' => 'Mexico',
+            'Mexico Eastern Time' => 'Mexico',
+        ];
+    }
+
     public function run(): void
     {
         $countryIds = DB::table('countries')->pluck('id', 'name');
-        $sort = 0;
+        $sortOrder = 10;
 
         foreach (LocationOptions::timezones() as $code => $label) {
-            $countryId = $this->guessCountryId($code, $countryIds);
+            $countryName = $this->timezoneCountries()[$code] ?? null;
+            $countryId = $countryName ? ($countryIds[$countryName] ?? null) : null;
 
             DB::table('timezones')->updateOrInsert(
                 ['code' => $code],
                 [
                     'country_id' => $countryId,
                     'name' => $label,
-                    'sort_order' => $sort++,
+                    'sort_order' => $sortOrder,
                     'is_active' => true,
-                    'updated_at' => now(),
                     'created_at' => now(),
+                    'updated_at' => now(),
                 ],
             );
-        }
-    }
 
-    /**
-     * @param  \Illuminate\Support\Collection<string, int>  $countryIds
-     */
-    private function guessCountryId(string $code, $countryIds): ?int
-    {
-        if (str_starts_with($code, 'Canada')) {
-            return $countryIds['Canada'] ?? null;
+            $sortOrder += 10;
         }
-
-        if (str_starts_with($code, 'Mexico')) {
-            return $countryIds['Mexico'] ?? null;
-        }
-
-        if ($code === 'Philippines Time') {
-            return $countryIds['Philippines'] ?? null;
-        }
-
-        if (in_array($code, ['PST', 'MST', 'CST', 'EST'], true)) {
-            return $countryIds['United States'] ?? null;
-        }
-
-        return null;
     }
 }

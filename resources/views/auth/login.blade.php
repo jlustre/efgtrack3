@@ -27,11 +27,11 @@
                                 Welcome Back
                             </h1>
                             <div class="mt-4 h-0.5 w-16 bg-gradient-to-r from-[#D4AF37] to-transparent"></div>
-                            <p class="mt-5 max-w-md border-l-2 border-[#D4AF37]/50 pl-4 text-base leading-7 text-slate-300">
+                            <p class="mt-5 max-w-md border-l-2 border-[#D4AF37]/50 pl-4 text-base leading-5 text-slate-300">
                                 Continue tracking onboarding, licensing, mentorship, training, team progress, and rank advancement.
                             </p>
 
-                            <div class="mt-8 space-y-4 text-sm text-slate-200">
+                            <div class="mt-4 space-y-1 text-sm text-slate-200">
                                 <div class="flex items-center gap-3">
                                     <span class="h-2 w-2 rounded-full bg-[#D4AF37] shadow-[0_0_8px_#D4AF37]"></span>
                                     Private member dashboard

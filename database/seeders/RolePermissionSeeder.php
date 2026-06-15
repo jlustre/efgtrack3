@@ -79,6 +79,14 @@ class RolePermissionSeeder extends Seeder
             'manage team bookings',
             'view apprentice bookings',
             'manage booking settings',
+            'manage fna records',
+            'view shared fna records',
+            'submit fna for review',
+            'review trainee fna records',
+            'view fna agency reports',
+            'view fna financial details',
+            'export fna records',
+            'manage fna settings',
         ];
 
         foreach ($permissions as $permission) {
@@ -166,6 +174,13 @@ class RolePermissionSeeder extends Seeder
                 'cancel bookings',
                 'view apprentice bookings',
                 'manage team bookings',
+                'manage fna records',
+                'view shared fna records',
+                'submit fna for review',
+                'review trainee fna records',
+                'view fna agency reports',
+                'view fna financial details',
+                'export fna records',
             ],
             'certified-field-mentor' => [
                 'view dashboard',
@@ -200,6 +215,11 @@ class RolePermissionSeeder extends Seeder
                 'cancel bookings',
                 'view apprentice bookings',
                 'manage booking settings',
+                'manage fna records',
+                'view shared fna records',
+                'review trainee fna records',
+                'view fna financial details',
+                'export fna records',
             ],
             'trainer' => [
                 'view dashboard',
@@ -257,6 +277,11 @@ class RolePermissionSeeder extends Seeder
                 'book mentor sessions',
                 'reschedule bookings',
                 'cancel bookings',
+                'manage fna records',
+                'view shared fna records',
+                'submit fna for review',
+                'view fna financial details',
+                'export fna records',
             ],
             'associate' => [
                 'view dashboard',
@@ -287,6 +312,11 @@ class RolePermissionSeeder extends Seeder
                 'book mentor sessions',
                 'reschedule bookings',
                 'cancel bookings',
+                'manage fna records',
+                'view shared fna records',
+                'submit fna for review',
+                'view fna financial details',
+                'export fna records',
             ],
             'new-recruit' => [
                 'view dashboard',
@@ -306,6 +336,11 @@ class RolePermissionSeeder extends Seeder
                 'book mentor sessions',
                 'reschedule bookings',
                 'cancel bookings',
+                'manage fna records',
+                'view shared fna records',
+                'submit fna for review',
+                'view fna financial details',
+                'export fna records',
             ],
         ];
 

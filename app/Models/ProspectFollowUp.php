@@ -2,13 +2,18 @@
 
 namespace App\Models;
 
+use App\Policies\FollowUpPolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+#[UsePolicy(FollowUpPolicy::class)]
 class ProspectFollowUp extends Model
 {
     use SoftDeletes;
+
+    protected $table = 'prospect_followups';
 
     protected $guarded = [];
 

@@ -37,12 +37,25 @@
 
     <div>
         <label for="{{ $fieldId }}" class="block text-sm font-semibold text-[#0B1F3A]">{{ $field['label'] }}</label>
+        @if (! empty($field['help']))
+            <p class="mt-1 text-xs leading-5 text-slate-500">{{ $field['help'] }}</p>
+        @endif
 
         @if ($type === 'textarea')
             <textarea
                 id="{{ $fieldId }}"
                 name="{{ $field['name'] }}"
-                rows="{{ $field['name'] === 'body' ? 8 : 4 }}"
+                rows="{{ $field['rows'] ?? ($field['name'] === 'body' ? 8 : 4) }}"
+                class="mt-2 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+            >{{ $value }}</textarea>
+        @endif
+
+        @if ($type === 'rich_text')
+            <textarea
+                id="{{ $fieldId }}"
+                name="{{ $field['name'] }}"
+                rows="{{ $field['rows'] ?? 14 }}"
+                data-rich-text
                 class="mt-2 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
             >{{ $value }}</textarea>
         @endif
@@ -164,7 +177,7 @@
             >
         @endif
 
-        @if (! in_array($type, array_merge(['textarea', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url'], $relationshipSelectTypes), true))
+        @if (! in_array($type, array_merge(['textarea', 'rich_text', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url'], $relationshipSelectTypes), true))
             <input
                 id="{{ $fieldId }}"
                 name="{{ $field['name'] }}"

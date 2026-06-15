@@ -91,8 +91,87 @@ class TopbarNavigationTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Open notifications')
+            ->assertSee('Notifications', false)
             ->assertSee('Licensing item approved')
-            ->assertSee('1 unread update');
+            ->assertSee('1 unread update')
+            ->assertSee('Mark All Read', false)
+            ->assertSee('View All', false);
+    }
+
+    public function test_dashboard_notification_panel_can_mark_notification_read(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+        $notificationId = (string) Str::uuid();
+
+        DB::table('notifications')->insert([
+            'id' => $notificationId,
+            'type' => 'database',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $user->id,
+            'data' => json_encode([
+                'title' => 'CFM session scheduled',
+                'message' => 'Your mentor session is tomorrow at 10 AM.',
+                'category' => 'Mentor Assignment',
+                'action_url' => route('team.cfms'),
+            ]),
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('CFM session scheduled')
+            ->assertSee('Mark Read', false)
+            ->assertSee('Open', false);
+
+        $this->actingAs($user)
+            ->post(route('notifications.mark-read', $notificationId))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertNotNull(DB::table('notifications')->where('id', $notificationId)->value('read_at'));
+    }
+
+    public function test_dashboard_notification_panel_can_mark_all_read(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+
+        DB::table('notifications')->insert([
+            [
+                'id' => (string) Str::uuid(),
+                'type' => 'database',
+                'notifiable_type' => User::class,
+                'notifiable_id' => $user->id,
+                'data' => json_encode(['title' => 'Alert one', 'message' => 'First alert', 'category' => 'General']),
+                'read_at' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => (string) Str::uuid(),
+                'type' => 'database',
+                'notifiable_type' => User::class,
+                'notifiable_id' => $user->id,
+                'data' => json_encode(['title' => 'Alert two', 'message' => 'Second alert', 'category' => 'Training']),
+                'read_at' => null,
+                'created_at' => now()->subMinute(),
+                'updated_at' => now()->subMinute(),
+            ],
+        ]);
+
+        $this->actingAs($user)
+            ->from(route('dashboard'))
+            ->post(route('notifications.mark-all-read'))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertSame(0, $user->fresh()->unreadNotifications()->count());
     }
 
     public function test_notification_center_can_mark_notifications_read(): void
@@ -174,7 +253,7 @@ class TopbarNavigationTest extends TestCase
             'resources.documents',
             'resources.videos',
             'resources.recorded-webinars',
-            'resources.zoom-links',
+            'resources.links',
         ];
 
         foreach ($routes as $route) {

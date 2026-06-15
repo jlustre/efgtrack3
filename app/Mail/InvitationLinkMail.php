@@ -3,6 +3,8 @@
 namespace App\Mail;
 
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 
 class InvitationLinkMail extends Mailable
 {
@@ -11,16 +13,21 @@ class InvitationLinkMail extends Mailable
         public string $emailBody,
         public string $senderName,
         public string $senderEmail,
-    ) {
-        //
+    ) {}
+
+    public function envelope(): Envelope
+    {
+        return new Envelope(
+            from: new \Illuminate\Mail\Mailables\Address($this->senderEmail, $this->senderName),
+            replyTo: [new \Illuminate\Mail\Mailables\Address($this->senderEmail, $this->senderName)],
+            subject: $this->customSubject,
+        );
     }
 
-    public function build(): self
+    public function content(): Content
     {
-        return $this
-            ->from($this->senderEmail, $this->senderName)
-            ->replyTo($this->senderEmail, $this->senderName)
-            ->subject($this->customSubject)
-            ->text('emails.invitation-link');
+        return new Content(
+            htmlString: $this->emailBody,
+        );
     }
 }

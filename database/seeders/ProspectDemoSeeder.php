@@ -137,7 +137,7 @@ class ProspectDemoSeeder extends Seeder
     private function teamId(): int
     {
         DB::table('teams')->updateOrInsert(
-            ['name' => 'Elite Financial Growth Team'],
+            ['name' => 'Wealth Legacy Alliance'],
             [
                 'description' => 'Default team for local development and seeded demo users.',
                 'is_active' => true,
@@ -147,7 +147,7 @@ class ProspectDemoSeeder extends Seeder
             ]
         );
 
-        return (int) DB::table('teams')->where('name', 'Elite Financial Growth Team')->value('id');
+        return (int) DB::table('teams')->where('name', 'Wealth Legacy Alliance')->value('id');
     }
 
     private function user(string $email, string $name, string $role, ?int $rankId, int $teamId): User

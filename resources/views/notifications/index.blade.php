@@ -2,8 +2,8 @@
     <div class="space-y-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Activity Center</p>
-                <h1 class="text-2xl font-semibold text-[#0B1F3A]">Notifications</h1>
+                <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Notifications</p>
+                <h1 class="text-2xl font-semibold text-[#0B1F3A]">All notifications</h1>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                     Personal alerts for mentorship, apprenticeship, training, assessments, announcements, events, and rank progress.
                 </p>
@@ -49,37 +49,24 @@
                             $tone = match (strtolower($category)) {
                                 'mentorship', 'mentor assignment' => 'bg-[#C8A24A]',
                                 'training' => 'bg-emerald-500',
+                                'licensing' => 'bg-red-500',
                                 'event', 'events' => 'bg-sky-500',
                                 'rank advancement' => 'bg-purple-500',
+                                'announcement', 'announcements' => 'bg-orange-500',
                                 default => 'bg-[#0B1F3A]',
                             };
+                            $actionUrl = data_get($notification->data, 'action_url')
+                                ?? data_get($notification->data, 'action_link.url')
+                                ?? data_get($notification->data, 'action_link');
                         @endphp
 
-                        <article class="flex gap-4 px-5 py-4 transition hover:bg-slate-50">
-                            <div class="mt-1 h-3 w-3 shrink-0 rounded-full {{ $tone }}"></div>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <h3 class="text-sm font-semibold text-[#0B1F3A]">{{ data_get($notification->data, 'title', 'Portal notification') }}</h3>
-                                    <span class="w-fit rounded-full px-2 py-1 text-xs font-semibold {{ $notification->read() ? 'bg-slate-100 text-slate-500' : 'bg-[#C8A24A]/20 text-[#0B1F3A]' }}">
-                                        {{ $notification->read() ? 'Read' : 'Unread' }}
-                                    </span>
-                                </div>
-                                <p class="mt-2 text-sm leading-6 text-slate-600">
-                                    {{ data_get($notification->data, 'message', data_get($notification->data, 'body', 'Open notifications to review the latest portal activity.')) }}
-                                </p>
-                                <div class="mt-3 flex flex-wrap items-center gap-3">
-                                    <p class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ $category }} &middot; {{ $notification->created_at->diffForHumans() }}</p>
-                                    @unless ($notification->read())
-                                        <form method="POST" action="{{ route('notifications.mark-read', $notification->id) }}">
-                                            @csrf
-                                            <button class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
-                                                Mark Read
-                                            </button>
-                                        </form>
-                                    @endunless
-                                </div>
-                            </div>
-                        </article>
+                        <x-notification-item
+                            :notification="$notification"
+                            :tone="$tone"
+                            :action-url="$actionUrl"
+                            variant="page"
+                            class="px-5 py-4"
+                        />
                     @empty
                         <div class="px-5 py-10 text-center text-sm text-slate-500">
                             No notifications yet.

@@ -11,32 +11,34 @@ class StateProvinceSeeder extends Seeder
     public function run(): void
     {
         $countryIds = DB::table('countries')->pluck('id', 'name');
-        $provinceCodes = [
-            'Canada' => LocationOptions::class.'::canadaProvinceCodes',
-        ];
 
         foreach (LocationOptions::provincesByCountry() as $countryName => $provinces) {
             $countryId = $countryIds[$countryName] ?? null;
 
-            if (! $countryId) {
+            if ($countryId === null) {
                 continue;
             }
 
-            $sort = 0;
+            $sortOrder = 10;
 
-            foreach ($provinces as $provinceName => $label) {
-                $code = LocationOptions::provinceDisplayCode($countryName, $provinceName);
+            foreach ($provinces as $provinceName => $provinceLabel) {
+                $name = is_string($provinceLabel) ? $provinceLabel : $provinceName;
 
                 DB::table('state_provinces')->updateOrInsert(
-                    ['country_id' => $countryId, 'name' => $provinceName],
                     [
-                        'code' => $code,
-                        'sort_order' => $sort++,
+                        'country_id' => $countryId,
+                        'name' => $name,
+                    ],
+                    [
+                        'code' => LocationOptions::provinceDisplayCode($countryName, $name),
+                        'sort_order' => $sortOrder,
                         'is_active' => true,
-                        'updated_at' => now(),
                         'created_at' => now(),
+                        'updated_at' => now(),
                     ],
                 );
+
+                $sortOrder += 10;
             }
         }
     }

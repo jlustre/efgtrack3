@@ -65,7 +65,7 @@
                                 <label for="event-category" class="block text-sm font-semibold text-[#0B1F3A]">Calendar Category</label>
                                 <select id="event-category" name="calendar_category_id" class="mt-2 block w-full rounded-lg border-[#516070]/40 bg-white text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                                     <option value="">Use type category</option>
-                                    @foreach ($categories as $category)
+                                    @foreach (($assignableCategories ?? $categories) as $category)
                                         <option value="{{ $category->id }}" @selected(old('calendar_category_id') == $category->id)>{{ $category->name }}</option>
                                     @endforeach
                                 </select>
@@ -107,9 +107,9 @@
                             <div>
                                 <label for="event-timezone" class="block text-sm font-semibold text-[#0B1F3A]">Timezone</label>
                                 <select id="event-timezone" name="timezone" required class="mt-2 block w-full rounded-lg border-[#516070]/40 bg-white text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
-                                    @php($selectedTimezone = old('timezone', auth()->user()->profile?->timezone ?? 'America/Vancouver'))
-                                    @foreach ($americaTimezones as $timezone)
-                                        <option value="{{ $timezone }}" @selected($selectedTimezone === $timezone)>{{ str($timezone)->replace('America/', '')->replace('_', ' ') }}</option>
+                                    @php($selectedTimezone = old('timezone', auth()->user()->profile?->timezone ?? 'PST'))
+                                    @foreach ($eventTimezones as $code => $label)
+                                        <option value="{{ $code }}" @selected($selectedTimezone === $code)>{{ $label }}</option>
                                     @endforeach
                                 </select>
                                 @error('timezone') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror

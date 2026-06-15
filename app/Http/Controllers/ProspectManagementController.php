@@ -3,13 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Prospect;
+use App\Services\Prospects\ProspectExportService;
+use App\Services\Prospects\ProspectFunnelService;
+use App\Services\Prospects\ProspectShareService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProspectManagementController extends Controller
 {
+    public function __construct(
+        private ProspectFunnelService $funnels,
+        private ProspectShareService $shares,
+    ) {}
     public function index(Request $request): View
     {
         $user = $request->user();
@@ -259,6 +268,7 @@ class ProspectManagementController extends Controller
             ->when($request->filled('prospect_stage'), fn ($query) => $query->where('pipeline_stage_id', $request->integer('prospect_stage')))
             ->when($request->filled('prospect_source'), fn ($query) => $query->where('prospect_source_id', $request->integer('prospect_source')))
             ->when($request->filled('prospect_interest'), fn ($query) => $query->where('interest_level', $request->string('prospect_interest')))
+            ->when($request->boolean('prospect_converted'), fn ($query) => $query->whereNotNull('converted_to'))
             ->orderByDesc('updated_at')
             ->paginate(10, ['*'], 'prospects_page')
             ->withQueryString();
@@ -307,23 +317,88 @@ class ProspectManagementController extends Controller
         ]);
     }
 
-    public function placeholder(Request $request, string $screen): View|RedirectResponse
+    public function create(): View
+    {
+        $this->authorize('create', Prospect::class);
+
+        return view('team.prospect-create');
+    }
+
+    public function pipeline(): View
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return view('team.prospect-pipeline');
+    }
+
+    public function followUps(): View
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return view('team.prospect-follow-ups');
+    }
+
+    public function appointments(): View
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return view('team.prospect-appointments');
+    }
+
+    public function accessManager(): View
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return view('team.prospect-access-manager');
+    }
+
+    public function sharedWithMe(): View
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return view('team.prospect-shared-with-me');
+    }
+
+    public function sharedByMe(): View
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return view('team.prospect-shared-by-me');
+    }
+
+    public function analytics(): View
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return view('team.prospect-analytics');
+    }
+
+    public function aiCoach(): View
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return view('team.prospect-ai-coach');
+    }
+
+    public function import(): View
+    {
+        abort_unless(auth()->user()?->can('import prospects'), 403);
+
+        return view('team.prospect-import');
+    }
+
+    public function export(Request $request, ProspectExportService $exports): StreamedResponse
+    {
+        $this->authorize('viewAny', Prospect::class);
+
+        return $exports->streamForUser($request->user());
+    }
+
+    public function placeholder(Request $request, string $screen): View
     {
         abort_unless(in_array($screen, [
-            'create',
-            'pipeline',
-            'follow-ups',
-            'appointments',
-            'shared-with-me',
-            'shared-by-me',
-            'access-manager',
-            'import',
             'settings',
         ], true), 404);
-
-        if ($screen === 'create') {
-            return redirect()->route('team.prospects.create');
-        }
 
         return view('team.prospect-screen', [
             'screen' => str($screen)->replace('-', ' ')->title(),
@@ -332,47 +407,46 @@ class ProspectManagementController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
-    {
-        $this->authorize('create', Prospect::class);
-
-        return view('team.prospect-record', [
-            'mode' => 'create',
-            'prospect' => new Prospect([
-                'status' => 'active',
-                'interest_level' => 'warm',
-                'priority' => 'medium',
-            ]),
-            ...$this->prospectFormOptions(),
-        ]);
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        $this->authorize('create', Prospect::class);
-
-        $validated = $this->validatedProspectData($request);
-
-        $prospect = Prospect::create([
-            ...$validated,
-            'owner_id' => $request->user()->id,
-            'status' => 'active',
-            'is_archived' => false,
-        ]);
-
-        return redirect()
-            ->route('team.prospects.records.show', $prospect)
-            ->with('status', 'Prospect created.');
-    }
-
-    public function show(Prospect $prospect): View
+    public function show(Request $request, Prospect $prospect): View
     {
         $this->authorize('view', $prospect);
 
+        $user = $request->user();
+
+        if ((int) $prospect->owner_id !== $user->id) {
+            $this->shares->logAccess($prospect, $user, 'view');
+        }
+
         return view('team.prospect-record', [
-            'mode' => 'show',
-            'prospect' => $prospect->load(['source:id,name', 'stage:id,name']),
-            ...$this->prospectFormOptions(),
+            'prospect' => $prospect->load([
+                'source:id,name',
+                'stage:id,name',
+                'funnel:id,name,key',
+                'types:id,name',
+                'interests:id,name',
+                'tags:id,name',
+                'conversions.convertedBy:id,name',
+                'conversions.createdUser:id,name',
+            ]),
+        ]);
+    }
+
+    public function activity(Request $request, Prospect $prospect): View
+    {
+        $this->authorize('view', $prospect);
+
+        $user = $request->user();
+
+        if ((int) $prospect->owner_id !== $user->id) {
+            $this->shares->logAccess($prospect, $user, 'view');
+        }
+
+        return view('team.prospect-activity', [
+            'prospect' => $prospect->load([
+                'source:id,name',
+                'stage:id,name',
+                'funnel:id,name,key',
+            ]),
         ]);
     }
 
@@ -380,10 +454,18 @@ class ProspectManagementController extends Controller
     {
         $this->authorize('update', $prospect);
 
-        return view('team.prospect-record', [
-            'mode' => 'edit',
-            'prospect' => $prospect->load(['source:id,name', 'stage:id,name']),
-            ...$this->prospectFormOptions(),
+        $prospect = $prospect->load(['source:id,name', 'stage:id,name', 'funnel:id,name,key']);
+        $prospectFunnelId = $this->resolveProspectFunnelId($prospect);
+
+        return view('team.prospect-edit', [
+            'prospect' => $prospect,
+            'prospectFunnelId' => $prospectFunnelId,
+            'funnelTypes' => config('prospects.funnel_types'),
+            'fnaStatuses' => config('prospects.fna_statuses'),
+            'sources' => DB::table('prospect_sources')->where('is_active', true)->orderBy('sort_order')->get(),
+            'stages' => $prospectFunnelId
+                ? $this->funnels->stagesForFunnel($prospectFunnelId)
+                : DB::table('pipeline_stages')->whereNull('user_id')->where('is_active', true)->orderBy('sort_order')->get(),
         ]);
     }
 
@@ -391,11 +473,48 @@ class ProspectManagementController extends Controller
     {
         $this->authorize('update', $prospect);
 
-        $prospect->update($this->validatedProspectData($request));
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
+            'preferred_name' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:60'],
+            'home_phone' => ['nullable', 'string', 'max:60'],
+            'work_phone' => ['nullable', 'string', 'max:60'],
+            'address_line_1' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'state_province' => ['nullable', 'string', 'max:255'],
+            'country' => ['nullable', 'string', 'max:255'],
+            'postal_code' => ['nullable', 'string', 'max:40'],
+            'funnel_type' => ['required', 'in:insurance,recruiting,both'],
+            'prospect_funnel_id' => ['nullable', 'exists:prospect_funnels,id'],
+            'prospect_source_id' => ['nullable', 'exists:prospect_sources,id'],
+            'pipeline_stage_id' => ['nullable', 'exists:pipeline_stages,id'],
+            'status' => ['required', 'string', 'max:60'],
+            'interest_level' => ['required', 'in:cold,warm,hot'],
+            'interest_score' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'priority' => ['required', 'in:low,medium,high,urgent'],
+            'fna_status' => ['nullable', 'string', 'max:40'],
+            'referral_source_name' => ['nullable', 'string', 'max:255'],
+            'campaign_name' => ['nullable', 'string', 'max:255'],
+            'next_follow_up_at' => ['nullable', 'date'],
+            'notes_summary' => ['nullable', 'string'],
+        ]);
+
+        try {
+            $validated['prospect_funnel_id'] = $this->funnels->resolveFunnel(
+                $validated['funnel_type'],
+                $validated['prospect_funnel_id'] ?? null,
+            )->id;
+        } catch (ModelNotFoundException) {
+            unset($validated['prospect_funnel_id'], $validated['funnel_type']);
+        }
+
+        $this->funnels->updateProspect($prospect, $request->user(), $validated);
 
         return redirect()
             ->route('team.prospects.records.show', $prospect)
-            ->with('status', 'Prospect updated.');
+            ->with('status', 'Prospect updated successfully.');
     }
 
     public function archive(Prospect $prospect): RedirectResponse
@@ -422,50 +541,6 @@ class ProspectManagementController extends Controller
         return redirect()
             ->route('team.prospects')
             ->with('status', 'Prospect deleted.');
-    }
-
-    private function prospectFormOptions(): array
-    {
-        return [
-            'pipelineStages' => DB::table('pipeline_stages')->whereNull('user_id')->where('is_active', true)->orderBy('sort_order')->get(),
-            'sources' => DB::table('prospect_sources')->where('is_active', true)->orderBy('sort_order')->get(),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validatedProspectData(Request $request): array
-    {
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:60'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'occupation' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'string', 'max:60'],
-            'interest_level' => ['required', 'in:cold,warm,hot'],
-            'priority' => ['required', 'in:low,medium,high,urgent'],
-            'pipeline_stage_id' => ['nullable', 'exists:pipeline_stages,id'],
-            'prospect_source_id' => ['nullable', 'exists:prospect_sources,id'],
-            'next_follow_up_at' => ['nullable', 'date'],
-            'notes_summary' => ['nullable', 'string'],
-        ]);
-
-        if (blank($validated['pipeline_stage_id'] ?? null)) {
-            $validated['pipeline_stage_id'] = DB::table('pipeline_stages')
-                ->whereNull('user_id')
-                ->where('is_active', true)
-                ->where('slug', 'new-lead')
-                ->value('id');
-        }
-
-        if (blank($validated['prospect_source_id'] ?? null)) {
-            unset($validated['prospect_source_id']);
-        }
-
-        return $validated;
     }
 
     private function screenData(Request $request): array
@@ -572,5 +647,18 @@ class ProspectManagementController extends Controller
                 ->limit(25)
                 ->get(),
         ];
+    }
+
+    private function resolveProspectFunnelId(Prospect $prospect): ?int
+    {
+        if ($prospect->prospect_funnel_id) {
+            return (int) $prospect->prospect_funnel_id;
+        }
+
+        try {
+            return $this->funnels->resolveFunnel($prospect->funnel_type ?? 'insurance')->id;
+        } catch (ModelNotFoundException) {
+            return null;
+        }
     }
 }

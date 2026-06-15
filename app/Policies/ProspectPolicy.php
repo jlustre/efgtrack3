@@ -41,4 +41,9 @@ class ProspectPolicy
     {
         return (int) $prospect->owner_id === $user->id || $user->hasAnyRole(['super-admin', 'admin']);
     }
+
+    public function convert(User $user, Prospect $prospect): bool
+    {
+        return (int) $prospect->owner_id === $user->id || $user->hasAnyRole(['super-admin', 'admin']);
+    }
 }

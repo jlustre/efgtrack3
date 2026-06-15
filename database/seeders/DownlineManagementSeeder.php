@@ -7,6 +7,7 @@ use App\Models\Rank;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
+use App\Support\LocationOptions;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -60,10 +61,16 @@ class DownlineManagementSeeder extends Seeder
 
     public function run(): void
     {
+        $this->call([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+        ]);
+
         $this->randomSeed = self::FAKER_SEED;
 
         $this->team = Team::firstOrCreate(
-            ['name' => 'Elite Financial Growth Team'],
+            ['name' => 'Wealth Legacy Alliance'],
             ['description' => 'Default downline team for EFGTrack demo hierarchy.', 'is_active' => true]
         );
 
@@ -324,10 +331,10 @@ class DownlineManagementSeeder extends Seeder
     private function seedProfiles(): void
     {
         $countries = [
-            ['Canada', 'Vancouver', 'America/Vancouver'],
-            ['United States', 'Phoenix', 'America/Phoenix'],
-            ['Canada', 'Toronto', 'America/Toronto'],
-            ['United States', 'Dallas', 'America/Chicago'],
+            ['Canada', 'Vancouver', 'Canada Pacific Time'],
+            ['United States', 'Phoenix', 'MST'],
+            ['Canada', 'Toronto', 'Canada Eastern Time'],
+            ['United States', 'Dallas', 'CST'],
         ];
 
         User::query()
@@ -339,7 +346,7 @@ class DownlineManagementSeeder extends Seeder
 
                 Profile::updateOrCreate(
                     ['user_id' => $user->id],
-                    [
+                    LocationOptions::profileAttributesForStorage([
                         'phone' => '555-01'.str_pad((string) ($index % 100), 2, '0', STR_PAD_LEFT),
                         'city' => $city,
                         'country' => $country,
@@ -348,7 +355,7 @@ class DownlineManagementSeeder extends Seeder
                         'efg_associate_id' => 'EFG-'.$user->id,
                         'is_efg_active_associate' => true,
                         'recruited_at' => $user->joined_at,
-                    ]
+                    ])
                 );
             });
     }

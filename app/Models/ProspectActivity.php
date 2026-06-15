@@ -20,23 +20,14 @@ class ProspectActivity extends Model
         'other' => 'Other',
     ];
 
-    protected $fillable = [
-        'prospect_id',
-        'user_id',
-        'activity_type',
-        'subject',
-        'notes',
-        'occurred_at',
-        'outcome',
-        'next_action',
-        'next_follow_up_at',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {
         return [
             'occurred_at' => 'datetime',
             'next_follow_up_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 

@@ -15,12 +15,17 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             LocationLookupSeeder::class,
             EmailTemplateSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             TeamSeeder::class,
             OnboardingStepSeeder::class,
             LicensingStepSeeder::class,
             FieldApprenticeshipProgramSeeder::class,
             CfmTrainingModuleSeeder::class,
+            CfmTraineeChecklistItemSeeder::class,
             ProspectLookupSeeder::class,
+            ProspectFunnelSeeder::class,
             UsersSeeder::class,
             TaskScenarioSeeder::class,
             TaskManagementSeeder::class,
@@ -35,10 +40,15 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CfmManagementSeeder::class,
             ProspectDemoSeeder::class,
-            
+            ProspectModuleTestSeeder::class,
+            NotificationDemoSeeder::class,
             CalendarModuleSeeder::class,
+            FnaLookupSeeder::class,
+            FnaDemoSeeder::class,
             UserCalendarPreferenceSeeder::class,
             BookingSchedulingSeeder::class,
+            ResourceDocumentSeeder::class,
+            ResourceLinkSeeder::class,
         ]);
 
         $admin = User::updateOrCreate(

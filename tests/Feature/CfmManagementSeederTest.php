@@ -152,8 +152,7 @@ class CfmManagementSeederTest extends TestCase
             ->assertSee('Lisa Morgan', false)
             ->assertSee('FAP Queue — California', false)
             ->assertSee('FAP Queue — Washington', false)
-            ->assertSee('Licensed in associate province', false)
-            ->assertSee('US license match', false)
+            ->assertSee('Smart Recommendations', false)
             ->assertSee('ON, CA', false);
     }
 }

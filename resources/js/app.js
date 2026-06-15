@@ -7,15 +7,23 @@ import orgChartBoard from './org-chart-board';
 import downlineHierarchyTable from './downline-hierarchy-table';
 import profilePhotoUpload from './profile-photo-upload';
 import prospectActivitiesModal from './prospect-activities-modal';
+import genealogyTreePan from './genealogy-tree-pan';
+import dashboardStats from './dashboard-stats';
+import prospectKanbanBoard from './prospect-kanban-board';
 
 window.Alpine = Alpine;
 
-Alpine.data('taskManagement', taskManagement);
-Alpine.data('cfmManagement', cfmManagement);
-Alpine.data('profileTableFilter', profileTableFilter);
-Alpine.data('orgChartBoard', orgChartBoard);
-Alpine.data('downlineHierarchyTable', downlineHierarchyTable);
-Alpine.data('profilePhotoUpload', profilePhotoUpload);
-Alpine.data('prospectActivitiesModal', prospectActivitiesModal);
+document.addEventListener('alpine:init', () => {
+    Alpine.data('taskManagement', taskManagement);
+    Alpine.data('cfmManagement', cfmManagement);
+    Alpine.data('profileTableFilter', profileTableFilter);
+    Alpine.data('orgChartBoard', orgChartBoard);
+    Alpine.data('downlineHierarchyTable', downlineHierarchyTable);
+    Alpine.data('profilePhotoUpload', profilePhotoUpload);
+    Alpine.data('prospectActivitiesModal', prospectActivitiesModal);
+    Alpine.data('genealogyTreePan', genealogyTreePan);
+    Alpine.data('dashboardStats', dashboardStats);
+    Alpine.data('prospectKanbanBoard', prospectKanbanBoard);
+});
 
 Alpine.start();

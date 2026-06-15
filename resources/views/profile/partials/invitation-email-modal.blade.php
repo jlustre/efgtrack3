@@ -1,4 +1,9 @@
-<div x-show="{{ $modalState }}" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+<div
+    x-show="{{ $modalState }}"
+    x-cloak
+    x-effect="if ({{ $modalState }}) { $nextTick(() => window.efgInitRichText?.('{{ $inputPrefix }}_message')) }"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"
+>
     <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl" x-on:click.outside="{{ $modalState }} = false">
         <div class="flex items-start justify-between gap-4">
             <div>
@@ -25,8 +30,14 @@
 
             <div>
                 <x-input-label for="{{ $inputPrefix }}_message" :value="__('Message')" />
-                <textarea id="{{ $inputPrefix }}_message" name="message" rows="12" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]" required>{{ old('message', $emailPreview['body']) }}</textarea>
-                <p class="mt-2 text-xs text-slate-500">The registration link must remain in the message. Add the recipient name before sending.</p>
+                <textarea
+                    id="{{ $inputPrefix }}_message"
+                    name="message"
+                    rows="12"
+                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+                    required
+                >{!! old('message', $emailPreview['body']) !!}</textarea>
+                <p class="mt-2 text-xs text-slate-500">The registration link must remain in the message. Formatting matches what the recipient will see in their inbox.</p>
                 <x-input-error class="mt-2" :messages="$errors->get('message')" />
             </div>
 

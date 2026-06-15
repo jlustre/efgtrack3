@@ -41,7 +41,8 @@ export default function cfmManagement(initial = {}) {
         assignableAssociates: initial.assignableAssociates ?? [],
         fapQueue: initial.fapQueue ?? [],
         cfmCandidates: initial.cfmCandidates ?? [],
-        aiSuggestions: initial.aiSuggestions ?? [],
+        recommendationsByAssociate: initial.recommendationsByAssociate ?? {},
+        selectedRecommendationAssociateId: initial.defaultRecommendationAssociateId ?? null,
         cfms: [],
         addCfmForm: {
             userId: '',
@@ -235,6 +236,29 @@ export default function cfmManagement(initial = {}) {
             );
         },
 
+        get selectedRecommendationAssociate() {
+            if (! this.selectedRecommendationAssociateId) {
+                return null;
+            }
+
+            return this.fapQueue.find(
+                (row) => String(row.id) === String(this.selectedRecommendationAssociateId)
+            ) ?? null;
+        },
+
+        get aiSuggestions() {
+            if (! this.selectedRecommendationAssociateId) {
+                return [{
+                    type: 'hint',
+                    detail: 'Select an associate from the FAP queue to see personalized CFM matches.',
+                }];
+            }
+
+            return this.recommendationsByAssociate[String(this.selectedRecommendationAssociateId)]
+                ?? this.recommendationsByAssociate[this.selectedRecommendationAssociateId]
+                ?? [];
+        },
+
         get assignableCfmsForSelectedAssociate() {
             const associate = this.selectedAssignAssociate;
 
@@ -388,7 +412,12 @@ export default function cfmManagement(initial = {}) {
             this.showExportModal = true;
         },
 
+        selectAssociateForRecommendations(associate) {
+            this.selectedRecommendationAssociateId = associate.id;
+        },
+
         assignFromQueue(associate) {
+            this.selectAssociateForRecommendations(associate);
             this.assignAssociateId = String(associate.id);
             this.openAssign();
         },
@@ -579,7 +608,10 @@ export default function cfmManagement(initial = {}) {
         },
 
         selectAiSuggestion(item) {
-            const match = this.cfms.find((c) => c.name === item.cfmName);
+            const match = item.cfmId
+                ? this.cfms.find((c) => c.id === item.cfmId)
+                : this.cfms.find((c) => c.name === item.cfmName);
+
             if (match) {
                 this.selectCfm(match);
             }

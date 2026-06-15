@@ -10,20 +10,21 @@ class CountrySeeder extends Seeder
 {
     public function run(): void
     {
-        $codes = LocationOptions::countryDisplayCodes();
-        $sort = 0;
+        $sortOrder = 10;
 
-        foreach (LocationOptions::countries() as $country) {
+        foreach (LocationOptions::countries() as $countryName) {
             DB::table('countries')->updateOrInsert(
-                ['name' => $country],
+                ['name' => $countryName],
                 [
-                    'code' => $codes[$country] ?? strtoupper(substr($country, 0, 2)),
-                    'sort_order' => $sort++,
+                    'code' => LocationOptions::countryDisplayCode($countryName),
+                    'sort_order' => $sortOrder,
                     'is_active' => true,
-                    'updated_at' => now(),
                     'created_at' => now(),
+                    'updated_at' => now(),
                 ],
             );
+
+            $sortOrder += 10;
         }
     }
 }
