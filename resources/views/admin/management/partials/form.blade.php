@@ -10,6 +10,14 @@
             }
         }
 
+        if (is_string($value) && in_array($name, ['data', 'recipients', 'notification_template', 'action_link', 'channels', 'placeholders'], true)) {
+            try {
+                return json_encode(json_decode($value, true, 512, JSON_THROW_ON_ERROR), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            } catch (\Throwable) {
+                return $value;
+            }
+        }
+
         return $value;
     };
 
@@ -25,6 +33,9 @@
         'calendar_event_type',
         'booking_event_type',
         'availability_schedule',
+        'notification_type',
+        'notification_trigger',
+        'notification_template',
     ];
 @endphp
 
@@ -58,6 +69,17 @@
                 data-rich-text
                 class="mt-2 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
             >{{ $value }}</textarea>
+        @endif
+
+        @if ($type === 'json')
+            <textarea
+                id="{{ $fieldId }}"
+                name="{{ $field['name'] }}"
+                rows="6"
+                placeholder='{"label":"Open item","url":"/dashboard"}'
+                class="mt-2 block w-full rounded-md border-slate-300 font-mono text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+            >{{ $value }}</textarea>
+            <p class="mt-2 text-xs leading-5 text-slate-500">Enter valid JSON.</p>
         @endif
 
         @if ($type === 'boolean')
@@ -150,6 +172,9 @@
                     'calendar_event_type' => 'calendar_event_types',
                     'booking_event_type' => 'booking_event_types',
                     'availability_schedule' => 'availability_schedules',
+                    'notification_type' => 'notification_types',
+                    'notification_trigger' => 'notification_triggers',
+                    'notification_template' => 'notification_templates',
                 };
             @endphp
             <select
@@ -177,7 +202,11 @@
             >
         @endif
 
+<<<<<<< HEAD
         @if (! in_array($type, array_merge(['textarea', 'rich_text', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url'], $relationshipSelectTypes), true))
+=======
+        @if (! in_array($type, array_merge(['textarea', 'json', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url'], $relationshipSelectTypes), true))
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             <input
                 id="{{ $fieldId }}"
                 name="{{ $field['name'] }}"

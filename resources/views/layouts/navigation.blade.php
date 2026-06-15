@@ -51,12 +51,29 @@
         return false;
     };
 
+    $user = auth()->user()?->loadMissing('profile');
+    $isEmployee = $user?->isEmployee() ?? false;
+
     $topItems = [
         ['label' => 'My Dashboard', 'route' => 'dashboard'],
+<<<<<<< HEAD
         ['label' => 'My Profile', 'route' => 'profile.edit', 'active' => ['profile.*']],
+=======
+    ];
+
+    if ($isEmployee) {
+        $topItems[] = ['label' => 'Facilities Websites', 'route' => 'facilities.index', 'active' => ['facilities.*']];
+        $topItems[] = ['label' => 'My Employment', 'route' => 'employment.index', 'active' => ['employment.*']];
+    } else {
+        $topItems[] = ['label' => 'Pre-employment', 'route' => 'pre-employment.index', 'active' => ['pre-employment.*']];
+    }
+
+    $topItems = array_merge($topItems, [
+        ['label' => 'My Messages', 'route' => 'messages.index', 'active' => ['messages.*']],
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         ['label' => 'CFM Management', 'route' => 'team.cfms', 'access' => 'canAccessCfmManagement'],
         ['label' => 'CFM Portal', 'route' => 'cfm.portal', 'access' => 'canAccessCfmPortal'],
-    ];
+    ]);
 
     $groups = [
         [
@@ -115,6 +132,7 @@
                 ['label' => 'User Management', 'route' => 'admin.users.index', 'active' => ['admin.users.*'], 'roles' => ['super-admin', 'admin', 'agency-owner']],
                 ['label' => 'Roles & Permissions', 'route' => 'admin.roles.index', 'permissions' => ['manage roles']],
                 ['label' => 'Ranks', 'route' => 'admin.management.resource.index', 'params' => ['ranks'], 'active_resource' => 'ranks', 'roles' => ['super-admin', 'admin']],
+                ['label' => 'Profile Completion Fields', 'route' => 'admin.management.resource.index', 'params' => ['profile-completion-fields'], 'active_resource' => 'profile-completion-fields', 'roles' => ['super-admin', 'admin']],
                 ['label' => 'Teams', 'route' => 'admin.management.resource.index', 'params' => ['teams'], 'active_resource' => 'teams', 'roles' => ['super-admin', 'admin']],
                 ['label' => 'Checklists', 'route' => 'admin.checklists.index', 'active' => ['admin.checklists.*'], 'active_resources' => ['onboarding-steps', 'licensing-steps', 'apprenticeship-steps', 'cfm-training-modules'], 'roles' => ['super-admin', 'admin', 'agency-owner', 'team-leader', 'certified-field-mentor', 'trainer']],
                 ['label' => 'Calendar Categories', 'route' => 'admin.management.resource.index', 'params' => ['calendar-categories'], 'active_resource' => 'calendar-categories', 'roles' => ['super-admin', 'admin', 'agency-owner']],

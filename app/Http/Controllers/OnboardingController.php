@@ -162,7 +162,11 @@ class OnboardingController extends Controller
             ->join('users', 'users.id', '=', 'user_onboarding_progress.user_id')
             ->join('onboarding_steps', 'onboarding_steps.id', '=', 'user_onboarding_progress.onboarding_step_id')
             ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
+<<<<<<< HEAD
             ->tap(fn ($query) => ProfileLocationQuery::joinCountry($query))
+=======
+            ->leftJoin('countries', 'countries.id', '=', 'profiles.country_id')
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             ->where('user_onboarding_progress.status', 'pending_confirmation')
             ->whereNull('users.deleted_at')
             ->whereNull('onboarding_steps.deleted_at')
@@ -176,7 +180,11 @@ class OnboardingController extends Controller
                 'users.email as member_email',
                 'users.sponsor_id',
                 'users.mentor_id',
+<<<<<<< HEAD
                 ProfileLocationQuery::memberCountrySelect(),
+=======
+                'countries.name as member_country',
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                 'onboarding_steps.title',
                 'onboarding_steps.description',
                 'onboarding_steps.notified_parties'

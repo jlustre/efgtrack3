@@ -191,7 +191,11 @@ class TrackerChecklistController extends Controller
             ->join('users', 'users.id', '=', $config['progressTable'].'.user_id')
             ->join($config['stepTable'], $config['stepTable'].'.id', '=', $config['progressTable'].'.'.$config['foreignKey'])
             ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
+<<<<<<< HEAD
             ->tap(fn ($query) => ProfileLocationQuery::joinCountry($query))
+=======
+            ->leftJoin('countries', 'countries.id', '=', 'profiles.country_id')
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             ->where($config['progressTable'].'.status', 'pending_confirmation')
             ->whereNull('users.deleted_at')
             ->whereNull($config['stepTable'].'.deleted_at')
@@ -205,7 +209,11 @@ class TrackerChecklistController extends Controller
                 'users.email as member_email',
                 'users.sponsor_id',
                 'users.mentor_id',
+<<<<<<< HEAD
                 ProfileLocationQuery::memberCountrySelect(),
+=======
+                'countries.name as member_country',
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                 $config['stepTable'].'.title',
                 $config['stepTable'].'.description',
                 $config['stepTable'].'.notified_parties'

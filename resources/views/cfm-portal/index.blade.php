@@ -9,6 +9,7 @@
         x-data="{
             showEditProfileModal: @js($openEditProfileModal || $errors->any()),
             profileSaving: false,
+<<<<<<< HEAD
             editCountry: @js(old('country', $portal['editForm']['country'] ?? '')),
             editProvince: @js(old('province', $portal['editForm']['province'] ?? '')),
             editProvinces: @js($portal['locationOptions']['provincesByCountry']),
@@ -17,13 +18,18 @@
             checklistModalError: null,
             checklistModalData: null,
             checklistModalView: 'accomplished',
+=======
+            editCountryId: @js(old('country_id', $portal['editForm']['country_id'] ?? '')),
+            editProvinceId: @js(old('state_province_id', $portal['editForm']['state_province_id'] ?? '')),
+            editProvinces: @js($portal['locationOptions']['provincesByCountryId']),
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             get editProvinceOptions() {
-                return this.editProvinces[this.editCountry] || {};
+                return this.editProvinces[String(this.editCountryId)] || {};
             },
             onCountryChange() {
                 const options = this.editProvinceOptions;
-                if (this.editProvince && ! Object.prototype.hasOwnProperty.call(options, this.editProvince)) {
-                    this.editProvince = '';
+                if (this.editProvinceId && ! Object.prototype.hasOwnProperty.call(options, String(this.editProvinceId))) {
+                    this.editProvinceId = '';
                 }
             },
             submitProfileForm() {

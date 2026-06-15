@@ -63,6 +63,7 @@ return new class extends Migration
             }
         });
 
+<<<<<<< HEAD
         if (Schema::hasTable('profile_completion_fields')) {
             $fieldKeyMap = [
                 'country' => 'country_id',
@@ -75,6 +76,18 @@ return new class extends Migration
                     ->where('field_key', $oldKey)
                     ->update(['field_key' => $newKey]);
             }
+=======
+        $fieldKeyMap = [
+            'country' => 'country_id',
+            'province' => 'state_province_id',
+            'timezone' => 'timezone_id',
+        ];
+
+        foreach ($fieldKeyMap as $oldKey => $newKey) {
+            DB::table('profile_completion_fields')
+                ->where('field_key', $oldKey)
+                ->update(['field_key' => $newKey]);
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         }
     }
 
@@ -110,6 +123,7 @@ return new class extends Migration
             $table->dropConstrainedForeignId('country_id');
         });
 
+<<<<<<< HEAD
         if (Schema::hasTable('profile_completion_fields')) {
             $fieldKeyMap = [
                 'country_id' => 'country',
@@ -122,6 +136,18 @@ return new class extends Migration
                     ->where('field_key', $oldKey)
                     ->update(['field_key' => $newKey]);
             }
+=======
+        $fieldKeyMap = [
+            'country_id' => 'country',
+            'state_province_id' => 'province',
+            'timezone_id' => 'timezone',
+        ];
+
+        foreach ($fieldKeyMap as $oldKey => $newKey) {
+            DB::table('profile_completion_fields')
+                ->where('field_key', $oldKey)
+                ->update(['field_key' => $newKey]);
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         }
     }
 };

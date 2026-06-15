@@ -6,6 +6,7 @@ use App\Models\Profile;
 use App\Models\Rank;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\LocationOptions;
 use App\Services\DownlineHierarchyService;
 use App\Support\LocationOptions;
 use Illuminate\Database\Seeder;
@@ -342,15 +343,15 @@ class DownlineManagementSeeder extends Seeder
             ->orderBy('id')
             ->get()
             ->each(function (User $user, int $index) use ($countries): void {
-                [$country, $city, $timezone] = $countries[$index % count($countries)];
+                [$countryName, $city, $timezoneCode] = $countries[$index % count($countries)];
 
                 Profile::updateOrCreate(
                     ['user_id' => $user->id],
                     LocationOptions::profileAttributesForStorage([
                         'phone' => '555-01'.str_pad((string) ($index % 100), 2, '0', STR_PAD_LEFT),
                         'city' => $city,
-                        'country' => $country,
-                        'timezone' => $timezone,
+                        'country_id' => LocationOptions::resolveCountryId($countryName),
+                        'timezone_id' => LocationOptions::resolveTimezoneId($timezoneCode),
                         'license_number' => $index % 3 === 0 ? 'LIC-'.$user->id.'-EFG' : null,
                         'efg_associate_id' => 'EFG-'.$user->id,
                         'is_efg_active_associate' => true,

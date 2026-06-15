@@ -2,7 +2,14 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Profile;
 use App\Models\User;
+use App\Support\LocationOptions;
+use Database\Seeders\CountrySeeder;
+use Database\Seeders\ProfileCompletionFieldSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\StateProvinceSeeder;
+use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -46,6 +53,48 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_login_prompts_profile_completion_modal_when_profile_is_incomplete(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+            ProfileCompletionFieldSeeder::class,
+        ]);
+
+        $user = User::factory()->create([
+            'name' => 'Incomplete Member',
+            'email' => 'incomplete@example.com',
+        ]);
+        $user->assignRole('member');
+
+        Profile::query()->create([
+            'user_id' => $user->id,
+            'city' => 'Vancouver',
+            'country_id' => LocationOptions::resolveCountryId('Canada'),
+        ]);
+
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+            ->assertRedirect(route('dashboard', absolute: false))
+            ->assertSessionHas('show_profile_completion_modal', true);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertViewHas('forceProfileCompletionModal', true)
+            ->assertSee('Complete your profile', false)
+            ->assertSee('My Profile', false);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertViewHas('forceProfileCompletionModal', false);
     }
 
     public function test_users_can_logout(): void

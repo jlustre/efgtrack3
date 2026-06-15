@@ -76,6 +76,7 @@ class Profile extends Model
         return Attribute::get(fn (): ?string => $this->timezoneRecord?->code ?? $this->timezoneRecord?->name);
     }
 
+<<<<<<< HEAD
     public function fill(array $attributes)
     {
         $attributes = app(ProfileLocationService::class)->mapAttributesForStorage(
@@ -86,6 +87,8 @@ class Profile extends Model
         return parent::fill($attributes);
     }
 
+=======
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
     protected static function booted(): void
     {
         static::deleting(function (Profile $profile): void {

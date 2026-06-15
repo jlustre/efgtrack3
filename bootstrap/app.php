@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureCfmManagementAccess;
 use App\Http\Middleware\EnsureCfmPortalAccess;
+use App\Http\Middleware\EnsureEmployeeAccess;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\LoadAuthenticatedUserProfile;
 use Illuminate\Foundation\Application;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'cfm.management' => EnsureCfmManagementAccess::class,
             'cfm.portal' => EnsureCfmPortalAccess::class,
+            'employee' => EnsureEmployeeAccess::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,

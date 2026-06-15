@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+<<<<<<< HEAD
 use App\Rules\UrlOrRelativePath;
 use App\Models\PortalResource;
 use App\Services\DocumentLinkSyncService;
 use App\Services\ResourcePdfService;
+=======
+use App\Models\ProfileCompletionField;
+use App\Models\User;
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,17 +24,59 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminManagementController extends Controller
 {
+<<<<<<< HEAD
     public function __construct(
         private readonly ResourcePdfService $resourcePdf,
         private readonly DocumentLinkSyncService $documentLinkSync,
     ) {}
 
     public function index(): View
+=======
+    public function index(Request $request): View
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
     {
         abort_unless($this->canViewManagementIndex(), 403);
 
+        $search = $request->string('search')->toString();
+        $category = $request->string('category')->toString();
+
+        $resources = collect($this->resources())
+            ->map(function (array $resource, string $key): array {
+                $resource['key'] = $key;
+                $resource['category'] = $this->resourceCategory($key);
+                $resource['record_count'] = DB::table($resource['table'])->whereNull('deleted_at')->count();
+                $resource['archived_count'] = DB::table($resource['table'])->whereNotNull('deleted_at')->count();
+
+                return $resource;
+            })
+            ->when($search !== '', function ($collection) use ($search) {
+                $needle = strtolower($search);
+
+                return $collection->filter(function (array $resource) use ($needle): bool {
+                    return str_contains(strtolower($resource['label']), $needle)
+                        || str_contains(strtolower($resource['description']), $needle)
+                        || str_contains(strtolower($resource['key']), $needle)
+                        || str_contains(strtolower($resource['table']), $needle);
+                });
+            })
+            ->when($category !== '', fn ($collection) => $collection->filter(
+                fn (array $resource): bool => $resource['category'] === $category
+            ))
+            ->sortBy('label')
+            ->values();
+
+        $resources = new \Illuminate\Pagination\LengthAwarePaginator(
+            $resources->forPage($request->integer('page', 1), 10)->values(),
+            $resources->count(),
+            10,
+            $request->integer('page', 1),
+            ['path' => $request->url(), 'query' => $request->query()],
+        );
+
         return view('admin.management.index', [
-            'resources' => $this->resources(),
+            'resources' => $resources,
+            'filters' => compact('search', 'category'),
+            'categories' => $this->resourceCategoryOptions(),
         ]);
     }
 
@@ -62,9 +109,15 @@ class AdminManagementController extends Controller
             'records' => $records,
             'filters' => compact('search', 'trashed'),
             'canManage' => $this->canManageResource($resource),
+<<<<<<< HEAD
             'canDeleteRecords' => $this->canDeleteResourceRecords($resource),
             'canUpdateSeeder' => $this->canManageResource($resource) && $this->isSeederUpdatableResource($resource),
             'options' => ($config['use_inline_modals'] ?? true) ? $this->formOptionsFor($config) : [],
+=======
+            'canUpdateSeeder' => $this->canManageResource($resource) && $this->isChecklistResource($resource),
+            'options' => $this->formOptions(),
+            'embedded' => $request->boolean('embedded'),
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         ]);
     }
 
@@ -98,8 +151,15 @@ class AdminManagementController extends Controller
 
         $validated['created_at'] = now();
         $validated['updated_at'] = now();
+        $validated = $this->prepareRecordPayload($validated, $config, $request);
 
-        $id = DB::table($config['table'])->insertGetId($validated);
+        if ($config['uses_uuid'] ?? false) {
+            $validated['id'] = (string) Str::uuid();
+            DB::table($config['table'])->insert($validated);
+            $id = $validated['id'];
+        } else {
+            $id = DB::table($config['table'])->insertGetId($validated);
+        }
 
         $pdfStatus = $this->syncResourcePdf($resource, $id, (bool) $request->boolean('generate_pdf'));
         $this->syncDocumentLinks($resource, $id);
@@ -109,7 +169,7 @@ class AdminManagementController extends Controller
             ->with('status', $pdfStatus ?: 'record-created');
     }
 
-    public function show(string $resource, int $record): View
+    public function show(string $resource, string $record): View
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canViewResource($resource), 403);
@@ -124,7 +184,7 @@ class AdminManagementController extends Controller
         ]);
     }
 
-    public function edit(string $resource, int $record): View
+    public function edit(string $resource, string $record): View
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -141,7 +201,7 @@ class AdminManagementController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $resource, int $record): RedirectResponse
+    public function update(Request $request, string $resource, string $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -159,6 +219,7 @@ class AdminManagementController extends Controller
         }
 
         $validated['updated_at'] = now();
+        $validated = $this->prepareRecordPayload($validated, $config, $request);
 
         DB::table($config['table'])->where('id', $record)->update($validated);
 
@@ -214,7 +275,7 @@ class AdminManagementController extends Controller
         );
     }
 
-    public function toggleStatus(string $resource, int $record): RedirectResponse
+    public function toggleStatus(string $resource, string $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -252,7 +313,7 @@ class AdminManagementController extends Controller
             ->with('status', 'seeder-updated');
     }
 
-    public function destroy(string $resource, int $record): RedirectResponse
+    public function destroy(string $resource, string $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -268,7 +329,7 @@ class AdminManagementController extends Controller
             ->with('status', 'record-archived');
     }
 
-    public function restore(string $resource, int $record): RedirectResponse
+    public function restore(string $resource, string $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -284,7 +345,7 @@ class AdminManagementController extends Controller
             ->with('status', 'record-restored');
     }
 
-    private function validatedData(Request $request, array $config, ?int $record = null): array
+    private function validatedData(Request $request, array $config, string|int|null $record = null): array
     {
         $rules = [];
 
@@ -298,7 +359,47 @@ class AdminManagementController extends Controller
             $rules[$field['name']] = $fieldRules;
         }
 
-        return $request->validate($rules);
+        $validated = $request->validate($rules);
+
+        foreach ($config['fields'] as $field) {
+            if (($field['type'] ?? '') !== 'json') {
+                continue;
+            }
+
+            $name = $field['name'];
+
+            if (! array_key_exists($name, $validated) || blank($validated[$name])) {
+                $validated[$name] = null;
+
+                continue;
+            }
+
+            json_decode($validated[$name], true, 512, JSON_THROW_ON_ERROR);
+        }
+
+        return $validated;
+    }
+
+    private function prepareRecordPayload(array $validated, array $config, Request $request): array
+    {
+        if (($config['table'] ?? '') === 'notifications') {
+            $validated['notifiable_type'] = User::class;
+            $validated['type'] = filled($validated['type'] ?? null) ? $validated['type'] : 'database';
+
+            if (blank($validated['data'] ?? null)) {
+                $validated['data'] = json_encode([
+                    'title' => 'Portal notification',
+                    'message' => 'A new notification was created from admin management.',
+                    'category' => 'System',
+                ]);
+            }
+
+            if (($validated['sender_type'] ?? 'system') === 'system') {
+                $validated['sender_user_id'] = null;
+            }
+        }
+
+        return $validated;
     }
 
     private function syncResourcePdf(string $resource, int $recordId, bool $forceGenerate): ?string
@@ -771,6 +872,7 @@ PHP;
 
     private function formOptionsFor(array $config): array
     {
+<<<<<<< HEAD
         $types = collect($config['fields'])->pluck('type')->unique()->all();
         $needs = fn (string ...$fieldTypes): bool => array_intersect($types, $fieldTypes) !== [];
 
@@ -825,11 +927,59 @@ PHP;
         }
 
         return $options;
+=======
+        return [
+            'users' => DB::table('users')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name', 'email']),
+            'teams' => DB::table('teams')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            'training_categories' => DB::table('training_categories')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            'training_modules' => DB::table('training_modules')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
+            'assessments' => DB::table('assessments')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
+            'questions' => DB::table('questions')->whereNull('deleted_at')->orderBy('question')->get(['id', 'question']),
+            'ranks' => DB::table('ranks')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'code', 'name']),
+            'apprenticeship_programs' => DB::table('apprenticeship_programs')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            'calendar_categories' => DB::table('calendar_categories')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name']),
+            'calendar_event_types' => DB::table('calendar_event_types')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name']),
+            'booking_event_types' => DB::table('booking_event_types')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
+            'availability_schedules' => DB::table('availability_schedules')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            'notification_types' => DB::table('notification_types')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name', 'code']),
+            'notification_triggers' => DB::table('notification_triggers')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name', 'code']),
+            'notification_templates' => DB::table('notification_templates')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name', 'subject']),
+        ];
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
+    }
+
+    private function resourceCategoryOptions(): array
+    {
+        return [
+            'organization' => 'Organization',
+            'checklists' => 'Checklists',
+            'training' => 'Training',
+            'advancement' => 'Rank Advancement',
+            'content' => 'Content & Communication',
+            'calendar' => 'Calendar & Events',
+            'booking' => 'Booking & Scheduling',
+            'notifications' => 'Notifications',
+        ];
+    }
+
+    private function resourceCategory(string $resource): string
+    {
+        return match ($resource) {
+            'ranks', 'teams', 'profile-completion-fields' => 'organization',
+            'onboarding-steps', 'licensing-steps', 'apprenticeship-programs', 'apprenticeship-steps', 'cfm-training-modules' => 'checklists',
+            'training-categories', 'training-modules', 'training-lessons', 'assessments', 'questions', 'answers' => 'training',
+            'rank-requirements' => 'advancement',
+            'resources', 'events', 'announcements', 'badges', 'email-templates' => 'content',
+            'notification-types', 'notification-triggers', 'notification-templates', 'notifications' => 'notifications',
+            'calendar-categories', 'calendar-event-types', 'calendar-events' => 'calendar',
+            'booking-event-types', 'booking-links', 'bookings' => 'booking',
+            default => 'content',
+        };
     }
 
     private function resources(): array
     {
-        return [
+        return array_merge([
             'ranks' => [
                 'table' => 'ranks',
                 'label' => 'Ranks',
@@ -845,6 +995,7 @@ PHP;
                     ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
                 ],
             ],
+            'profile-completion-fields' => $this->profileCompletionFieldsResource(),
             'teams' => [
                 'table' => 'teams',
                 'label' => 'Teams',
@@ -1230,6 +1381,122 @@ PHP;
                 ],
             ],
             'cfm-training-modules' => $this->stepResource('cfm_training_modules', 'CFM Training Modules', 'Manage CFM certification training modules.'),
+        ], $this->notificationResources());
+    }
+
+    private function notificationResources(): array
+    {
+        return [
+            'notification-types' => [
+                'table' => 'notification_types',
+                'label' => 'Notification Types',
+                'description' => 'Manage notification categories such as training, mentoring, licensing, and system alerts.',
+                'order_by' => 'sort_order',
+                'search' => ['code', 'name', 'description'],
+                'columns' => ['code', 'name', 'sort_order', 'is_active'],
+                'fields' => [
+                    ['name' => 'code', 'label' => 'Code', 'type' => 'text', 'rules' => ['required', 'string', 'max:60'], 'unique' => true],
+                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
+                    ['name' => 'icon', 'label' => 'Icon', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:100']],
+                    ['name' => 'color', 'label' => 'Color', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:20']],
+                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                ],
+            ],
+            'notification-triggers' => [
+                'table' => 'notification_triggers',
+                'label' => 'Notification Triggers',
+                'description' => 'Manage events that can generate notifications and their parent notification type.',
+                'order_by' => 'sort_order',
+                'search' => ['code', 'name', 'event_key', 'description'],
+                'columns' => ['code', 'name', 'notification_type_id', 'event_key', 'is_active'],
+                'fields' => [
+                    ['name' => 'notification_type_id', 'label' => 'Notification Type', 'type' => 'notification_type', 'rules' => ['required', 'integer', 'exists:notification_types,id']],
+                    ['name' => 'code', 'label' => 'Code', 'type' => 'text', 'rules' => ['required', 'string', 'max:60'], 'unique' => true],
+                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
+                    ['name' => 'event_key', 'label' => 'Event Key', 'type' => 'text', 'rules' => ['required', 'string', 'max:120']],
+                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                ],
+            ],
+            'notification-templates' => [
+                'table' => 'notification_templates',
+                'label' => 'Notification Templates',
+                'description' => 'Manage reusable notification copy, channels, and placeholders for each trigger.',
+                'order_by' => 'name',
+                'search' => ['name', 'subject', 'body'],
+                'columns' => ['name', 'notification_trigger_id', 'subject', 'is_default', 'is_active'],
+                'fields' => [
+                    ['name' => 'notification_trigger_id', 'label' => 'Notification Trigger', 'type' => 'notification_trigger', 'rules' => ['required', 'integer', 'exists:notification_triggers,id']],
+                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                    ['name' => 'subject', 'label' => 'Subject', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                    ['name' => 'body', 'label' => 'Body', 'type' => 'textarea', 'rules' => ['required', 'string']],
+                    ['name' => 'channels', 'label' => 'Channels (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
+                    ['name' => 'placeholders', 'label' => 'Placeholders (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
+                    ['name' => 'is_default', 'label' => 'Default Template', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                ],
+            ],
+            'notifications' => [
+                'table' => 'notifications',
+                'uses_uuid' => true,
+                'label' => 'Notifications',
+                'description' => 'Review and create portal notifications with trigger metadata, recipients, and action links.',
+                'order_by' => 'created_at',
+                'search' => ['type', 'sender_type'],
+                'columns' => ['notification_type_id', 'trigger_id', 'sender_type', 'notifiable_id', 'read_at'],
+                'fields' => [
+                    ['name' => 'notification_type_id', 'label' => 'Notification Type', 'type' => 'notification_type', 'rules' => ['nullable', 'integer', 'exists:notification_types,id']],
+                    ['name' => 'trigger_id', 'label' => 'Notification Trigger', 'type' => 'notification_trigger', 'rules' => ['nullable', 'integer', 'exists:notification_triggers,id']],
+                    ['name' => 'sender_type', 'label' => 'Sender Type', 'type' => 'select', 'options' => ['system' => 'System', 'user' => 'User'], 'rules' => ['required', 'string', 'in:system,user']],
+                    ['name' => 'sender_user_id', 'label' => 'Sender User', 'type' => 'user', 'rules' => ['nullable', 'integer', 'exists:users,id']],
+                    ['name' => 'notifiable_id', 'label' => 'Recipient', 'type' => 'user', 'rules' => ['required', 'integer', 'exists:users,id']],
+                    ['name' => 'type', 'label' => 'Laravel Type', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'data', 'label' => 'Notification Data (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
+                    ['name' => 'recipients', 'label' => 'Recipients (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
+                    ['name' => 'notification_template', 'label' => 'Template Snapshot (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
+                    ['name' => 'action_link', 'label' => 'Action Link (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
+                ],
+            ],
+        ];
+    }
+
+    private function profileCompletionFieldsResource(): array
+    {
+        $allowedKeys = implode(',', array_keys(ProfileCompletionField::definitions()));
+
+        return [
+            'table' => 'profile_completion_fields',
+            'label' => 'Profile Completion Fields',
+            'description' => 'Configure which member profile fields count toward dashboard completion.',
+            'order_by' => 'sort_order',
+            'search' => ['field_key', 'label'],
+            'columns' => ['field_key', 'label', 'source', 'sort_order', 'is_active'],
+            'fields' => [
+                [
+                    'name' => 'field_key',
+                    'label' => 'Field Key',
+                    'type' => 'select',
+                    'options' => ProfileCompletionField::fieldKeyOptions(),
+                    'rules' => ['required', 'string', 'max:60', "in:{$allowedKeys}"],
+                    'unique' => true,
+                ],
+                ['name' => 'label', 'label' => 'Label', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                [
+                    'name' => 'source',
+                    'label' => 'Data Source',
+                    'type' => 'select',
+                    'options' => [
+                        'user' => 'User account',
+                        'profile' => 'Member profile',
+                    ],
+                    'rules' => ['required', 'string', 'in:user,profile'],
+                ],
+                ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+            ],
         ];
     }
 

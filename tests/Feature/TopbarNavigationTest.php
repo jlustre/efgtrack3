@@ -233,6 +233,9 @@ class TopbarNavigationTest extends TestCase
 
         $routes = [
             'dashboard',
+            'employment.index',
+            'pre-employment.index',
+            'messages.index',
             'onboarding.index',
             'licensing.index',
             'tasks.index',

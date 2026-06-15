@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <x-app-layout>
     <section class="space-y-6">
         <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -379,3 +380,14 @@
         </div>
     </section>
 </x-app-layout>
+=======
+@if ($embedded ?? false)
+    <x-embedded-layout>
+        @include('admin.management.partials.resource-index-content')
+    </x-embedded-layout>
+@else
+    <x-app-layout>
+        @include('admin.management.partials.resource-index-content')
+    </x-app-layout>
+@endif
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0

@@ -2,14 +2,54 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Reference data and configuration required for every environment.
+     *
+     * @var list<class-string<Seeder>>
+     */
+    protected array $requiredSeeders = [
+        RankSeeder::class,
+        RolePermissionSeeder::class,
+        EmailTemplateSeeder::class,
+        CountrySeeder::class,
+        StateProvinceSeeder::class,
+        TimezoneSeeder::class,
+        TeamSeeder::class,
+        OnboardingStepSeeder::class,
+        LicensingStepSeeder::class,
+        FieldApprenticeshipProgramSeeder::class,
+        CfmTrainingModuleSeeder::class,
+        ProspectLookupSeeder::class,
+        UsersSeeder::class,
+        ProfileCompletionFieldSeeder::class,
+        NotificationConfigSeeder::class,
+        FacilitySeeder::class,
+    ];
+
+    /**
+     * Demo users, sample records, and module fixtures for local/staging only.
+     *
+     * @var list<class-string<Seeder>>
+     */
+    protected array $transactionalSeeders = [
+        // TaskScenarioSeeder::class,
+        // TaskManagementSeeder::class,
+        // DownlineManagementSeeder::class,
+        // CfmManagementSeeder::class,
+        // ProspectDemoSeeder::class,
+        // CalendarModuleSeeder::class,
+        // UserCalendarPreferenceSeeder::class,
+        // BookingSchedulingSeeder::class,
+        // NotificationDemoSeeder::class,
+    ];
+
     public function run(): void
     {
+<<<<<<< HEAD
         $this->call([
             RankSeeder::class,
             RolePermissionSeeder::class,
@@ -30,13 +70,16 @@ class DatabaseSeeder extends Seeder
             TaskScenarioSeeder::class,
             TaskManagementSeeder::class,
         ]);
+=======
+        $this->call($this->requiredSeeders);
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 
-        if (app()->environment('local')) {
-            $this->call([
-                DownlineManagementSeeder::class,
-            ]);
+        if ($this->shouldSeedTransactionalData() && $this->transactionalSeeders !== []) {
+            // $this->call($this->transactionalSeeders);
         }
+    }
 
+<<<<<<< HEAD
         $this->call([
             CfmManagementSeeder::class,
             ProspectDemoSeeder::class,
@@ -63,5 +106,10 @@ class DatabaseSeeder extends Seeder
         );
 
         $admin->assignRole('super-admin');
+=======
+    protected function shouldSeedTransactionalData(): bool
+    {
+        return ! app()->isProduction();
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
     }
 }

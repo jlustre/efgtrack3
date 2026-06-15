@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\ProfileCompletionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,19 +23,27 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request, ProfileCompletionService $profileCompletion): RedirectResponse
     {
         $request->authenticate();
 
         $request->session()->regenerate();
 
-        $request->user()->forceFill([
+        $user = $request->user();
+
+        $user->forceFill([
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
             'is_online' => true,
         ])->save();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $redirect = redirect()->intended(route('dashboard', absolute: false));
+
+        if (! $profileCompletion->isComplete($user)) {
+            $redirect->with('show_profile_completion_modal', true);
+        }
+
+        return $redirect;
     }
 
     /**

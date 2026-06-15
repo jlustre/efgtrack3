@@ -13,6 +13,7 @@ use App\Models\MentorAssignment;
 use App\Models\Rank;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Support\LocationOptions;
 use App\Services\DownlineHierarchyService;
 use App\Support\LocationOptions;
 use Carbon\Carbon;
@@ -166,7 +167,11 @@ class CfmManagementSeeder extends Seeder
             $apprentice = $this->member($email, 'Maria Apprentice '.($index + 1), $agencyOwner->team_id, $agencyOwner->id, $maria->id, $rankFa);
             $apprentice->profile()->updateOrCreate(
                 ['user_id' => $apprentice->id],
+<<<<<<< HEAD
                 LocationOptions::profileAttributesForStorage([
+=======
+                $this->normalizeProfileLocation([
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                     'country' => 'Canada',
                     'province' => $index === 0 ? 'Ontario' : 'Quebec',
                     'city' => $index === 0 ? 'Toronto' : 'Montreal',
@@ -284,7 +289,11 @@ class CfmManagementSeeder extends Seeder
             $associate = $this->member($row['email'], $row['name'], $teamId, $agencyOwner->id, null, $rankFa);
             $associate->profile()->updateOrCreate(
                 ['user_id' => $associate->id],
+<<<<<<< HEAD
                 LocationOptions::profileAttributesForStorage([
+=======
+                $this->normalizeProfileLocation([
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                     'country' => $row['country'],
                     'province' => $row['province'],
                     'city' => $row['city'],
@@ -415,7 +424,11 @@ class CfmManagementSeeder extends Seeder
         $user->syncRoles(['certified-field-mentor']);
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
+<<<<<<< HEAD
             LocationOptions::profileAttributesForStorage([
+=======
+            $this->normalizeProfileLocation([
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                 'country' => 'Canada',
                 'province' => 'British Columbia',
                 'city' => 'Victoria',
@@ -455,12 +468,31 @@ class CfmManagementSeeder extends Seeder
         );
 
         $user->syncRoles(['certified-field-mentor']);
+<<<<<<< HEAD
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
             LocationOptions::profileAttributesForStorage($profile)
         );
+=======
+        $user->profile()->updateOrCreate(['user_id' => $user->id], $this->normalizeProfileLocation($profile));
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 
         return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $profile
+     * @return array<string, mixed>
+     */
+    private function normalizeProfileLocation(array $profile): array
+    {
+        $country = $profile['country'] ?? 'Canada';
+        $province = $profile['province'] ?? null;
+        $timezone = $profile['timezone'] ?? null;
+
+        unset($profile['country'], $profile['province'], $profile['timezone']);
+
+        return array_merge($profile, LocationOptions::profileLocationIds($country, $province, $timezone));
     }
 
     private function member(string $email, string $name, ?int $teamId, ?int $sponsorId, ?int $mentorId, ?int $rankId): User
@@ -732,7 +764,11 @@ class CfmManagementSeeder extends Seeder
 
             $user->profile()->updateOrCreate(
                 ['user_id' => $user->id],
+<<<<<<< HEAD
                 LocationOptions::profileAttributesForStorage($definition['location'])
+=======
+                $this->normalizeProfileLocation($definition['location'])
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             );
 
             $this->seedProfile($user, $definition['mentor']);
@@ -859,12 +895,21 @@ class CfmManagementSeeder extends Seeder
     ): void {
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
+<<<<<<< HEAD
             LocationOptions::profileAttributesForStorage([
                 'country' => $country,
                 'province' => $province,
                 'city' => $city,
                 'timezone' => $timezone,
             ])
+=======
+            array_merge(
+                [
+                    'city' => $city,
+                ],
+                LocationOptions::profileLocationIds($country, $province, $timezone),
+            )
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         );
     }
 

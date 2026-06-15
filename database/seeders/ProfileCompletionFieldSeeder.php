@@ -2,13 +2,19 @@
 
 namespace Database\Seeders;
 
+<<<<<<< HEAD
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+=======
+use App\Models\ProfileCompletionField;
+use Illuminate\Database\Seeder;
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 
 class ProfileCompletionFieldSeeder extends Seeder
 {
     public function run(): void
     {
+<<<<<<< HEAD
         $fields = [
             ['field_key' => 'phone', 'label' => 'Phone', 'sort_order' => 10],
             ['field_key' => 'city', 'label' => 'City', 'sort_order' => 20],
@@ -35,3 +41,22 @@ class ProfileCompletionFieldSeeder extends Seeder
         }
     }
 };
+=======
+        $sortOrder = 10;
+
+        foreach (ProfileCompletionField::definitions() as $fieldKey => $definition) {
+            ProfileCompletionField::query()->updateOrCreate(
+                ['field_key' => $fieldKey],
+                [
+                    'label' => $definition['label'],
+                    'source' => $definition['source'],
+                    'sort_order' => $sortOrder,
+                    'is_active' => true,
+                ],
+            );
+
+            $sortOrder += 10;
+        }
+    }
+}
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0

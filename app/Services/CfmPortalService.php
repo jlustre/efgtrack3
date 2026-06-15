@@ -46,10 +46,17 @@ class CfmPortalService
                 LocationOptions::profileAttributesForStorage([
                     'phone' => $data['phone'] ?? null,
                     'city' => $data['city'] ?? null,
+<<<<<<< HEAD
                     'province' => $data['province'] ?? null,
                     'country' => $data['country'] ?? null,
                     'timezone' => $data['timezone'] ?? null,
                 ])
+=======
+                    'country_id' => $data['country_id'] ?? null,
+                    'state_province_id' => $data['state_province_id'] ?? null,
+                    'timezone_id' => $data['timezone_id'] ?? null,
+                ]
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             );
 
             $mentorProfile = CfmMentorProfile::firstOrCreate(
@@ -83,9 +90,9 @@ class CfmPortalService
         return [
             'phone' => old('phone', $cfmUser->profile?->phone ?? ''),
             'city' => old('city', $cfmUser->profile?->city ?? ''),
-            'province' => old('province', $cfmUser->profile?->province ?? ''),
-            'country' => old('country', $cfmUser->profile?->country ?? ''),
-            'timezone' => old('timezone', $cfmUser->profile?->timezone ?? ''),
+            'country_id' => old('country_id', $cfmUser->profile?->country_id ?? ''),
+            'state_province_id' => old('state_province_id', $cfmUser->profile?->state_province_id ?? ''),
+            'timezone_id' => old('timezone_id', $cfmUser->profile?->timezone_id ?? ''),
             'mentor_bio' => old('mentor_bio', $profile['bio'] ?? ''),
             'languages' => old('languages', implode(', ', $profile['languages'] ?? [])),
             'specialties' => old('specialties', implode(', ', $profile['specialties'] ?? [])),

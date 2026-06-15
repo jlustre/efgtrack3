@@ -16,6 +16,7 @@ class RankSeeder extends Seeder
             ['code' => 'ED', 'name' => 'Executive Director'],
             ['code' => 'SED', 'name' => 'Senior Executive Director'],
             ['code' => 'NED', 'name' => 'National Executive Director'],
+            ['code' => 'SNED', 'name' => 'Senior National Executive Director'],
             ['code' => 'EP', 'name' => 'Executive Partner'],
         ];
 

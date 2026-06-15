@@ -25,12 +25,59 @@ class AdminManagementTest extends TestCase
         $this->actingAs($superAdmin)
             ->get(route('admin.management.index'))
             ->assertOk()
-            ->assertSee('Operations Table Management');
+            ->assertSee('Operations Table Management')
+            ->assertSee('Search table name, description, or key')
+            ->assertSee('All categories')
+            ->assertSee('Manage');
 
         $this->actingAs($admin)
             ->get(route('admin.management.index'))
             ->assertOk()
+            ->assertSee('Operations Table Management')
+            ->assertSee('Ranks')
+            ->assertSee('Teams');
+    }
+
+    public function test_admin_management_index_supports_search_filter_and_pagination(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.index', ['search' => 'rank']))
+            ->assertOk()
+            ->assertSee('>ranks</div>', false)
+            ->assertSee('>rank_requirements</div>', false)
+            ->assertDontSee('>booking_links</div>', false);
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.index', ['category' => 'booking']))
+            ->assertOk()
+            ->assertSee('>booking_links</div>', false)
+            ->assertSee('>bookings</div>', false)
+            ->assertDontSee('>ranks</div>', false);
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.index', ['page' => 2]))
+            ->assertOk()
             ->assertSee('Operations Table Management');
+    }
+
+    public function test_admin_management_resource_index_can_render_embedded_panel(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.resource.index', ['ranks', 'embedded' => 1]))
+            ->assertOk()
+            ->assertSee('Ranks')
+            ->assertSee('Add Record')
+            ->assertDontSee('id="efg-sidebar-navigation"', false);
     }
 
     public function test_member_cannot_open_admin_management(): void
@@ -169,6 +216,67 @@ class AdminManagementTest extends TestCase
         $this->actingAs($trainer)
             ->patch(route('admin.management.status', ['cfm-training-modules', $moduleId]))
             ->assertForbidden();
+    }
+
+    public function test_admin_can_manage_profile_completion_fields(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.resource.index', 'profile-completion-fields'))
+            ->assertOk()
+            ->assertSee('Profile Completion Fields')
+            ->assertSee('Add Record');
+
+        $this->actingAs($admin)
+            ->post(route('admin.management.store', 'profile-completion-fields'), [
+                'field_key' => 'phone',
+                'label' => 'Phone number',
+                'source' => 'profile',
+                'sort_order' => 15,
+                'is_active' => 1,
+            ])
+            ->assertRedirect();
+
+        $fieldId = DB::table('profile_completion_fields')->where('field_key', 'phone')->value('id');
+
+        $this->assertNotNull($fieldId);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.management.update', ['profile-completion-fields', $fieldId]), [
+                'field_key' => 'phone',
+                'label' => 'Mobile phone',
+                'source' => 'profile',
+                'sort_order' => 25,
+                'is_active' => 0,
+            ])
+            ->assertRedirect(route('admin.management.edit', ['profile-completion-fields', $fieldId]));
+
+        $this->assertDatabaseHas('profile_completion_fields', [
+            'id' => $fieldId,
+            'label' => 'Mobile phone',
+            'sort_order' => 25,
+            'is_active' => false,
+        ]);
+    }
+
+    public function test_admin_management_index_lists_notification_resources(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.index', ['search' => 'notification']))
+            ->assertOk()
+            ->assertSee('>notification_types</div>', false)
+            ->assertSee('>notification_triggers</div>', false)
+            ->assertSee('>notification_templates</div>', false)
+            ->assertSee('>notifications</div>', false);
     }
 
     public function test_unknown_admin_management_resource_returns_not_found(): void

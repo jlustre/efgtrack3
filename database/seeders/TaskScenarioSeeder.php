@@ -206,8 +206,29 @@ class TaskScenarioSeeder extends Seeder
 
     private function profile(User $user, array $overrides = []): void
     {
+        $defaults = [
+            'phone' => '555-0100',
+            'city' => 'Vancouver',
+            'country' => 'Canada',
+            'province' => 'British Columbia',
+            'timezone' => 'Canada Pacific Time',
+            'efg_associate_id' => 'EFG-DEMO-'.$user->id,
+            'is_efg_active_associate' => true,
+            'recruited_at' => now()->subDays(6)->toDateString(),
+        ];
+
+        $data = array_merge($defaults, $overrides);
+        $locationIds = LocationOptions::profileLocationIds(
+            $data['country'] ?? 'Canada',
+            $data['province'] ?? null,
+            $data['timezone'] ?? null,
+        );
+
+        unset($data['country'], $data['province'], $data['timezone']);
+
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
+<<<<<<< HEAD
             LocationOptions::profileAttributesForStorage(array_merge([
                 'phone' => '555-0100',
                 'city' => 'Vancouver',
@@ -218,6 +239,9 @@ class TaskScenarioSeeder extends Seeder
                 'is_efg_active_associate' => true,
                 'recruited_at' => now()->subDays(6)->toDateString(),
             ], $overrides))
+=======
+            array_merge($data, $locationIds)
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         );
     }
 

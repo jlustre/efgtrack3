@@ -8,8 +8,12 @@ use App\Models\RegistrationInvitation;
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
 use App\Support\LocationOptions;
+<<<<<<< HEAD
 use Database\Seeders\CountrySeeder;
+=======
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 use Database\Seeders\CfmTrainingModuleSeeder;
+use Database\Seeders\CountrySeeder;
 use Database\Seeders\FieldApprenticeshipProgramSeeder;
 use Database\Seeders\OnboardingStepSeeder;
 use Database\Seeders\RankSeeder;
@@ -83,7 +87,10 @@ class ProfileTest extends TestCase
             RankSeeder::class,
             CountrySeeder::class,
             StateProvinceSeeder::class,
+<<<<<<< HEAD
             TimezoneSeeder::class,
+=======
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             OnboardingStepSeeder::class,
             FieldApprenticeshipProgramSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -97,12 +104,19 @@ class ProfileTest extends TestCase
             'is_active' => true,
         ]);
         $levelOne->assignRole('certified-field-mentor');
+<<<<<<< HEAD
         Profile::query()->create(LocationOptions::profileAttributesForStorage([
             'user_id' => $levelOne->id,
             'phone' => '+1 416-555-0100',
             'province' => 'Ontario',
             'country' => 'Canada',
         ]));
+=======
+        Profile::query()->create(array_merge([
+            'user_id' => $levelOne->id,
+            'phone' => '+1 416-555-0100',
+        ], LocationOptions::profileLocationIds('Canada', 'Ontario')));
+>>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         User::factory()->create([
             'name' => 'Recruit Level Two',
             'email' => 'recruit.level2@example.com',
@@ -161,13 +175,14 @@ class ProfileTest extends TestCase
                 'name' => 'Test User',
                 'email' => 'test@example.com',
                 'phone' => '555-123-4567',
-                'province' => 'Ontario',
+                'state_province_id' => LocationOptions::resolveStateProvinceId('Canada', 'Ontario'),
                 'city' => 'Toronto',
-                'country' => 'Canada',
-                'timezone' => 'Canada Eastern Time',
+                'country_id' => LocationOptions::resolveCountryId('Canada'),
+                'timezone_id' => LocationOptions::resolveTimezoneId('Canada Eastern Time'),
                 'best_contact_time' => 'Morning (8am – 12pm)',
                 'license_number' => 'LIC-123',
                 'efg_associate_id' => 'EFG-2001',
+                'efg_invite_link' => 'https://efg.example.com/invite/2001',
                 'bio' => 'Building a strong financial services team.',
             ]);
 
@@ -182,7 +197,7 @@ class ProfileTest extends TestCase
             ->assertSee('Profile saved', false)
             ->assertSee('Your profile was updated successfully.', false);
 
-        $user->refresh();
+        $user->refresh()->load('profile.stateProvince', 'profile.countryRecord', 'profile.timezoneRecord');
 
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
@@ -195,6 +210,7 @@ class ProfileTest extends TestCase
         $this->assertSame('Morning (8am – 12pm)', $user->profile->best_contact_time);
         $this->assertSame('LIC-123', $user->profile->license_number);
         $this->assertSame('EFG-2001', $user->profile->efg_associate_id);
+        $this->assertSame('https://efg.example.com/invite/2001', $user->profile->efg_invite_link);
     }
 
     public function test_profile_update_shows_validation_errors_on_profile_tab(): void
@@ -212,13 +228,13 @@ class ProfileTest extends TestCase
             ->patch(route('profile.update'), [
                 'name' => 'Test User',
                 'email' => 'not-an-email',
-                'country' => 'Canada',
-                'province' => 'Invalid Province',
-                'timezone' => 'Invalid TZ',
+                'country_id' => LocationOptions::resolveCountryId('Canada'),
+                'state_province_id' => LocationOptions::resolveStateProvinceId('United States', 'California'),
+                'timezone_id' => 999999,
             ])
             ->assertRedirect(route('profile.edit', ['tab' => 'profile']))
             ->assertSessionHas('profile_feedback', fn (array $feedback) => $feedback['type'] === 'error')
-            ->assertSessionHasErrors(['email', 'province', 'timezone']);
+            ->assertSessionHasErrors(['email', 'state_province_id', 'timezone_id']);
 
         $this->actingAs($user)
             ->get(route('profile.edit', ['tab' => 'profile']))

@@ -3,11 +3,15 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\LocationOptions;
 use Database\Seeders\CfmManagementSeeder;
 use Database\Seeders\CfmTrainingModuleSeeder;
+use Database\Seeders\CountrySeeder;
 use Database\Seeders\OnboardingStepSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\StateProvinceSeeder;
 use Database\Seeders\TaskScenarioSeeder;
+use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,6 +23,9 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             TaskScenarioSeeder::class,
             OnboardingStepSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -43,6 +50,9 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             TaskScenarioSeeder::class,
             OnboardingStepSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -55,9 +65,9 @@ class CfmPortalPageTest extends TestCase
             ->patch(route('cfm.portal.profile.update'), [
                 'phone' => '555-0100',
                 'city' => 'Toronto',
-                'province' => 'Ontario',
-                'country' => 'Canada',
-                'timezone' => 'Canada Eastern Time',
+                'state_province_id' => LocationOptions::resolveStateProvinceId('Canada', 'Ontario'),
+                'country_id' => LocationOptions::resolveCountryId('Canada'),
+                'timezone_id' => LocationOptions::resolveTimezoneId('Canada Eastern Time'),
                 'languages' => 'English, French',
                 'specialties' => 'Field Apprenticeship, Licensing',
                 'licensed_jurisdictions' => ['Canada|Ontario', 'Canada|Quebec'],
@@ -81,6 +91,9 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             TaskScenarioSeeder::class,
             OnboardingStepSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -101,6 +114,9 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             TaskScenarioSeeder::class,
             OnboardingStepSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -112,14 +128,14 @@ class CfmPortalPageTest extends TestCase
         $this->actingAs($cfm)
             ->from(route('cfm.portal'))
             ->patch(route('cfm.portal.profile.update'), [
-                'country' => 'Canada',
-                'province' => 'Invalid Province',
-                'timezone' => 'Not A Timezone',
+                'country_id' => LocationOptions::resolveCountryId('Canada'),
+                'state_province_id' => 999999,
+                'timezone_id' => 999999,
             ])
             ->assertRedirect(route('cfm.portal'))
             ->assertSessionHas('open_edit_profile_modal', true)
             ->assertSessionHas('profile_feedback', fn (array $feedback) => $feedback['type'] === 'error')
-            ->assertSessionHasErrors(['province', 'timezone']);
+            ->assertSessionHasErrors(['state_province_id', 'timezone_id']);
 
         $this->actingAs($cfm)
             ->get(route('cfm.portal'))
@@ -133,6 +149,9 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             TaskScenarioSeeder::class,
             OnboardingStepSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -145,9 +164,9 @@ class CfmPortalPageTest extends TestCase
             ->patch(route('cfm.portal.profile.update'), [
                 'phone' => '555-0199',
                 'city' => 'Vancouver',
-                'province' => 'British Columbia',
-                'country' => 'Canada',
-                'timezone' => 'PST',
+                'state_province_id' => LocationOptions::resolveStateProvinceId('Canada', 'British Columbia'),
+                'country_id' => LocationOptions::resolveCountryId('Canada'),
+                'timezone_id' => LocationOptions::resolveTimezoneId('PST'),
             ])
             ->assertRedirect(route('cfm.portal'));
 
@@ -162,6 +181,9 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             TaskScenarioSeeder::class,
             OnboardingStepSeeder::class,
             CfmTrainingModuleSeeder::class,
@@ -183,6 +205,9 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             TaskScenarioSeeder::class,
             OnboardingStepSeeder::class,
             CfmTrainingModuleSeeder::class,
