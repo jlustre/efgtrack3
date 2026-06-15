@@ -8481,6 +8481,7 @@ namespace App\Models {
 	 * @property int|null $related_rank_requirement_id
 	 * @property int|null $related_training_module_id
 	 * @property int|null $related_apprentice_id
+	 * @property string|null $related_fna_id
 	 * @property string|null $related_prospect_id
 	 * @property string $color
 	 * @property string $status
@@ -8538,6 +8539,7 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarEvent>|CalendarEvent whereStatus($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarEvent>|CalendarEvent whereColor($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarEvent>|CalendarEvent whereRelatedProspectId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarEvent>|CalendarEvent whereRelatedFnaId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarEvent>|CalendarEvent whereRelatedApprenticeId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarEvent>|CalendarEvent whereRelatedTrainingModuleId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<CalendarEvent>|CalendarEvent whereRelatedRankRequirementId($value)
@@ -14708,8 +14710,24 @@ namespace App\Models {
 <<<<<<< HEAD
 	 * App\Models\FnaActivityLog
 	 *
+	 * @property \Illuminate\Support\Carbon $created_at
+	 * @property string|null $ip_address
+	 * @property array|null $metadata
+	 * @property string|null $description
+	 * @property string $action
+	 * @property int|null $user_id
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
 	 * @property-read \App\Models\User $user
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog whereUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog whereAction($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog whereDescription($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog whereMetadata($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog whereIpAddress($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog whereCreatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaActivityLog>|FnaActivityLog query()
@@ -15045,7 +15063,23 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaAnalyticsSnapshot
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property array|null $metadata
+	 * @property float $value
+	 * @property string $metric_key
+	 * @property \Illuminate\Support\Carbon $snapshot_date
+	 * @property int $user_id
+	 * @property int $id
 	 * @property-read \App\Models\User $user
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot whereUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot whereSnapshotDate($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot whereMetricKey($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot whereValue($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot whereMetadata($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAnalyticsSnapshot>|FnaAnalyticsSnapshot query()
@@ -15368,7 +15402,33 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaAssetDetail
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property float|null $total_assets
+	 * @property float|null $other_assets
+	 * @property float|null $college_savings
+	 * @property float|null $business_assets
+	 * @property float|null $real_estate_assets
+	 * @property float|null $investment_accounts
+	 * @property float|null $retirement_accounts
+	 * @property float|null $checking_savings
+	 * @property float|null $emergency_fund
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereEmergencyFund($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereCheckingSavings($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereRetirementAccounts($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereInvestmentAccounts($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereRealEstateAssets($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereBusinessAssets($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereCollegeSavings($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereOtherAssets($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereTotalAssets($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAssetDetail>|FnaAssetDetail query()
@@ -15691,8 +15751,32 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaAttachment
 	 *
+	 * @property \Illuminate\Support\Carbon|null $deleted_at
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property string|null $category
+	 * @property int $size_bytes
+	 * @property string|null $mime_type
+	 * @property string $original_name
+	 * @property string $path
+	 * @property string $disk
+	 * @property int $uploaded_by_user_id
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
 	 * @property-read \App\Models\User $uploadedBy
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereUploadedByUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereDisk($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment wherePath($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereOriginalName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereMimeType($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereSizeBytes($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereCategory($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereUpdatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment whereDeletedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaAttachment>|FnaAttachment query()
@@ -16015,10 +16099,52 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaClientInvite
 	 *
+	 * @property \Illuminate\Support\Carbon|null $deleted_at
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property \Illuminate\Support\Carbon|null $revoked_at
+	 * @property \Illuminate\Support\Carbon|null $submitted_at
+	 * @property \Illuminate\Support\Carbon|null $last_saved_at
+	 * @property \Illuminate\Support\Carbon|null $first_opened_at
+	 * @property \Illuminate\Support\Carbon|null $expires_at
+	 * @property string|null $personal_message
+	 * @property string $status
+	 * @property string|null $access_credential_hash
+	 * @property string|null $recipient_phone
+	 * @property string|null $recipient_email
+	 * @property string $recipient_name
+	 * @property string $fna_record_id
+	 * @property int|null $recipient_user_id
+	 * @property string|null $prospect_id
+	 * @property int $sender_user_id
+	 * @property string $security_code_hash
+	 * @property string $token
+	 * @property string $id
 	 * @property-read \App\Models\User $sender
 	 * @property-read \App\Models\Prospect $prospect
 	 * @property-read \App\Models\User $recipientUser
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereToken($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereSecurityCodeHash($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereSenderUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereProspectId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereRecipientUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereRecipientName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereRecipientEmail($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereRecipientPhone($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereAccessCredentialHash($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite wherePersonalMessage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereExpiresAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereFirstOpenedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereLastSavedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereSubmittedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereRevokedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereUpdatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite whereDeletedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaClientInvite>|FnaClientInvite query()
@@ -16341,7 +16467,33 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaDebtDetail
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property float|null $total_debt
+	 * @property float|null $other_liabilities
+	 * @property float|null $business_debt
+	 * @property float|null $personal_loans
+	 * @property float|null $student_loans
+	 * @property float|null $car_loans
+	 * @property float|null $credit_card_debt
+	 * @property float|null $rent_amount
+	 * @property float|null $mortgage_balance
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereMortgageBalance($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereRentAmount($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereCreditCardDebt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereCarLoans($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereStudentLoans($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail wherePersonalLoans($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereBusinessDebt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereOtherLiabilities($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereTotalDebt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDebtDetail>|FnaDebtDetail query()
@@ -16664,7 +16816,67 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaDimeAnalysis
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property \Illuminate\Support\Carbon|null $calculated_at
+	 * @property string|null $notes
+	 * @property float|null $recommended_coverage_max
+	 * @property float|null $recommended_coverage_min
+	 * @property float $estimated_protection_gap
+	 * @property float|null $liquid_assets_allocated
+	 * @property float|null $existing_life_insurance
+	 * @property float $total_dime_need
+	 * @property float|null $total_education_need
+	 * @property float|null $existing_education_savings
+	 * @property boolean $education_inflation_adjustment
+	 * @property int|null $education_years_to_college
+	 * @property float|null $education_cost_per_child
+	 * @property bool|null $education_children_count
+	 * @property float|null $total_mortgage_need
+	 * @property boolean $include_mortgage_payoff
+	 * @property float|null $monthly_mortgage_payment
+	 * @property int|null $mortgage_years_remaining
+	 * @property float|null $mortgage_balance
+	 * @property float|null $total_income_need
+	 * @property float|null $existing_income_replacement_coverage
+	 * @property boolean $income_inflation_adjustment
+	 * @property int|null $income_years_to_replace
+	 * @property float|null $income_annual_to_replace
+	 * @property float $total_debt
+	 * @property array|null $debt_inputs
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereDebtInputs($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereTotalDebt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereIncomeAnnualToReplace($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereIncomeYearsToReplace($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereIncomeInflationAdjustment($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereExistingIncomeReplacementCoverage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereTotalIncomeNeed($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereMortgageBalance($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereMortgageYearsRemaining($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereMonthlyMortgagePayment($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereIncludeMortgagePayoff($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereTotalMortgageNeed($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereEducationChildrenCount($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereEducationCostPerChild($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereEducationYearsToCollege($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereEducationInflationAdjustment($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereExistingEducationSavings($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereTotalEducationNeed($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereTotalDimeNeed($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereExistingLifeInsurance($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereLiquidAssetsAllocated($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereEstimatedProtectionGap($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereRecommendedCoverageMin($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereRecommendedCoverageMax($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereNotes($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereCalculatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaDimeAnalysis>|FnaDimeAnalysis query()
@@ -16987,7 +17199,35 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaExistingCoverage
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property boolean $policy_review_needed
+	 * @property string|null $beneficiary_information
+	 * @property float|null $long_term_care_coverage
+	 * @property float|null $critical_illness_coverage
+	 * @property float|null $disability_coverage
+	 * @property float|null $group_insurance_coverage
+	 * @property float|null $universal_life_coverage
+	 * @property float|null $whole_life_coverage
+	 * @property float|null $term_coverage
+	 * @property float|null $existing_life_insurance_amount
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereExistingLifeInsuranceAmount($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereTermCoverage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereWholeLifeCoverage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereUniversalLifeCoverage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereGroupInsuranceCoverage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereDisabilityCoverage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereCriticalIllnessCoverage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereLongTermCareCoverage($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereBeneficiaryInformation($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage wherePolicyReviewNeeded($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaExistingCoverage>|FnaExistingCoverage query()
@@ -17310,7 +17550,19 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaGoal
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property string|null $goal_notes
+	 * @property array|null $selected_goals
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal whereSelectedGoals($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal whereGoalNotes($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaGoal>|FnaGoal query()
@@ -17633,7 +17885,31 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaHousehold
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property array|null $financial_priorities
+	 * @property float|null $household_expenses
+	 * @property float|null $household_income
+	 * @property string|null $dependents_notes
+	 * @property array|null $children_details
+	 * @property bool|null $children_count
+	 * @property bool|null $spouse_partner_age
+	 * @property string|null $spouse_partner_name
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereSpousePartnerName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereSpousePartnerAge($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereChildrenCount($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereChildrenDetails($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereDependentsNotes($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereHouseholdIncome($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereHouseholdExpenses($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereFinancialPriorities($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaHousehold>|FnaHousehold query()
@@ -17956,7 +18232,29 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaIncomeDetail
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property string|null $expected_income_changes
+	 * @property float|null $passive_income
+	 * @property float|null $business_income
+	 * @property array|null $other_income_sources
+	 * @property float|null $spouse_annual_income
+	 * @property float|null $monthly_income
+	 * @property float|null $annual_income
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereAnnualIncome($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereMonthlyIncome($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereSpouseAnnualIncome($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereOtherIncomeSources($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereBusinessIncome($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail wherePassiveIncome($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereExpectedIncomeChanges($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaIncomeDetail>|FnaIncomeDetail query()
@@ -18279,9 +18577,33 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaPermission
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property \Illuminate\Support\Carbon|null $expires_at
+	 * @property \Illuminate\Support\Carbon|null $revoked_at
+	 * @property \Illuminate\Support\Carbon $granted_at
+	 * @property string $status
+	 * @property boolean $can_view_financial_details
+	 * @property string $permission_level
+	 * @property int $shared_with_user_id
+	 * @property int $granted_by_user_id
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
 	 * @property-read \App\Models\User $grantedBy
 	 * @property-read \App\Models\User $sharedWith
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereGrantedByUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereSharedWithUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission wherePermissionLevel($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereCanViewFinancialDetails($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereGrantedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereRevokedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereExpiresAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaPermission>|FnaPermission query()
@@ -18605,6 +18927,49 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaRecord
 	 *
+	 * @property \Illuminate\Support\Carbon|null $deleted_at
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property \Illuminate\Support\Carbon|null $closed_at
+	 * @property \Illuminate\Support\Carbon|null $presented_at
+	 * @property \Illuminate\Support\Carbon|null $approved_at
+	 * @property \Illuminate\Support\Carbon|null $submitted_at
+	 * @property string|null $summary_notes
+	 * @property string|null $cfm_feedback_summary
+	 * @property string|null $associate_recommendation
+	 * @property \Illuminate\Support\Carbon|null $follow_up_date
+	 * @property string|null $recommended_next_action
+	 * @property string|null $main_needs_identified
+	 * @property string|null $best_contact_time
+	 * @property string|null $preferred_contact_method
+	 * @property string|null $country
+	 * @property string|null $state_province
+	 * @property string|null $city
+	 * @property string|null $employer_business
+	 * @property string|null $occupation
+	 * @property string|null $marital_status
+	 * @property string|null $gender
+	 * @property bool|null $age
+	 * @property \Illuminate\Support\Carbon|null $date_of_birth
+	 * @property string|null $client_phone
+	 * @property string|null $client_email
+	 * @property string $client_name
+	 * @property float|null $recommended_coverage_max
+	 * @property float|null $recommended_coverage_min
+	 * @property float|null $protection_gap
+	 * @property boolean $is_client_portal
+	 * @property boolean $dime_completed
+	 * @property bool $completeness_score
+	 * @property bool $current_step
+	 * @property string $reference_code
+	 * @property string $title
+	 * @property string $status
+	 * @property int|null $calendar_event_id
+	 * @property string|null $prospect_id
+	 * @property int|null $cfm_user_id
+	 * @property int $created_by_user_id
+	 * @property int $owner_user_id
+	 * @property string $id
 	 * @property-read \App\Models\User $owner
 	 * @property-read \App\Models\User $creator
 	 * @property-read \App\Models\User $cfm
@@ -18633,6 +18998,49 @@ namespace App\Models {
 	 * @property-read \App\Models\FnaClientInvite $activeClientInvite
 	 * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserTask> $tasks
 	 * @property-read int|null $tasks_count
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereOwnerUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCreatedByUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCfmUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereProspectId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCalendarEventId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereTitle($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereReferenceCode($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCurrentStep($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCompletenessScore($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereDimeCompleted($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereIsClientPortal($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereProtectionGap($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereRecommendedCoverageMin($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereRecommendedCoverageMax($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereClientName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereClientEmail($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereClientPhone($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereDateOfBirth($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereAge($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereGender($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereMaritalStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereOccupation($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereEmployerBusiness($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCity($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereStateProvince($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCountry($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord wherePreferredContactMethod($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereBestContactTime($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereMainNeedsIdentified($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereRecommendedNextAction($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereFollowUpDate($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereAssociateRecommendation($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCfmFeedbackSummary($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereSummaryNotes($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereSubmittedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereApprovedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord wherePresentedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereClosedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereUpdatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord whereDeletedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRecord>|FnaRecord query()
@@ -18955,8 +19363,24 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaReviewComment
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property boolean $is_internal
+	 * @property string $body
+	 * @property string $comment_type
+	 * @property int $user_id
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
 	 * @property-read \App\Models\User $user
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment whereUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment whereCommentType($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment whereBody($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment whereIsInternal($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaReviewComment>|FnaReviewComment query()
@@ -19279,7 +19703,31 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaRiskAssessment
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property string|null $urgency_level
+	 * @property string|null $risk_tolerance
+	 * @property string|null $current_protection_gap
+	 * @property string|null $emergency_fund_adequacy
+	 * @property string|null $family_dependency_level
+	 * @property string|null $job_stability
+	 * @property string|null $health_considerations
+	 * @property string|null $main_financial_concern
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereMainFinancialConcern($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereHealthConsiderations($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereJobStability($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereFamilyDependencyLevel($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereEmergencyFundAdequacy($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereCurrentProtectionGap($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereRiskTolerance($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereUrgencyLevel($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaRiskAssessment>|FnaRiskAssessment query()
@@ -19602,8 +20050,24 @@ namespace App\Models {
 	/**
 	 * App\Models\FnaStatusHistory
 	 *
+	 * @property \Illuminate\Support\Carbon $created_at
+	 * @property array|null $metadata
+	 * @property string $change_source
+	 * @property int $changed_by_user_id
+	 * @property string $to_status
+	 * @property string|null $from_status
+	 * @property string $fna_record_id
+	 * @property int $id
 	 * @property-read \App\Models\FnaRecord $fnaRecord
 	 * @property-read \App\Models\User $changedBy
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory whereFnaRecordId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory whereFromStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory whereToStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory whereChangedByUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory whereChangeSource($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory whereMetadata($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory whereCreatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<FnaStatusHistory>|FnaStatusHistory query()
@@ -25886,9 +26350,17 @@ namespace App\Models {
 	 * @property string|null $converted_to
 	 * @property \Illuminate\Support\Carbon|null $conversion_at
 	 * @property \Illuminate\Support\Carbon|null $appointment_at
+	 * @property \Illuminate\Support\Carbon|null $last_activity_at
 	 * @property \Illuminate\Support\Carbon|null $last_contacted_at
 	 * @property \Illuminate\Support\Carbon|null $next_follow_up_at
 	 * @property string $priority
+	 * @property string|null $social_source
+	 * @property string|null $event_name
+	 * @property string|null $campaign_name
+	 * @property string|null $referral_source_name
+	 * @property string $visibility_preset
+	 * @property string|null $fna_status
+	 * @property bool|null $interest_score
 	 * @property string $interest_level
 	 * @property string $status
 	 * @property bool|null $children_count
@@ -25900,14 +26372,21 @@ namespace App\Models {
 	 * @property string|null $preferred_language
 	 * @property string|null $timezone
 	 * @property string|null $country
+	 * @property string|null $postal_code
 	 * @property string|null $state_province
+	 * @property string|null $address_line_1
 	 * @property string|null $city
 	 * @property string|null $secondary_phone
+	 * @property float $engagement_score
+	 * @property string|null $work_phone
+	 * @property string|null $home_phone
 	 * @property string|null $phone
 	 * @property string|null $email
 	 * @property string|null $preferred_name
 	 * @property string|null $last_name
 	 * @property string $first_name
+	 * @property int|null $prospect_funnel_id
+	 * @property string $funnel_type
 	 * @property int|null $pipeline_stage_id
 	 * @property int|null $prospect_source_id
 	 * @property int $owner_id
@@ -25950,14 +26429,21 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereOwnerId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereProspectSourceId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect wherePipelineStageId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereFunnelType($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereProspectFunnelId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereFirstName($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereLastName($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect wherePreferredName($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereEmail($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect wherePhone($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereHomePhone($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereWorkPhone($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereEngagementScore($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereSecondaryPhone($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereCity($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereAddressLine1($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereStateProvince($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect wherePostalCode($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereCountry($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereTimezone($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect wherePreferredLanguage($value)
@@ -25969,9 +26455,17 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereChildrenCount($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereStatus($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereInterestLevel($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereInterestScore($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereFnaStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereVisibilityPreset($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereReferralSourceName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereCampaignName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereEventName($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereSocialSource($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect wherePriority($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereNextFollowUpAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereLastContactedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereLastActivityAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereAppointmentAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereConversionAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Prospect>|Prospect whereConvertedTo($value)
@@ -26652,12 +27146,13 @@ namespace App\Models {
 	 * @property \Illuminate\Support\Carbon|null $deleted_at
 	 * @property \Illuminate\Support\Carbon|null $updated_at
 	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property array|null $metadata
 	 * @property \Illuminate\Support\Carbon|null $next_follow_up_at
 	 * @property string|null $next_action
-	 * @property string|null $outcome
-	 * @property \Illuminate\Support\Carbon $occurred_at
 	 * @property string|null $notes
-	 * @property string|null $subject
+	 * @property string|null $outcome
+	 * @property int|null $duration_minutes
+	 * @property \Illuminate\Support\Carbon $occurred_at
 	 * @property string $activity_type
 	 * @property int $user_id
 	 * @property string $prospect_id
@@ -26668,12 +27163,13 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereProspectId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereUserId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereActivityType($value)
-	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereSubject($value)
-	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereNotes($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereOccurredAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereDurationMinutes($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereOutcome($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereNotes($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereNextAction($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereNextFollowUpAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereMetadata($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereCreatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectActivity>|ProspectActivity whereDeletedAt($value)
@@ -27009,6 +27505,7 @@ namespace App\Models {
 	 * @property string|null $location_or_link
 	 * @property string|null $timezone
 	 * @property \Illuminate\Support\Carbon $scheduled_at
+	 * @property int|null $calendar_event_id
 	 * @property int|null $appointment_type_id
 	 * @property int|null $assigned_helper_id
 	 * @property int $owner_id
@@ -27024,6 +27521,7 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectAppointment>|ProspectAppointment whereOwnerId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectAppointment>|ProspectAppointment whereAssignedHelperId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectAppointment>|ProspectAppointment whereAppointmentTypeId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectAppointment>|ProspectAppointment whereCalendarEventId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectAppointment>|ProspectAppointment whereScheduledAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectAppointment>|ProspectAppointment whereTimezone($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectAppointment>|ProspectAppointment whereLocationOrLink($value)
@@ -29445,7 +29943,27 @@ namespace App\Models {
 	/**
 	 * App\Models\ProspectGoal
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property integer $actual_value
+	 * @property integer $target_value
+	 * @property string $metric_key
+	 * @property \Illuminate\Support\Carbon $period_end
+	 * @property \Illuminate\Support\Carbon $period_start
+	 * @property string $period_type
+	 * @property int $user_id
+	 * @property int $id
 	 * @property-read \App\Models\User $user
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal whereUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal wherePeriodType($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal wherePeriodStart($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal wherePeriodEnd($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal whereMetricKey($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal whereTargetValue($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal whereActualValue($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoal>|ProspectGoal query()
@@ -29768,7 +30286,21 @@ namespace App\Models {
 	/**
 	 * App\Models\ProspectGoalSnapshot
 	 *
+	 * @property \Illuminate\Support\Carbon|null $updated_at
+	 * @property \Illuminate\Support\Carbon|null $created_at
+	 * @property integer $value
+	 * @property string $metric_key
+	 * @property \Illuminate\Support\Carbon $snapshot_date
+	 * @property int $user_id
+	 * @property int $id
 	 * @property-read \App\Models\User $user
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot whereId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot whereUserId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot whereSnapshotDate($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot whereMetricKey($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot whereValue($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot whereCreatedAt($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot whereUpdatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot newModelQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot newQuery()
 	 * @method static \Illuminate\Database\Eloquent\Builder<ProspectGoalSnapshot>|ProspectGoalSnapshot query()
@@ -33215,6 +33747,7 @@ namespace App\Models {
 	 * @property string $role_name
 	 * @property string|null $email
 	 * @property string $code
+	 * @property string|null $prospect_id
 	 * @property int|null $accepted_by
 	 * @property int $sponsor_id
 	 * @property int $id
@@ -33224,6 +33757,7 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<RegistrationInvitation>|RegistrationInvitation whereId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<RegistrationInvitation>|RegistrationInvitation whereSponsorId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<RegistrationInvitation>|RegistrationInvitation whereAcceptedBy($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<RegistrationInvitation>|RegistrationInvitation whereProspectId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<RegistrationInvitation>|RegistrationInvitation whereCode($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<RegistrationInvitation>|RegistrationInvitation whereEmail($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<RegistrationInvitation>|RegistrationInvitation whereRoleName($value)
@@ -37064,6 +37598,8 @@ namespace App\Models {
 	 * @property string|null $reminder
 	 * @property integer $progress
 	 * @property \Illuminate\Support\Carbon|null $due_date
+	 * @property string|null $related_fna_id
+	 * @property string|null $related_prospect_id
 	 * @property string|null $related_person
 	 * @property string|null $related_module
 	 * @property string $category
@@ -37092,6 +37628,8 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<UserTask>|UserTask whereCategory($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<UserTask>|UserTask whereRelatedModule($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<UserTask>|UserTask whereRelatedPerson($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<UserTask>|UserTask whereRelatedProspectId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<UserTask>|UserTask whereRelatedFnaId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<UserTask>|UserTask whereDueDate($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<UserTask>|UserTask whereProgress($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<UserTask>|UserTask whereReminder($value)
