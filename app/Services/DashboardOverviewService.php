@@ -4,7 +4,8 @@ namespace App\Services;
 
 use App\Http\Controllers\TaskController;
 use App\Models\CalendarEvent;
-use App\Models\OnboardingStep;
+use App\Models\Checklist;
+use App\Models\ChecklistProgress;
 use App\Models\Rank;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -17,6 +18,7 @@ class DashboardOverviewService
         private readonly DashboardStatsService $stats,
         private readonly ProfileCompletionService $profileCompletion,
         private readonly TaskController $tasks,
+        private readonly ChecklistService $checklists,
     ) {}
 
     public function forUser(User $user): array
@@ -40,7 +42,8 @@ class DashboardOverviewService
      */
     private function onboarding(User $user): array
     {
-        $steps = OnboardingStep::query()
+        $steps = Checklist::query()
+            ->forTypeCode('onboarding')
             ->applicableToCountry($user->profile?->country)
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -50,8 +53,6 @@ class DashboardOverviewService
         return $this->checklistOverview(
             $user,
             $steps,
-            'user_onboarding_progress',
-            'onboarding_step_id',
             $this->stats->onboardingPercent($user),
             'onboarding.index'
         );
@@ -62,9 +63,9 @@ class DashboardOverviewService
      */
     private function licensing(User $user): array
     {
-        $steps = DB::table('licensing_steps')
+        $steps = Checklist::query()
+            ->forTypeCode('licensing')
             ->where('is_active', true)
-            ->whereNull('deleted_at')
             ->orderBy('sort_order')
             ->orderBy('title')
             ->get(['id', 'title']);
@@ -72,8 +73,6 @@ class DashboardOverviewService
         return $this->checklistOverview(
             $user,
             $steps,
-            'user_licensing_progress',
-            'licensing_step_id',
             $this->stats->licensingPercent($user),
             'licensing.index'
         );
@@ -84,21 +83,16 @@ class DashboardOverviewService
      */
     private function fap(User $user): array
     {
-        $steps = DB::table('apprenticeship_steps')
-            ->join('apprenticeship_programs', 'apprenticeship_programs.id', '=', 'apprenticeship_steps.apprenticeship_program_id')
-            ->where('apprenticeship_steps.is_active', true)
-            ->whereNull('apprenticeship_steps.deleted_at')
-            ->where('apprenticeship_programs.is_active', true)
-            ->whereNull('apprenticeship_programs.deleted_at')
-            ->orderBy('apprenticeship_steps.sort_order')
-            ->orderBy('apprenticeship_steps.title')
-            ->get(['apprenticeship_steps.id', 'apprenticeship_steps.title']);
+        $steps = Checklist::query()
+            ->forTypeCode('fap')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->get(['id', 'title']);
 
         return $this->checklistOverview(
             $user,
             $steps,
-            'user_apprenticeship_progress',
-            'apprenticeship_step_id',
             $this->stats->apprenticeshipPercent($user),
             'apprenticeship.index'
         );
@@ -370,8 +364,6 @@ class DashboardOverviewService
     private function checklistOverview(
         User $user,
         iterable $steps,
-        string $progressTable,
-        string $foreignKey,
         int $percent,
         string $route,
     ): array {
@@ -380,11 +372,12 @@ class DashboardOverviewService
 
         $progress = $stepIds->isEmpty()
             ? collect()
-            : DB::table($progressTable)
+            : ChecklistProgress::query()
                 ->where('user_id', $user->id)
-                ->whereIn($foreignKey, $stepIds)
-                ->get([$foreignKey, 'status'])
-                ->keyBy($foreignKey);
+                ->memberProgress()
+                ->whereIn('checklist_id', $stepIds)
+                ->get(['checklist_id', 'status'])
+                ->keyBy('checklist_id');
 
         $completed = $steps->filter(
             fn (object $step): bool => ($progress->get($step->id)?->status ?? 'not_started') === 'completed'
@@ -414,19 +407,20 @@ class DashboardOverviewService
      */
     private function cfmTrainingOverview(User $user): array
     {
-        $moduleIds = DB::table('cfm_training_modules')
+        $moduleIds = Checklist::query()
+            ->forTypeCode('cfm-training')
             ->where('is_active', true)
-            ->whereNull('deleted_at')
             ->pluck('id');
 
         if ($moduleIds->isEmpty()) {
             return ['percent' => 0, 'completed' => 0, 'total' => 0];
         }
 
-        $completed = DB::table('cfm_training_progress')
+        $completed = ChecklistProgress::query()
             ->where('user_id', $user->id)
-            ->whereIn('cfm_training_module_id', $moduleIds)
-            ->where('status', 'completed')
+            ->memberProgress()
+            ->whereIn('checklist_id', $moduleIds)
+            ->completed()
             ->count();
 
         $total = $moduleIds->count();

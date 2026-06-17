@@ -5,10 +5,10 @@
 @if ($profileFeedback)
     <div
         id="cfm-portal-profile-feedback"
-        class="mb-6 rounded-xl border px-4 py-3 text-sm {{ $profileFeedback['type'] === 'success' ? 'border-green-500/30 bg-green-900/20 text-green-300' : 'border-red-500/30 bg-red-900/20 text-red-300' }}"
+        class="rounded-lg border px-4 py-3 text-sm {{ $profileFeedback['type'] === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800' }}"
         role="alert"
     >
-        <p class="font-semibold {{ $profileFeedback['type'] === 'success' ? 'text-green-200' : 'text-red-200' }}">
+        <p class="font-semibold">
             {{ $profileFeedback['type'] === 'success' ? 'Profile saved' : 'Could not save profile' }}
         </p>
         <p class="mt-1">{{ $profileFeedback['message'] }}</p>
@@ -16,9 +16,9 @@
 @endif
 
 @if ($errors->any() && ! $profileFeedback)
-    <div id="cfm-portal-profile-feedback" class="mb-6 rounded-xl border border-red-500/30 bg-red-900/20 px-4 py-3 text-sm text-red-300" role="alert">
-        <p class="font-semibold text-red-200">Could not save profile</p>
-        <ul class="mt-2 list-disc list-inside space-y-1">
+    <div id="cfm-portal-profile-feedback" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p class="font-semibold">Could not save profile</p>
+        <ul class="mt-2 list-inside list-disc space-y-1">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>
             @endforeach

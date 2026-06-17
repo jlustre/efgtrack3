@@ -13,6 +13,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="min-h-full bg-[#F5F7FA] font-sans text-[#172033] antialiased">
+        @include('layouts.partials.page-chrome')
         <div class="flex min-h-full flex-col">
             {{ $slot }}
         </div>

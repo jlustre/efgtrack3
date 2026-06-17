@@ -15,17 +15,34 @@ class UpdateProfileInviteLinkRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $normalized = [];
+
+        foreach (['efg_associate_id', 'efg_invite_link'] as $field) {
+            if ($this->input($field) === '') {
+                $normalized[$field] = null;
+            }
+        }
+
+        if ($normalized !== []) {
+            $this->merge($normalized);
+        }
+    }
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
+        $profileId = $this->user()->profile()->value('id');
+
         return [
             'efg_associate_id' => [
                 'nullable',
                 'string',
                 'max:100',
-                Rule::unique('profiles', 'efg_associate_id')->ignore($this->user()->profile?->id),
+                Rule::unique('profiles', 'efg_associate_id')->ignore($profileId),
             ],
             'efg_invite_link' => ['nullable', 'string', 'max:2048', 'url'],
         ];
@@ -44,6 +61,11 @@ class UpdateProfileInviteLinkRequest extends FormRequest
 
     protected function failedValidation(Validator $validator): void
     {
+        session()->flash('efg_details_feedback', [
+            'type' => 'error',
+            'message' => 'Please correct the EFG details and try again.',
+        ]);
+
         throw (new ValidationException($validator))
             ->errorBag($this->errorBag)
             ->redirectTo(route('profile.edit'));

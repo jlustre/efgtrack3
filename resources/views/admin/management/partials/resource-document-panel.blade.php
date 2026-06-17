@@ -10,7 +10,7 @@
         <div>
             <h2 class="text-sm font-semibold text-[#0B1F3A]">PDF output</h2>
             <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-                Save document content above, then generate a PDF for the public document library. The generated file is stored automatically and used for member downloads.
+                Compose document content and generate a PDF, or upload a PDF directly on the form below. The stored file is used for member downloads and previews.
             </p>
             @if ($record)
                 <dl class="mt-4 grid gap-2 text-sm sm:grid-cols-2">

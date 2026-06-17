@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\PortalResource;
 use App\Support\DompdfHtml;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -43,6 +44,7 @@ class ResourcePdfService
 
         $resource->update([
             'file_path' => $path,
+            'url' => 'storage/'.$path,
             'file_format' => 'PDF',
             'pdf_generated_at' => now(),
         ]);
@@ -59,6 +61,28 @@ class ResourcePdfService
         }
 
         return $this->generate($resource);
+    }
+
+    public function storeUpload(PortalResource $resource, UploadedFile $file): PortalResource
+    {
+        $path = $this->storagePathFor($resource);
+
+        if ($resource->file_path && $resource->file_path !== $path) {
+            Storage::disk('public')->delete($resource->file_path);
+        }
+
+        Storage::disk('public')->makeDirectory(dirname($path));
+
+        $file->storeAs(dirname($path), basename($path), 'public');
+
+        $resource->update([
+            'file_path' => $path,
+            'url' => 'storage/'.$path,
+            'file_format' => 'PDF',
+            'pdf_generated_at' => now(),
+        ]);
+
+        return $resource->fresh();
     }
 
     private function storagePathFor(PortalResource $resource): string

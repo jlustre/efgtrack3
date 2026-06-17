@@ -7,8 +7,8 @@ use App\Models\User;
 use App\Services\DownlineHierarchyService;
 use App\Support\LocationOptions;
 use Database\Seeders\CountrySeeder;
-use Database\Seeders\LicensingStepSeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\ProfileCompletionFieldSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -36,8 +36,8 @@ class DashboardOverviewTest extends TestCase
             TimezoneSeeder::class,
             ProfileCompletionFieldSeeder::class,
             TeamSeeder::class,
-            OnboardingStepSeeder::class,
-            LicensingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
     }
 
@@ -68,11 +68,13 @@ class DashboardOverviewTest extends TestCase
         $rankId = Rank::where('code', 'FA')->value('id');
         $user = $this->createUser('onboarding.hub@example.com', 'Onboarding Hub Member', 'member', $teamId, $rankId);
 
-        $firstStepTitle = DB::table('onboarding_steps')
-            ->where('is_active', true)
-            ->whereNull('deleted_at')
-            ->orderBy('sort_order')
-            ->value('title');
+        $firstStepTitle = DB::table('checklists')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->where('checklist_types.code', 'onboarding')
+            ->where('checklists.is_active', true)
+            ->whereNull('checklists.deleted_at')
+            ->orderBy('checklists.sort_order')
+            ->value('checklists.title');
 
         $this->assertNotNull($firstStepTitle);
 

@@ -456,7 +456,6 @@ class LocationOptions
     }
 
     /**
-<<<<<<< HEAD
      * @return array{country_id: int|null, state_province_id: int|null, timezone_id: int|null}
      */
     public static function profileLocationIds(
@@ -588,22 +587,6 @@ class LocationOptions
         return Country::query()->whereKey($countryId)->value('name');
     }
 
-=======
-     * @return array{country_id: ?int, state_province_id: ?int, timezone_id: ?int}
-     */
-    public static function profileLocationIds(
-        ?string $countryName = 'Canada',
-        ?string $provinceName = null,
-        ?string $timezoneCode = null,
-    ): array {
-        return [
-            'country_id' => self::resolveCountryId($countryName),
-            'state_province_id' => self::resolveStateProvinceId($countryName, $provinceName),
-            'timezone_id' => self::resolveTimezoneId($timezoneCode),
-        ];
-    }
-
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
     public static function jurisdictionKey(string $country, string $province): string
     {
         return $country.'|'.$province;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TaskSuggestion;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Services\ChecklistService;
 use App\Support\ProfileLocationQuery;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -14,6 +15,8 @@ use Illuminate\View\View;
 
 class TaskController extends Controller
 {
+    public function __construct(private readonly ChecklistService $checklists) {}
+
     public function openTaskCountFor(User $user): int
     {
         return $this->confirmationTasksFor($user)->count()
@@ -400,40 +403,7 @@ class TaskController extends Controller
 
     private function pendingChecklistTasks(User $user, array $config): Collection
     {
-        return DB::table($config['progress_table'])
-            ->join('users', 'users.id', '=', $config['progress_table'].'.user_id')
-            ->join($config['step_table'], $config['step_table'].'.id', '=', $config['progress_table'].'.'.$config['foreign_key'])
-            ->leftJoin('profiles', 'profiles.user_id', '=', 'users.id')
-<<<<<<< HEAD
-            ->tap(fn ($query) => ProfileLocationQuery::joinCountry($query))
-=======
-            ->leftJoin('countries', 'countries.id', '=', 'profiles.country_id')
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
-            ->where($config['progress_table'].'.status', 'pending_confirmation')
-            ->whereNull('users.deleted_at')
-            ->whereNull($config['step_table'].'.deleted_at')
-            ->where($config['step_table'].'.is_active', true)
-            ->where('users.id', '!=', $user->id)
-            ->select(
-                $config['progress_table'].'.id',
-                $config['progress_table'].'.submitted_at',
-                'users.id as member_id',
-                'users.name as member_name',
-                'users.email as member_email',
-                'users.sponsor_id',
-                'users.mentor_id',
-<<<<<<< HEAD
-                ProfileLocationQuery::memberCountrySelect(),
-=======
-                'countries.name as member_country',
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
-                $config['step_table'].'.title',
-                $config['step_table'].'.description',
-                $config['step_table'].'.notified_parties'
-            )
-            ->orderBy($config['progress_table'].'.submitted_at')
-            ->get()
-            ->filter(fn (object $item) => $this->userCanConfirm($user, $item))
+        return $this->checklists->confirmationItemsFor($user, $config['typeCode'])
             ->map(function (object $item) use ($config): array {
                 return [
                     'id' => $config['key'].'-'.$item->id,
@@ -628,9 +598,7 @@ class TaskController extends Controller
             [
                 'key' => 'onboarding',
                 'label' => 'Onboarding',
-                'step_table' => 'onboarding_steps',
-                'progress_table' => 'user_onboarding_progress',
-                'foreign_key' => 'onboarding_step_id',
+                'typeCode' => 'onboarding',
                 'route' => 'onboarding.index',
                 'review_route' => 'onboarding.review',
                 'tone' => 'bg-emerald-500',
@@ -638,9 +606,7 @@ class TaskController extends Controller
             [
                 'key' => 'licensing',
                 'label' => 'Licensing',
-                'step_table' => 'licensing_steps',
-                'progress_table' => 'user_licensing_progress',
-                'foreign_key' => 'licensing_step_id',
+                'typeCode' => 'licensing',
                 'route' => 'licensing.index',
                 'review_route' => 'licensing.review',
                 'tone' => 'bg-amber-500',
@@ -648,9 +614,7 @@ class TaskController extends Controller
             [
                 'key' => 'apprenticeship',
                 'label' => 'Field Apprenticeship',
-                'step_table' => 'apprenticeship_steps',
-                'progress_table' => 'user_apprenticeship_progress',
-                'foreign_key' => 'apprenticeship_step_id',
+                'typeCode' => 'fap',
                 'route' => 'apprenticeship.index',
                 'review_route' => 'apprenticeship.review',
                 'tone' => 'bg-blue-500',
@@ -658,9 +622,7 @@ class TaskController extends Controller
             [
                 'key' => 'cfm-training',
                 'label' => 'CFM Training',
-                'step_table' => 'cfm_training_modules',
-                'progress_table' => 'cfm_training_progress',
-                'foreign_key' => 'cfm_training_module_id',
+                'typeCode' => 'cfm-training',
                 'route' => 'cfm-training.index',
                 'review_route' => 'cfm-training.review',
                 'tone' => 'bg-violet-500',

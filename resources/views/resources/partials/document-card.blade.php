@@ -1,15 +1,12 @@
 @php
-
     $categoryKey = $document->category ?: 'general';
-
     $categoryMeta = $categories[$categoryKey] ?? $categories['general'];
-
     $format = $document->resolvedFormat();
-
     $actionUrl = $document->resolvedAccessUrl();
-
     $formUrl = $document->formUrl();
-
+    $favoriteResourceIds = $favoriteResourceIds ?? [];
+    $filters = $filters ?? [];
+    $isFavorited = in_array($document->id, $favoriteResourceIds, true);
 @endphp
 
 
@@ -76,10 +73,20 @@
 
             </div>
 
-            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#0B1F3A]">
-
-                {{ $format }}
-
+            <div class="flex shrink-0 flex-col items-end gap-2">
+                @unless ($document->isInteractiveForm())
+                    @include('resources.partials.portal-resource-favorite-button', [
+                        'formAction' => route('resources.documents.favorite', $document),
+                        'queryParams' => [
+                            'search' => $filters['search'] ?? '',
+                            'category' => $filters['category'] ?? '',
+                        ],
+                        'isFavorited' => $isFavorited,
+                    ])
+                @endunless
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#0B1F3A]">
+                    {{ $format }}
+                </div>
             </div>
 
         </div>
@@ -134,7 +141,7 @@
 
                     </button>
 
-                    @if ($actionUrl)
+                    @if ($document->shouldOfferListDownload())
 
                         <a
 

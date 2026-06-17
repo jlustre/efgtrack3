@@ -2,13 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\CfmTraineeChecklistItem;
+use App\Models\Checklist;
 use App\Models\MentorAssignment;
 use App\Models\User;
 use Database\Seeders\CfmManagementSeeder;
-use Database\Seeders\CfmTraineeChecklistItemSeeder;
-use Database\Seeders\CfmTrainingModuleSeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\TaskScenarioSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,9 +22,8 @@ class CfmTraineeChecklistTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
-            CfmTraineeChecklistItemSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
     }
@@ -59,7 +57,7 @@ class CfmTraineeChecklistTest extends TestCase
             ->where('status', 'active')
             ->firstOrFail();
 
-        $item = CfmTraineeChecklistItem::query()->orderBy('sort_order')->firstOrFail();
+        $item = Checklist::query()->forTypeCode('cfm-mentoring')->orderBy('sort_order')->firstOrFail();
 
         $this->actingAs($cfm)
             ->patch(route('cfm.portal.trainees.checklist.update', [$assignment, $item]), [
@@ -68,9 +66,9 @@ class CfmTraineeChecklistTest extends TestCase
             ->assertRedirect(route('cfm.portal.trainees.checklist', $assignment))
             ->assertSessionHas('profile_feedback', fn (array $feedback) => $feedback['type'] === 'success');
 
-        $this->assertDatabaseHas('cfm_trainee_checklist_progress', [
+        $this->assertDatabaseHas('checklist_progress', [
             'mentor_assignment_id' => $assignment->id,
-            'cfm_trainee_checklist_item_id' => $item->id,
+            'checklist_id' => $item->id,
             'status' => 'completed',
             'completed_by' => $cfm->id,
         ]);
@@ -115,7 +113,7 @@ class CfmTraineeChecklistTest extends TestCase
             ->where('status', 'active')
             ->firstOrFail();
 
-        $item = CfmTraineeChecklistItem::query()->orderBy('sort_order')->firstOrFail();
+        $item = Checklist::query()->forTypeCode('cfm-mentoring')->orderBy('sort_order')->firstOrFail();
 
         $this->actingAs($cfm)
             ->patch(route('cfm.portal.trainees.checklist.update', [$assignment, $item]), [

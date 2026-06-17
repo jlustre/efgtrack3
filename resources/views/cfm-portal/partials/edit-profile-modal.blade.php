@@ -4,24 +4,24 @@
         $editForm = $portal['editForm'];
         $selectedLicensed = $editForm['licensed_jurisdictions'] ?? [];
         $profileFeedback = session('profile_feedback');
-        $inputClass = 'mt-1 w-full bg-gray-800 border rounded-xl px-4 py-2 text-gray-200 focus:border-amber-500 focus:outline-none';
-        $inputErrorClass = 'border-red-500/60';
-        $inputOkClass = 'border-gray-700';
+        $inputClass = 'mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]';
+        $inputErrorClass = 'border-red-400';
+        $inputOkClass = 'border-gray-300';
     @endphp
 
     <div
         x-show="showEditProfileModal"
         x-cloak
-        class="fixed inset-0 z-[60] overflow-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+        class="fixed inset-0 z-[60] flex items-center justify-center overflow-auto bg-slate-900/50 p-4 backdrop-blur-sm"
         @keydown.escape.window="showEditProfileModal = false"
     >
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto" @click.stop>
-            <div class="flex items-center justify-between mb-4">
+        <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl" @click.stop>
+            <div class="mb-4 flex items-center justify-between">
                 <div>
-                    <h3 class="text-xl font-bold text-white">Edit CFM Profile</h3>
-                    <p class="text-xs text-gray-500 mt-1">Update your contact details and mentor information</p>
+                    <h3 class="text-xl font-semibold text-[#0B1F3A]">Edit CFM Profile</h3>
+                    <p class="mt-1 text-xs text-slate-500">Update your contact details and mentor information</p>
                 </div>
-                <button type="button" @click="showEditProfileModal = false" class="text-gray-400 hover:text-white text-2xl leading-none" :disabled="profileSaving">&times;</button>
+                <button type="button" @click="showEditProfileModal = false" class="text-2xl leading-none text-slate-400 hover:text-[#0B1F3A]" :disabled="profileSaving">&times;</button>
             </div>
 
             <form
@@ -34,16 +34,16 @@
                 @method('PATCH')
 
                 @if ($profileFeedback && ($profileFeedback['type'] ?? '') === 'error')
-                    <div class="rounded-xl border border-red-500/30 bg-red-900/20 px-4 py-3 text-sm text-red-300" role="alert">
-                        <p class="font-semibold text-red-200">Could not save profile</p>
+                    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                        <p class="font-semibold">Could not save profile</p>
                         <p class="mt-1">{{ $profileFeedback['message'] }}</p>
                     </div>
                 @endif
 
                 @if ($errors->any())
-                    <div class="rounded-xl border border-red-500/30 bg-red-900/20 px-4 py-3 text-sm text-red-300" role="alert">
-                        <p class="font-semibold text-red-200">Please fix the following</p>
-                        <ul class="mt-2 list-disc list-inside space-y-1">
+                    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                        <p class="font-semibold">Please fix the following</p>
+                        <ul class="mt-2 list-inside list-disc space-y-1">
                             @foreach ($errors->all() as $error)
                                 <li>{{ $error }}</li>
                             @endforeach
@@ -52,7 +52,7 @@
                 @endif
 
                 <div>
-                    <label for="edit-phone" class="text-xs font-medium text-gray-400">Phone</label>
+                    <label for="edit-phone" class="text-xs font-semibold text-slate-600">Phone</label>
                     <input
                         id="edit-phone"
                         type="text"
@@ -61,12 +61,12 @@
                         class="{{ $inputClass }} {{ $errors->has('phone') ? $inputErrorClass : $inputOkClass }}"
                     >
                     @error('phone')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label for="edit-city" class="text-xs font-medium text-gray-400">City</label>
+                    <label for="edit-city" class="text-xs font-semibold text-slate-600">City</label>
                     <input
                         id="edit-city"
                         type="text"
@@ -75,7 +75,7 @@
                         class="{{ $inputClass }} {{ $errors->has('city') ? $inputErrorClass : $inputOkClass }}"
                     >
                     @error('city')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -93,10 +93,13 @@
                 @include('cfm.partials.licensed-jurisdictions-picker', [
                     'locationOptions' => $locationOptions,
                     'selectedKeys' => $selectedLicensed,
+                    'inputClass' => $inputClass,
+                    'labelClass' => 'text-xs font-semibold text-slate-600',
+                    'sectionClass' => 'rounded-lg border border-slate-200 bg-slate-50 p-3',
                 ])
 
                 <div>
-                    <label for="edit-languages" class="text-xs font-medium text-gray-400">Languages</label>
+                    <label for="edit-languages" class="text-xs font-semibold text-slate-600">Languages</label>
                     <input
                         id="edit-languages"
                         type="text"
@@ -105,14 +108,14 @@
                         placeholder="English, Spanish"
                         class="{{ $inputClass }} {{ $errors->has('languages') ? $inputErrorClass : $inputOkClass }}"
                     >
-                    <p class="text-xs text-gray-500 mt-1">Separate multiple languages with commas.</p>
+                    <p class="mt-1 text-xs text-slate-500">Separate multiple languages with commas.</p>
                     @error('languages')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label for="edit-specialties" class="text-xs font-medium text-gray-400">Specialties</label>
+                    <label for="edit-specialties" class="text-xs font-semibold text-slate-600">Specialties</label>
                     <input
                         id="edit-specialties"
                         type="text"
@@ -121,53 +124,53 @@
                         placeholder="Field Apprenticeship, Licensing"
                         class="{{ $inputClass }} {{ $errors->has('specialties') ? $inputErrorClass : $inputOkClass }}"
                     >
-                    <p class="text-xs text-gray-500 mt-1">Separate multiple specialties with commas.</p>
+                    <p class="mt-1 text-xs text-slate-500">Separate multiple specialties with commas.</p>
                     @error('specialties')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label for="edit-mentor-bio" class="text-xs font-medium text-gray-400">Mentor bio</label>
+                    <label for="edit-mentor-bio" class="text-xs font-semibold text-slate-600">Mentor bio</label>
                     <textarea
                         id="edit-mentor-bio"
                         name="mentor_bio"
                         rows="4"
                         placeholder="Share your mentoring approach and experience..."
-                        class="{{ $inputClass }} {{ $errors->has('mentor_bio') ? $inputErrorClass : $inputOkClass }} text-white placeholder-gray-500"
+                        class="{{ $inputClass }} {{ $errors->has('mentor_bio') ? $inputErrorClass : $inputOkClass }}"
                     >{{ $editForm['mentor_bio'] }}</textarea>
                     @error('mentor_bio')
-                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <label class="flex items-center gap-2 text-sm text-gray-300">
+                <label class="flex items-center gap-2 text-sm text-slate-700">
                     <input type="hidden" name="manual_unavailable" value="0">
                     <input
                         type="checkbox"
                         name="manual_unavailable"
                         value="1"
                         @checked($editForm['manual_unavailable'])
-                        class="rounded border-gray-600 bg-gray-800 text-amber-500"
+                        class="rounded border-gray-300 text-[#C8A24A] focus:ring-[#C8A24A]"
                     >
                     Mark me as temporarily unavailable for new assignments
                 </label>
                 @error('manual_unavailable')
-                    <p class="text-xs text-red-400">{{ $message }}</p>
+                    <p class="text-xs text-red-600">{{ $message }}</p>
                 @enderror
 
                 <div class="flex gap-3 pt-2">
                     <button
                         type="button"
                         @click="showEditProfileModal = false"
-                        class="flex-1 border border-gray-700 py-2.5 rounded-xl text-gray-300 hover:bg-gray-800 transition disabled:opacity-50"
+                        class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-[#0B1F3A] transition hover:bg-slate-50 disabled:opacity-50"
                         :disabled="profileSaving"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
-                        class="flex-1 bg-amber-600 text-black font-bold py-2.5 rounded-xl hover:bg-amber-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        class="flex-1 rounded-lg bg-[#C8A24A] py-2.5 font-bold text-[#0B1F3A] transition hover:bg-[#D8B85F] disabled:cursor-not-allowed disabled:opacity-60"
                         :disabled="profileSaving"
                     >
                         <span x-show="! profileSaving">Save Profile</span>

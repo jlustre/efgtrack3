@@ -54,6 +54,6 @@ class MentorAssignment extends Model
 
     public function traineeChecklistProgress(): HasMany
     {
-        return $this->hasMany(CfmTraineeChecklistProgress::class, 'mentor_assignment_id');
+        return $this->hasMany(ChecklistProgress::class, 'mentor_assignment_id');
     }
 }

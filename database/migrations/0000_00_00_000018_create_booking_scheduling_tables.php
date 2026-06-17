@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('calendar_category_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('linked_apprenticeship_step_id')->nullable()->constrained('apprenticeship_steps')->nullOnDelete();
+            $table->unsignedBigInteger('linked_checklist_id')->nullable();
             $table->foreignId('linked_training_module_id')->nullable()->constrained('training_modules')->nullOnDelete();
             $table->string('title');
             $table->string('slug');
@@ -133,7 +133,7 @@ return new class extends Migration
             $table->foreignId('cfm_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('trainee_id')->nullable()->constrained('users')->nullOnDelete();
             $table->ulid('related_prospect_id')->nullable();
-            $table->foreignId('related_apprenticeship_step_id')->nullable()->constrained('apprenticeship_steps')->nullOnDelete();
+            $table->unsignedBigInteger('related_checklist_id')->nullable();
             $table->string('status')->default('pending_approval')->index();
             $table->timestamp('starts_at')->index();
             $table->timestamp('ends_at')->index();

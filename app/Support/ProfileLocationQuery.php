@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use Illuminate\Database\Query\Builder;
+use Illuminate\Contracts\Database\Query\Builder;
 
 class ProfileLocationQuery
 {

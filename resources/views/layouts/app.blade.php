@@ -14,6 +14,7 @@
         @livewireStyles
     </head>
     <body class="min-h-screen bg-[#F5F7FA] font-sans text-[#172033] antialiased">
+        @include('layouts.partials.page-chrome')
         <div
             x-data="{
                 sidebarOpen: false,
@@ -237,6 +238,5 @@
         </div>
 
         @livewireScripts
-        @include('layouts.partials.page-chrome')
     </body>
 </html>

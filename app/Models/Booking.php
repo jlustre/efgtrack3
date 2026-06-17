@@ -69,9 +69,9 @@ class Booking extends Model
         return $this->belongsTo(Prospect::class, 'related_prospect_id');
     }
 
-    public function relatedApprenticeshipStep(): BelongsTo
+    public function relatedChecklist(): BelongsTo
     {
-        return $this->belongsTo(ApprenticeshipStep::class, 'related_apprenticeship_step_id');
+        return $this->belongsTo(Checklist::class, 'related_checklist_id');
     }
 
     public function attendees(): HasMany

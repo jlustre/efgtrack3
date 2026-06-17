@@ -49,46 +49,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('licensing_steps', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->unsignedSmallInteger('sort_order')->default(0);
-            $table->boolean('is_required')->default(true);
-            $table->timestamps();
-        });
-
-        Schema::create('user_licensing_progress', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('licensing_step_id')->constrained()->cascadeOnDelete();
-            $table->string('status')->default('not_started');
-            $table->date('completed_at')->nullable();
-            $table->text('notes')->nullable();
-            $table->timestamps();
-            $table->unique(['user_id', 'licensing_step_id']);
-        });
-
-        Schema::create('onboarding_steps', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->unsignedSmallInteger('sort_order')->default(0);
-            $table->boolean('is_required')->default(true);
-            $table->timestamps();
-        });
-
-        Schema::create('user_onboarding_progress', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('onboarding_step_id')->constrained()->cascadeOnDelete();
-            $table->string('status')->default('not_started');
-            $table->timestamp('completed_at')->nullable();
-            $table->text('notes')->nullable();
-            $table->timestamps();
-            $table->unique(['user_id', 'onboarding_step_id']);
-        });
-
         Schema::create('training_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -239,34 +199,6 @@ return new class extends Migration
             $table->unique(['mentor_id', 'apprentice_id', 'status']);
         });
 
-        Schema::create('apprenticeship_programs', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-
-        Schema::create('apprenticeship_steps', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('apprenticeship_program_id')->constrained()->cascadeOnDelete();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->unsignedSmallInteger('sort_order')->default(0);
-            $table->timestamps();
-        });
-
-        Schema::create('user_apprenticeship_progress', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('apprenticeship_step_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('status')->default('not_started');
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamp('approved_at')->nullable();
-            $table->timestamps();
-        });
-
         Schema::create('mentor_notes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('mentor_assignment_id')->constrained()->cascadeOnDelete();
@@ -274,25 +206,6 @@ return new class extends Migration
             $table->text('note');
             $table->boolean('is_private')->default(true);
             $table->timestamps();
-        });
-
-        Schema::create('cfm_training_modules', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->unsignedSmallInteger('sort_order')->default(0);
-            $table->boolean('is_required')->default(true);
-            $table->timestamps();
-        });
-
-        Schema::create('cfm_training_progress', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('cfm_training_module_id')->constrained()->cascadeOnDelete();
-            $table->string('status')->default('not_started');
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamps();
-            $table->unique(['user_id', 'cfm_training_module_id']);
         });
 
         Schema::create('cfm_certification_requests', function (Blueprint $table) {
@@ -310,12 +223,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('cfm_certification_requests');
-        Schema::dropIfExists('cfm_training_progress');
-        Schema::dropIfExists('cfm_training_modules');
         Schema::dropIfExists('mentor_notes');
-        Schema::dropIfExists('user_apprenticeship_progress');
-        Schema::dropIfExists('apprenticeship_steps');
-        Schema::dropIfExists('apprenticeship_programs');
         Schema::dropIfExists('mentor_assignments');
         Schema::dropIfExists('badges');
         Schema::dropIfExists('announcements');
@@ -331,10 +239,6 @@ return new class extends Migration
         Schema::dropIfExists('training_lessons');
         Schema::dropIfExists('training_modules');
         Schema::dropIfExists('training_categories');
-        Schema::dropIfExists('user_onboarding_progress');
-        Schema::dropIfExists('onboarding_steps');
-        Schema::dropIfExists('user_licensing_progress');
-        Schema::dropIfExists('licensing_steps');
         Schema::dropIfExists('profiles');
 
         Schema::table('users', function (Blueprint $table) {

@@ -32,9 +32,9 @@ class BookingEventType extends Model
         return $this->belongsTo(CalendarCategory::class);
     }
 
-    public function linkedApprenticeshipStep(): BelongsTo
+    public function linkedChecklist(): BelongsTo
     {
-        return $this->belongsTo(ApprenticeshipStep::class, 'linked_apprenticeship_step_id');
+        return $this->belongsTo(Checklist::class, 'linked_checklist_id');
     }
 
     public function linkedTrainingModule(): BelongsTo

@@ -6,18 +6,13 @@ use App\Models\Rank;
 use App\Models\RegistrationInvitation;
 use App\Models\Team;
 use App\Models\User;
-<<<<<<< HEAD
+use App\Support\LocationOptions;
 use Database\Seeders\CountrySeeder;
 use Database\Seeders\EmailTemplateSeeder;
+use Database\Seeders\ProfileCompletionFieldSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StateProvinceSeeder;
-=======
-use App\Support\LocationOptions;
-use Database\Seeders\CountrySeeder;
-use Database\Seeders\RankSeeder;
-use Database\Seeders\RolePermissionSeeder;
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -89,9 +84,8 @@ class RegistrationTest extends TestCase
             CountrySeeder::class,
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
+            ProfileCompletionFieldSeeder::class,
         ]);
-
-        $locationIds = $this->registrationLocationIds();
 
         $sponsor = User::factory()->create();
         $team = Team::create([
@@ -113,14 +107,9 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1001',
             'city' => 'Vancouver',
-<<<<<<< HEAD
             'province' => 'British Columbia',
             'country' => 'Canada',
             'timezone' => 'Canada Pacific Time',
-=======
-            'country_id' => $locationIds['country_id'],
-            'timezone_id' => $locationIds['timezone_id'],
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             'sponsor_confirmed' => '1',
             'active_associate_confirmed' => '1',
             'password' => 'password',
@@ -142,11 +131,8 @@ class RegistrationTest extends TestCase
         $this->assertTrue($newUser->is_online);
         $this->assertSame('EFG-1001', $newUser->profile->efg_associate_id);
         $this->assertSame('Vancouver', $newUser->profile->city);
-<<<<<<< HEAD
+        $newUser->load('profile.countryRecord', 'profile.stateProvince', 'profile.timezoneRecord');
         $this->assertSame('British Columbia', $newUser->profile->province);
-=======
-        $newUser->load('profile.countryRecord', 'profile.timezoneRecord');
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         $this->assertSame('Canada', $newUser->profile->country);
         $this->assertSame('Canada Pacific Time', $newUser->profile->timezone);
         $this->assertTrue($newUser->profile->is_efg_active_associate);
@@ -164,6 +150,7 @@ class RegistrationTest extends TestCase
         $this->actingAs($newUser)
             ->get(route('dashboard'))
             ->assertOk()
+            ->assertViewHas('forceProfileCompletionModal', true)
             ->assertSee('Complete your profile', false)
             ->assertSee('Profile completion', false)
             ->assertSee('Required fields', false);
@@ -173,8 +160,6 @@ class RegistrationTest extends TestCase
     {
         $invitation = RegistrationInvitation::factory()->create();
 
-        $locationIds = $this->registrationLocationIds();
-
         $response = $this->post('/register', [
             'registration_code' => $invitation->code,
             'first_name' => 'Test',
@@ -182,14 +167,9 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1002',
             'city' => 'Vancouver',
-<<<<<<< HEAD
             'province' => 'British Columbia',
             'country' => 'Canada',
             'timezone' => 'Canada Pacific Time',
-=======
-            'country_id' => $locationIds['country_id'],
-            'timezone_id' => $locationIds['timezone_id'],
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
@@ -209,8 +189,6 @@ class RegistrationTest extends TestCase
             'max_uses' => 1,
         ]);
 
-        $locationIds = $this->registrationLocationIds();
-
         $response = $this->post('/register', [
             'registration_code' => $invitation->code,
             'first_name' => 'Test',
@@ -218,14 +196,9 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1003',
             'city' => 'Vancouver',
-<<<<<<< HEAD
             'province' => 'British Columbia',
             'country' => 'Canada',
             'timezone' => 'Canada Pacific Time',
-=======
-            'country_id' => $locationIds['country_id'],
-            'timezone_id' => $locationIds['timezone_id'],
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             'sponsor_confirmed' => '1',
             'active_associate_confirmed' => '1',
             'password' => 'password',

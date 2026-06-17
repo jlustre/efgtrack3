@@ -1,49 +1,50 @@
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4">
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4 shadow-xl hover:shadow-2xl transition-all">
-        <div class="text-amber-400 text-sm font-medium mb-2">Total CFMs</div>
-        <div class="text-2xl font-bold text-white" x-text="stats.total"></div>
-        <div class="text-xs text-gray-500 mt-1">Across accessible hierarchies</div>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total CFMs</p>
+        <p class="mt-2 text-2xl font-bold text-[#0B1F3A]" x-text="stats.total"></p>
+        <p class="mt-1 text-xs text-slate-500">Across accessible hierarchies</p>
     </div>
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4 shadow-xl">
-        <div class="text-green-400 text-sm font-medium mb-2">Available CFMs</div>
-        <div class="text-2xl font-bold text-green-400" x-text="stats.available"></div>
-        <div class="text-xs text-gray-400">0–2 apprentices</div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Available CFMs</p>
+        <p class="mt-2 text-2xl font-bold text-emerald-700" x-text="stats.available"></p>
+        <p class="mt-1 text-xs text-slate-500">0–2 apprentices</p>
     </div>
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4 shadow-xl">
-        <div class="text-orange-400 text-sm font-medium mb-2">Busy / Overloaded</div>
-        <div class="text-2xl font-bold text-orange-400" x-text="busyOverloadedCount"></div>
-        <div class="text-xs text-orange-300">6+ apprentices</div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Busy / Overloaded</p>
+        <p class="mt-2 text-2xl font-bold text-orange-700" x-text="busyOverloadedCount"></p>
+        <p class="mt-1 text-xs text-slate-500">6+ apprentices</p>
     </div>
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4 shadow-xl">
-        <div class="text-amber-400 text-sm font-medium mb-2">My Hierarchy</div>
-        <div class="text-2xl font-bold text-white" x-text="stats.myHierarchy"></div>
-        <div class="text-xs text-amber-400">Full access</div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">My Hierarchy</p>
+        <p class="mt-2 text-2xl font-bold text-[#0B1F3A]" x-text="stats.myHierarchy"></p>
+        <p class="mt-1 text-xs text-[#8A6A1F]">Full access</p>
     </div>
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4 shadow-xl">
-        <div class="text-blue-400 text-sm font-medium mb-2">External Hierarchy</div>
-        <div class="text-2xl font-bold text-blue-400" x-text="stats.externalHierarchy"></div>
-        <div class="text-xs text-gray-400">May require approval</div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">External Hierarchy</p>
+        <p class="mt-2 text-2xl font-bold text-sky-700" x-text="stats.externalHierarchy"></p>
+        <p class="mt-1 text-xs text-slate-500">May require approval</p>
     </div>
 </div>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-        <div class="text-amber-400 text-sm font-medium mb-1">Active Apprentices</div>
-        <div class="text-2xl font-bold text-white" x-text="stats.activeApprentices"></div>
+
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Active Apprentices</p>
+        <p class="mt-2 text-2xl font-bold text-[#0B1F3A]" x-text="stats.activeApprentices"></p>
     </div>
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-        <div class="text-amber-400 text-sm font-medium mb-1">Pending FAP Assignments</div>
-        <div class="text-2xl font-bold text-white" x-text="stats.pendingFap"></div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Pending FAP Assignments</p>
+        <p class="mt-2 text-2xl font-bold text-[#0B1F3A]" x-text="stats.pendingFap"></p>
     </div>
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-        <div class="text-amber-400 text-sm font-medium mb-1">Avg Mentor Load</div>
-        <div class="text-2xl font-bold text-white"><span x-text="stats.averageLoad"></span><span class="text-sm text-gray-400">/6</span></div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Avg Mentor Load</p>
+        <p class="mt-2 text-2xl font-bold text-[#0B1F3A]"><span x-text="stats.averageLoad"></span><span class="text-sm text-slate-500">/6</span></p>
     </div>
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-        <div class="text-amber-400 text-sm font-medium mb-1">FAP Completion Rate</div>
-        <div class="text-2xl font-bold text-green-400"><span x-text="stats.fapCompletionRate"></span>%</div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">FAP Completion Rate</p>
+        <p class="mt-2 text-2xl font-bold text-emerald-700"><span x-text="stats.fapCompletionRate"></span>%</p>
     </div>
-    <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-        <div class="text-amber-400 text-sm font-medium mb-1">Avg Weekly Availability</div>
-        <div class="text-2xl font-bold text-white"><span x-text="stats.avgWeeklyAvailabilityHours"></span>h</div>
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Avg Weekly Availability</p>
+        <p class="mt-2 text-2xl font-bold text-[#0B1F3A]"><span x-text="stats.avgWeeklyAvailabilityHours"></span>h</p>
     </div>
 </div>

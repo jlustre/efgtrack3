@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -15,12 +16,16 @@ class OnboardingStepCountryAdminTest extends TestCase
     public function test_admin_can_create_country_specific_onboarding_step(): void
     {
         $this->seed(RolePermissionSeeder::class);
+        $this->seed(ChecklistTypeSeeder::class);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
+        $typeId = DB::table('checklist_types')->where('code', 'onboarding')->value('id');
+
         $this->actingAs($admin)
-            ->post(route('admin.management.store', 'onboarding-steps'), [
+            ->post(route('admin.management.store', 'checklists'), [
+                'checklist_type_id' => $typeId,
                 'title' => 'Canada: Confirm Provincial Exam Booking',
                 'description' => 'Confirm provincial exam booking details.',
                 'sort_order' => 300,
@@ -32,7 +37,8 @@ class OnboardingStepCountryAdminTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertDatabaseHas('onboarding_steps', [
+        $this->assertDatabaseHas('checklists', [
+            'checklist_type_id' => $typeId,
             'title' => 'Canada: Confirm Provincial Exam Booking',
             'country' => 'Canada',
             'notified_parties' => 'SP, CFM',
@@ -43,12 +49,16 @@ class OnboardingStepCountryAdminTest extends TestCase
     public function test_admin_can_create_global_onboarding_step(): void
     {
         $this->seed(RolePermissionSeeder::class);
+        $this->seed(ChecklistTypeSeeder::class);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
+        $typeId = DB::table('checklist_types')->where('code', 'onboarding')->value('id');
+
         $this->actingAs($admin)
-            ->post(route('admin.management.store', 'onboarding-steps'), [
+            ->post(route('admin.management.store', 'checklists'), [
+                'checklist_type_id' => $typeId,
                 'title' => 'Global: Confirm Portal Access',
                 'description' => 'Confirm login and dashboard access.',
                 'sort_order' => 305,
@@ -60,6 +70,6 @@ class OnboardingStepCountryAdminTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertNull(DB::table('onboarding_steps')->where('title', 'Global: Confirm Portal Access')->value('country'));
+        $this->assertNull(DB::table('checklists')->where('title', 'Global: Confirm Portal Access')->value('country'));
     }
 }

@@ -5,10 +5,8 @@ namespace Tests\Feature;
 use App\Models\TaskSuggestion;
 use App\Models\User;
 use App\Models\UserTask;
-use Database\Seeders\CfmTrainingModuleSeeder;
-use Database\Seeders\FieldApprenticeshipProgramSeeder;
-use Database\Seeders\LicensingStepSeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\TaskManagementSeeder;
@@ -27,10 +25,8 @@ class TaskManagementSeederTest extends TestCase
             RankSeeder::class,
             RolePermissionSeeder::class,
             TeamSeeder::class,
-            OnboardingStepSeeder::class,
-            LicensingStepSeeder::class,
-            FieldApprenticeshipProgramSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             TaskScenarioSeeder::class,
             TaskManagementSeeder::class,
         ]);

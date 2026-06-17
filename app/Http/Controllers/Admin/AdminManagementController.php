@@ -3,19 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-<<<<<<< HEAD
+use App\Models\ChecklistType;
 use App\Rules\UrlOrRelativePath;
 use App\Models\PortalResource;
 use App\Services\DocumentLinkSyncService;
 use App\Services\ResourcePdfService;
-=======
-use App\Models\ProfileCompletionField;
-use App\Models\User;
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -24,59 +22,71 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminManagementController extends Controller
 {
-<<<<<<< HEAD
     public function __construct(
         private readonly ResourcePdfService $resourcePdf,
         private readonly DocumentLinkSyncService $documentLinkSync,
     ) {}
 
-    public function index(): View
-=======
     public function index(Request $request): View
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
     {
         abort_unless($this->canViewManagementIndex(), 403);
 
-        $search = $request->string('search')->toString();
-        $category = $request->string('category')->toString();
+        $search = $request->string('search')->trim()->toString();
+        $category = $request->string('category')->trim()->toString();
+        $page = max(1, $request->integer('page', 1));
+        $perPage = 12;
 
-        $resources = collect($this->resources())
-            ->map(function (array $resource, string $key): array {
-                $resource['key'] = $key;
-                $resource['category'] = $this->resourceCategory($key);
-                $resource['record_count'] = DB::table($resource['table'])->whereNull('deleted_at')->count();
-                $resource['archived_count'] = DB::table($resource['table'])->whereNotNull('deleted_at')->count();
+        $items = collect($this->resources())
+            ->map(function (array $config, string $key): array {
+                $counts = $this->resourceCounts($config, $key);
 
-                return $resource;
+                return [
+                    'key' => $key,
+                    'label' => $config['label'],
+                    'table' => $config['table'],
+                    'description' => $config['description'],
+                    'category' => $config['category'] ?? $this->resourceCategoryFor($key),
+                    'record_count' => $counts['record_count'],
+                    'archived_count' => $counts['archived_count'],
+                ];
             })
+            ->filter(fn (array $resource): bool => $this->canViewResource($resource['key']))
             ->when($search !== '', function ($collection) use ($search) {
-                $needle = strtolower($search);
+                $needle = Str::lower($search);
 
                 return $collection->filter(function (array $resource) use ($needle): bool {
-                    return str_contains(strtolower($resource['label']), $needle)
-                        || str_contains(strtolower($resource['description']), $needle)
-                        || str_contains(strtolower($resource['key']), $needle)
-                        || str_contains(strtolower($resource['table']), $needle);
+                    $haystack = Str::lower(implode(' ', [
+                        $resource['key'],
+                        $resource['label'],
+                        $resource['table'],
+                        $resource['description'],
+                    ]));
+
+                    return Str::contains($haystack, $needle);
                 });
             })
-            ->when($category !== '', fn ($collection) => $collection->filter(
-                fn (array $resource): bool => $resource['category'] === $category
-            ))
+            ->when($category !== '', fn ($collection) => $collection->where('category', $category))
             ->sortBy('label')
             ->values();
 
-        $resources = new \Illuminate\Pagination\LengthAwarePaginator(
-            $resources->forPage($request->integer('page', 1), 10)->values(),
-            $resources->count(),
-            10,
-            $request->integer('page', 1),
-            ['path' => $request->url(), 'query' => $request->query()],
+        $resources = new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            [
+                'path' => route('admin.management.index'),
+                'query' => $request->query(),
+            ],
         );
 
         return view('admin.management.index', [
             'resources' => $resources,
-            'filters' => compact('search', 'category'),
-            'categories' => $this->resourceCategoryOptions(),
+            'filters' => [
+                'search' => $search,
+                'category' => $category,
+            ],
+            'categories' => $this->resourceCategories(),
         ]);
     }
 
@@ -87,11 +97,31 @@ class AdminManagementController extends Controller
 
         $search = $request->string('search')->toString();
         $trashed = $request->string('trashed')->toString();
+        $category = $request->string('category')->toString();
+        $checklistType = $request->string('checklist_type')->toString();
+
+        $checklistTypes = $resource === 'checklists'
+            ? ChecklistType::query()
+                ->whereNull('deleted_at')
+                ->orderBy('sort_order')
+                ->get(['id', 'code', 'name'])
+            : collect();
+
+        $validChecklistTypeIds = $checklistTypes->pluck('id')->map(fn (int $id): string => (string) $id)->all();
 
         $records = DB::table($config['table'])
+            ->when($resource === 'resources', fn ($query) => $query->where('type', 'document'))
             ->when($trashed === 'with', fn ($query) => $query)
             ->when($trashed === 'only', fn ($query) => $query->whereNotNull('deleted_at'))
             ->when($trashed !== 'only', fn ($query) => $query->whereNull('deleted_at'))
+            ->when(
+                $resource === 'resources' && $category !== '' && \App\Support\ResourceDocumentCategories::isValid($category),
+                fn ($query) => $query->where('category', $category),
+            )
+            ->when(
+                $resource === 'checklists' && $checklistType !== '' && in_array($checklistType, $validChecklistTypeIds, true),
+                fn ($query) => $query->where('checklist_type_id', (int) $checklistType),
+            )
             ->when($search, function ($query) use ($config, $search): void {
                 $query->where(function ($query) use ($config, $search): void {
                     foreach ($config['search'] as $column) {
@@ -103,21 +133,42 @@ class AdminManagementController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        $favoriteResourceIds = [];
+        $favoriteRecords = collect();
+
+        if ($resource === 'resources') {
+            $favoriteResourceIds = $request->user()
+                ->favoritePortalResources()
+                ->where('type', 'document')
+                ->pluck('resources.id')
+                ->all();
+
+            $favoriteRecords = $request->user()
+                ->favoritePortalResources()
+                ->where('type', 'document')
+                ->orderBy('sort_order')
+                ->orderBy('title')
+                ->get();
+        }
+
         return view('admin.management.resource-index', [
             'resource' => $resource,
             'config' => $config,
             'records' => $records,
-            'filters' => compact('search', 'trashed'),
-            'canManage' => $this->canManageResource($resource),
-<<<<<<< HEAD
-            'canDeleteRecords' => $this->canDeleteResourceRecords($resource),
-            'canUpdateSeeder' => $this->canManageResource($resource) && $this->isSeederUpdatableResource($resource),
-            'options' => ($config['use_inline_modals'] ?? true) ? $this->formOptionsFor($config) : [],
-=======
-            'canUpdateSeeder' => $this->canManageResource($resource) && $this->isChecklistResource($resource),
-            'options' => $this->formOptions(),
+            'filters' => [
+                'search' => $search,
+                'trashed' => $trashed,
+                'category' => $category,
+                'checklist_type' => $checklistType,
+            ],
+            'checklistTypes' => $checklistTypes,
             'embedded' => $request->boolean('embedded'),
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
+            'canManage' => $this->canManageResource($resource),
+            'canDeleteRecords' => $this->canDeleteResourceRecords($resource),
+            'canUpdateSeeder' => $this->canUpdateSeeder($resource),
+            'options' => ($config['use_inline_modals'] ?? true) ? $this->formOptionsFor($config) : [],
+            'favoriteResourceIds' => $favoriteResourceIds,
+            'favoriteRecords' => $favoriteRecords,
         ]);
     }
 
@@ -151,17 +202,10 @@ class AdminManagementController extends Controller
 
         $validated['created_at'] = now();
         $validated['updated_at'] = now();
-        $validated = $this->prepareRecordPayload($validated, $config, $request);
 
-        if ($config['uses_uuid'] ?? false) {
-            $validated['id'] = (string) Str::uuid();
-            DB::table($config['table'])->insert($validated);
-            $id = $validated['id'];
-        } else {
-            $id = DB::table($config['table'])->insertGetId($validated);
-        }
+        $id = DB::table($config['table'])->insertGetId($validated);
 
-        $pdfStatus = $this->syncResourcePdf($resource, $id, (bool) $request->boolean('generate_pdf'));
+        $pdfStatus = $this->syncResourceDocumentFile($request, $resource, $id, (bool) $request->boolean('generate_pdf'));
         $this->syncDocumentLinks($resource, $id);
 
         return redirect()
@@ -169,7 +213,7 @@ class AdminManagementController extends Controller
             ->with('status', $pdfStatus ?: 'record-created');
     }
 
-    public function show(string $resource, string $record): View
+    public function show(string $resource, int $record): View
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canViewResource($resource), 403);
@@ -184,7 +228,7 @@ class AdminManagementController extends Controller
         ]);
     }
 
-    public function edit(string $resource, string $record): View
+    public function edit(string $resource, int $record): View
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -201,7 +245,7 @@ class AdminManagementController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $resource, string $record): RedirectResponse
+    public function update(Request $request, string $resource, int $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -219,11 +263,11 @@ class AdminManagementController extends Controller
         }
 
         $validated['updated_at'] = now();
-        $validated = $this->prepareRecordPayload($validated, $config, $request);
 
         DB::table($config['table'])->where('id', $record)->update($validated);
 
-        $pdfStatus = $this->syncResourcePdf(
+        $pdfStatus = $this->syncResourceDocumentFile(
+            $request,
             $resource,
             $record,
             (bool) $request->boolean('generate_pdf'),
@@ -275,7 +319,29 @@ class AdminManagementController extends Controller
         );
     }
 
-    public function toggleStatus(string $resource, string $record): RedirectResponse
+    public function toggleResourceFavorite(Request $request, int $record): RedirectResponse
+    {
+        abort_unless($this->canViewResource('resources'), 403);
+
+        $portalResource = PortalResource::query()->findOrFail($record);
+        abort_unless($portalResource->type === 'document', 404);
+
+        $attached = $request->user()->favoritePortalResources()->toggle($portalResource->id);
+
+        $status = $attached['attached'] === [] ? 'favorite-removed' : 'favorite-added';
+
+        return redirect()
+            ->route('admin.management.resource.index', array_filter([
+                'resources',
+                'search' => $request->string('search')->toString() ?: null,
+                'trashed' => $request->string('trashed')->toString() ?: null,
+                'category' => $request->string('category')->toString() ?: null,
+                'embedded' => $request->boolean('embedded') ? '1' : null,
+            ]))
+            ->with('status', $status);
+    }
+
+    public function toggleStatus(string $resource, int $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -293,27 +359,27 @@ class AdminManagementController extends Controller
             ->with('status', (bool) $row->is_active ? 'record-deactivated' : 'record-activated');
     }
 
-    public function updateSeeder(string $resource): RedirectResponse
+    public function updateSeeder(Request $request, string $resource): RedirectResponse
     {
         $this->resourceConfig($resource);
-        abort_unless($this->canManageResource($resource) && $this->isSeederUpdatableResource($resource), 403);
+        abort_unless($this->canUpdateSeeder($resource), 403);
 
-        $seederContent = match ($resource) {
-            'onboarding-steps' => $this->buildOnboardingStepSeeder(),
-            'licensing-steps' => $this->buildLicensingStepSeeder(),
-            'apprenticeship-steps' => $this->buildFieldApprenticeshipProgramSeeder(),
-            'cfm-training-modules' => $this->buildCfmTrainingModuleSeeder(),
-            'email-templates' => $this->buildEmailTemplateSeeder(),
+        match ($resource) {
+            'email-templates' => File::put($this->seederPath($resource), $this->buildEmailTemplateSeeder()),
+            'checklists' => $this->writeChecklistSeeders($request),
         };
 
-        File::put($this->seederPath($resource), $seederContent);
-
         return redirect()
-            ->route('admin.management.resource.index', [$resource, 'trashed' => request('trashed')])
+            ->route('admin.management.resource.index', array_filter([
+                $resource,
+                'search' => $request->string('search')->toString() ?: null,
+                'trashed' => $request->string('trashed')->toString() ?: null,
+                'checklist_type' => $request->string('checklist_type')->toString() ?: null,
+            ]))
             ->with('status', 'seeder-updated');
     }
 
-    public function destroy(string $resource, string $record): RedirectResponse
+    public function destroy(string $resource, int $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -329,7 +395,7 @@ class AdminManagementController extends Controller
             ->with('status', 'record-archived');
     }
 
-    public function restore(string $resource, string $record): RedirectResponse
+    public function restore(string $resource, int $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -345,7 +411,7 @@ class AdminManagementController extends Controller
             ->with('status', 'record-restored');
     }
 
-    private function validatedData(Request $request, array $config, string|int|null $record = null): array
+    private function validatedData(Request $request, array $config, ?int $record = null): array
     {
         $rules = [];
 
@@ -359,47 +425,28 @@ class AdminManagementController extends Controller
             $rules[$field['name']] = $fieldRules;
         }
 
-        $validated = $request->validate($rules);
-
-        foreach ($config['fields'] as $field) {
-            if (($field['type'] ?? '') !== 'json') {
-                continue;
-            }
-
-            $name = $field['name'];
-
-            if (! array_key_exists($name, $validated) || blank($validated[$name])) {
-                $validated[$name] = null;
-
-                continue;
-            }
-
-            json_decode($validated[$name], true, 512, JSON_THROW_ON_ERROR);
-        }
-
-        return $validated;
+        return $request->validate($rules);
     }
 
-    private function prepareRecordPayload(array $validated, array $config, Request $request): array
+    private function syncResourceDocumentFile(Request $request, string $resource, int $recordId, bool $forceGenerate): ?string
     {
-        if (($config['table'] ?? '') === 'notifications') {
-            $validated['notifiable_type'] = User::class;
-            $validated['type'] = filled($validated['type'] ?? null) ? $validated['type'] : 'database';
-
-            if (blank($validated['data'] ?? null)) {
-                $validated['data'] = json_encode([
-                    'title' => 'Portal notification',
-                    'message' => 'A new notification was created from admin management.',
-                    'category' => 'System',
-                ]);
-            }
-
-            if (($validated['sender_type'] ?? 'system') === 'system') {
-                $validated['sender_user_id'] = null;
-            }
+        if ($resource !== 'resources') {
+            return null;
         }
 
-        return $validated;
+        if ($request->hasFile('pdf_file')) {
+            $request->validate([
+                'pdf_file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+                'content_source' => ['nullable', 'in:compose,upload'],
+            ]);
+
+            $portalResource = PortalResource::query()->findOrFail($recordId);
+            $this->resourcePdf->storeUpload($portalResource, $request->file('pdf_file'));
+
+            return 'resource-pdf-uploaded';
+        }
+
+        return $this->syncResourcePdf($resource, $recordId, $forceGenerate);
     }
 
     private function syncResourcePdf(string $resource, int $recordId, bool $forceGenerate): ?string
@@ -443,6 +490,72 @@ class AdminManagementController extends Controller
         abort_unless(isset($resources[$resource]), 404);
 
         return $resources[$resource];
+    }
+
+    /**
+     * @return array{record_count: int, archived_count: int}
+     */
+    private function resourceCounts(array $config, string $key): array
+    {
+        $table = $config['table'];
+
+        if (! Schema::hasTable($table)) {
+            return ['record_count' => 0, 'archived_count' => 0];
+        }
+
+        $query = DB::table($table);
+
+        if ($key === 'resources') {
+            $query->where('type', 'document');
+        }
+
+        $hasSoftDeletes = $this->hasColumn($table, 'deleted_at');
+
+        $recordCount = (clone $query)
+            ->when($hasSoftDeletes, fn ($builder) => $builder->whereNull('deleted_at'))
+            ->count();
+
+        $archivedCount = $hasSoftDeletes
+            ? (clone $query)->whereNotNull('deleted_at')->count()
+            : 0;
+
+        return [
+            'record_count' => $recordCount,
+            'archived_count' => $archivedCount,
+        ];
+    }
+
+    private function resourceCategoryFor(string $key): string
+    {
+        return match (true) {
+            in_array($key, ['ranks', 'rank-requirements', 'badges'], true) => 'rank',
+            in_array($key, ['checklists', 'checklist-types', 'checklist-instructions'], true) => 'checklist',
+            in_array($key, ['training-categories', 'training-modules', 'training-lessons', 'assessments', 'questions', 'answers'], true) => 'training',
+            in_array($key, ['calendar-categories', 'calendar-event-types', 'calendar-events', 'events'], true) => 'calendar',
+            in_array($key, ['booking-event-types', 'booking-links', 'bookings'], true) => 'booking',
+            in_array($key, ['announcements', 'email-templates'], true) => 'communication',
+            $key === 'teams' => 'organization',
+            $key === 'resources' => 'resources',
+            default => 'other',
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function resourceCategories(): array
+    {
+        return [
+            'rank' => 'Rank & Recognition',
+            'checklist' => 'Checklists',
+            'training' => 'Training',
+            'calendar' => 'Calendar & Events',
+            'booking' => 'Booking',
+            'communication' => 'Communication',
+            'organization' => 'Organization',
+            'resources' => 'Document Library',
+            'other' => 'Other',
+        ];
     }
 
     private function fieldMap(array $config): array
@@ -515,16 +628,28 @@ class AdminManagementController extends Controller
     private function isChecklistResource(string $resource): bool
     {
         return in_array($resource, [
-            'onboarding-steps',
-            'licensing-steps',
-            'apprenticeship-steps',
-            'cfm-training-modules',
+            'checklists',
+            'checklist-types',
+            'checklist-instructions',
         ], true);
     }
 
     private function isSeederUpdatableResource(string $resource): bool
     {
-        return $this->isChecklistResource($resource) || $resource === 'email-templates';
+        return in_array($resource, ['email-templates', 'checklists'], true);
+    }
+
+    private function canUpdateSeeder(string $resource): bool
+    {
+        if (! $this->isSeederUpdatableResource($resource)) {
+            return false;
+        }
+
+        if ($resource === 'checklists') {
+            return auth()->user()->hasAnyRole(['super-admin', 'admin']);
+        }
+
+        return $this->canManageResource($resource);
     }
 
     private function hasColumn(string $table, string $column): bool
@@ -539,271 +664,266 @@ class AdminManagementController extends Controller
     private function seederPath(string $resource): string
     {
         return match ($resource) {
-            'onboarding-steps' => database_path('seeders/OnboardingStepSeeder.php'),
-            'licensing-steps' => database_path('seeders/LicensingStepSeeder.php'),
-            'apprenticeship-steps' => database_path('seeders/FieldApprenticeshipProgramSeeder.php'),
-            'cfm-training-modules' => database_path('seeders/CfmTrainingModuleSeeder.php'),
             'email-templates' => database_path('seeders/EmailTemplateSeeder.php'),
+            'checklists' => database_path('seeders/ChecklistSeeder.php'),
         };
     }
 
-    private function buildOnboardingStepSeeder(): string
+    private function writeChecklistSeeders(Request $request): void
     {
-        $steps = DB::table('onboarding_steps')
-            ->whereNull('deleted_at')
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->get()
-            ->map(fn ($step) => [
-                'title' => $step->title,
-                'description' => $step->description,
-                'sort_order' => (int) $step->sort_order,
-                'responsible_parties' => $step->responsible_parties ?: 'Self',
-                'notified_parties' => $step->notified_parties,
-                'is_active' => (bool) $step->is_active,
-                'is_required' => (bool) $step->is_required,
-                'country' => $step->country,
-            ])
-            ->all();
+        $records = $this->checklistRecordsForSeederExport();
 
-        $exportedSteps = $this->exportPhpArray($steps, 2);
-
-        return <<<PHP
-<?php
-
-namespace Database\\Seeders;
-
-use Illuminate\\Database\\Seeder;
-use Illuminate\\Support\\Facades\\DB;
-
-class OnboardingStepSeeder extends Seeder
-{
-    public function run(): void
-    {
-        \$steps = {$exportedSteps};
-
-        foreach (\$steps as \$step) {
-            DB::table('onboarding_steps')->updateOrInsert(
-                ['title' => \$step['title']],
-                [
-                    'description' => \$step['description'],
-                    'sort_order' => \$step['sort_order'],
-                    'responsible_parties' => \$step['responsible_parties'],
-                    'notified_parties' => \$step['notified_parties'],
-                    'is_active' => \$step['is_active'],
-                    'is_required' => \$step['is_required'],
-                    'country' => \$step['country'],
-                    'deleted_at' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
-        }
-    }
-}
-
-PHP;
-    }
-
-    private function buildLicensingStepSeeder(): string
-    {
-        $steps = DB::table('licensing_steps')
-            ->whereNull('deleted_at')
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->get()
-            ->map(fn ($step) => [
-                'title' => $step->title,
-                'description' => $step->description,
-                'sort_order' => (int) $step->sort_order,
-                'responsible_parties' => $step->responsible_parties ?: 'Self',
-                'notified_parties' => $step->notified_parties,
-                'is_active' => (bool) $step->is_active,
-                'is_required' => (bool) $step->is_required,
-            ])
-            ->all();
-
-        $exportedSteps = $this->exportPhpArray($steps, 2);
-
-        return <<<PHP
-<?php
-
-namespace Database\\Seeders;
-
-use Illuminate\\Database\\Seeder;
-use Illuminate\\Support\\Facades\\DB;
-
-class LicensingStepSeeder extends Seeder
-{
-    public function run(): void
-    {
-        \$steps = {$exportedSteps};
-
-        foreach (\$steps as \$step) {
-            DB::table('licensing_steps')->updateOrInsert(
-                ['title' => \$step['title']],
-                [
-                    'description' => \$step['description'],
-                    'sort_order' => \$step['sort_order'],
-                    'responsible_parties' => \$step['responsible_parties'],
-                    'notified_parties' => \$step['notified_parties'],
-                    'is_active' => \$step['is_active'],
-                    'is_required' => \$step['is_required'],
-                    'deleted_at' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
-        }
-    }
-}
-
-PHP;
-    }
-
-    private function buildFieldApprenticeshipProgramSeeder(): string
-    {
-        $program = DB::table('apprenticeship_programs')
-            ->whereNull('deleted_at')
-            ->where('name', 'Field Apprenticeship Program')
-            ->first()
-            ?? DB::table('apprenticeship_programs')->whereNull('deleted_at')->orderBy('name')->first();
-
-        abort_unless($program, 404);
-
-        $programData = [
-            'name' => $program->name,
-            'description' => $program->description,
-            'is_active' => (bool) $program->is_active,
-        ];
-
-        $steps = DB::table('apprenticeship_steps')
-            ->whereNull('deleted_at')
-            ->where('apprenticeship_program_id', $program->id)
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->get()
-            ->map(fn ($step) => [
-                'title' => $step->title,
-                'description' => $step->description,
-                'sort_order' => (int) $step->sort_order,
-                'responsible_parties' => $step->responsible_parties ?: 'Self',
-                'notified_parties' => $step->notified_parties,
-                'is_active' => (bool) $step->is_active,
-            ])
-            ->all();
-
-        $exportedProgram = $this->exportPhpArray($programData, 2);
-        $exportedSteps = $this->exportPhpArray($steps, 2);
-
-        return <<<PHP
-<?php
-
-namespace Database\\Seeders;
-
-use Illuminate\\Database\\Seeder;
-use Illuminate\\Support\\Facades\\DB;
-
-class FieldApprenticeshipProgramSeeder extends Seeder
-{
-    public function run(): void
-    {
-        \$program = {$exportedProgram};
-
-        DB::table('apprenticeship_programs')->updateOrInsert(
-            ['name' => \$program['name']],
-            [
-                'description' => \$program['description'],
-                'is_active' => \$program['is_active'],
-                'deleted_at' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
+        File::put(
+            database_path('seeders/data/cfm_mentoring_phases.php'),
+            $this->buildCfmMentoringPhasesFile($records->get('cfm-mentoring', collect())),
         );
 
-        \$programId = DB::table('apprenticeship_programs')
-            ->where('name', \$program['name'])
-            ->value('id');
-
-        \$steps = {$exportedSteps};
-
-        foreach (\$steps as \$step) {
-            DB::table('apprenticeship_steps')->updateOrInsert(
-                [
-                    'apprenticeship_program_id' => \$programId,
-                    'title' => \$step['title'],
-                ],
-                [
-                    'description' => \$step['description'],
-                    'sort_order' => \$step['sort_order'],
-                    'responsible_parties' => \$step['responsible_parties'],
-                    'notified_parties' => \$step['notified_parties'],
-                    'is_active' => \$step['is_active'],
-                    'deleted_at' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
-        }
-    }
-}
-
-PHP;
+        File::put($this->seederPath('checklists'), $this->buildChecklistSeeder($records));
     }
 
-    private function buildCfmTrainingModuleSeeder(): string
+    private function checklistRecordsForSeederExport(): \Illuminate\Support\Collection
     {
-        $modules = DB::table('cfm_training_modules')
-            ->whereNull('deleted_at')
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->get()
-            ->map(fn ($module) => [
-                'title' => $module->title,
-                'description' => $module->description,
-                'sort_order' => (int) $module->sort_order,
-                'responsible_parties' => $module->responsible_parties ?: 'Self',
-                'notified_parties' => $module->notified_parties,
-                'is_active' => (bool) $module->is_active,
-                'is_required' => (bool) $module->is_required,
+        return DB::table('checklists')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->whereNull('checklists.deleted_at')
+            ->orderBy('checklist_types.sort_order')
+            ->orderBy('checklists.sort_order')
+            ->orderBy('checklists.id')
+            ->get([
+                'checklists.title',
+                'checklists.description',
+                'checklists.sort_order',
+                'checklists.is_required',
+                'checklists.responsible_parties',
+                'checklists.notified_parties',
+                'checklists.country',
+                'checklists.group_label',
+                'checklists.phase_number',
+                'checklists.phase_title',
+                'checklists.phase_target',
+                'checklists.section_title',
+                'checklists.slug',
+                'checklists.action_url',
+                'checklists.action_label',
+                'checklists.is_active',
+                'checklist_types.code as type_code',
             ])
+            ->groupBy('type_code');
+    }
+
+    private function buildCfmMentoringPhasesFile(\Illuminate\Support\Collection $items): string
+    {
+        $phases = $items
+            ->sortBy('sort_order')
+            ->groupBy('phase_number')
+            ->map(function (\Illuminate\Support\Collection $phaseItems, $phaseNumber): array {
+                $first = $phaseItems->first();
+
+                return [
+                    'phase_number' => (int) $phaseNumber,
+                    'phase_title' => $first->phase_title,
+                    'phase_target' => $first->phase_target,
+                    'sections' => $phaseItems
+                        ->groupBy('section_title')
+                        ->map(fn (\Illuminate\Support\Collection $sectionItems) => $sectionItems
+                            ->sortBy('sort_order')
+                            ->pluck('title')
+                            ->values()
+                            ->all())
+                        ->all(),
+                ];
+            })
+            ->sortBy('phase_number')
+            ->values()
             ->all();
 
-        $exportedModules = $this->exportPhpArray($modules, 2);
+        return "<?php\n\nreturn ".$this->exportPhpArray($phases).";\n";
+    }
+
+    private function buildChecklistSeeder(\Illuminate\Support\Collection $recordsByType): string
+    {
+        $methods = [];
+
+        foreach ([
+            'onboarding' => 'seedOnboarding',
+            'licensing' => 'seedLicensing',
+            'fap' => 'seedFap',
+            'cfm-training' => 'seedCfmTraining',
+        ] as $typeCode => $methodName) {
+            $methods[] = $this->buildChecklistTypeSeedMethod(
+                $typeCode,
+                $methodName,
+                $recordsByType->get($typeCode, collect()),
+            );
+        }
+
+        $methods[] = <<<'PHP'
+    private function seedCfmMentoring(): void
+    {
+        $phases = require __DIR__.'/data/cfm_mentoring_phases.php';
+        $sortOrder = 0;
+
+        foreach ($phases as $phase) {
+            foreach ($phase['sections'] as $sectionTitle => $items) {
+                foreach ($items as $title) {
+                    $sortOrder++;
+                    $slug = Str::slug('phase_'.$phase['phase_number'].'_'.Str::slug($title));
+
+                    Checklist::query()->updateOrCreate(
+                        ['slug' => $slug],
+                        [
+                            'checklist_type_id' => $this->typeId('cfm-mentoring'),
+                            'title' => $title,
+                            'phase_number' => $phase['phase_number'],
+                            'phase_title' => $phase['phase_title'],
+                            'phase_target' => $phase['phase_target'],
+                            'section_title' => $sectionTitle,
+                            'sort_order' => $sortOrder,
+                            'is_required' => true,
+                            'is_active' => true,
+                        ],
+                    );
+                }
+            }
+        }
+    }
+PHP;
+
+        $methodBody = implode("\n\n", $methods);
 
         return <<<PHP
 <?php
 
 namespace Database\\Seeders;
 
+use App\\Models\\Checklist;
+use App\\Models\\ChecklistType;
 use Illuminate\\Database\\Seeder;
-use Illuminate\\Support\\Facades\\DB;
+use Illuminate\\Support\\Str;
 
-class CfmTrainingModuleSeeder extends Seeder
+class ChecklistSeeder extends Seeder
 {
     public function run(): void
     {
-        \$modules = {$exportedModules};
-
-        foreach (\$modules as \$module) {
-            DB::table('cfm_training_modules')->updateOrInsert(
-                ['title' => \$module['title']],
-                [
-                    'description' => \$module['description'],
-                    'sort_order' => \$module['sort_order'],
-                    'responsible_parties' => \$module['responsible_parties'],
-                    'notified_parties' => \$module['notified_parties'],
-                    'is_active' => \$module['is_active'],
-                    'is_required' => \$module['is_required'],
-                    'deleted_at' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
-        }
+        \$this->seedOnboarding();
+        \$this->seedLicensing();
+        \$this->seedFap();
+        \$this->seedCfmTraining();
+        \$this->seedCfmMentoring();
     }
+
+    private function typeId(string \$code): int
+    {
+        return (int) ChecklistType::query()->where('code', \$code)->value('id');
+    }
+
+    private function upsertItem(string \$typeCode, string \$title, array \$attributes): void
+    {
+        Checklist::query()->updateOrCreate(
+            [
+                'checklist_type_id' => \$this->typeId(\$typeCode),
+                'title' => \$title,
+            ],
+            array_merge(['is_active' => true], \$attributes),
+        );
+    }
+
+{$methodBody}
 }
 
+PHP;
+    }
+
+    private function buildChecklistTypeSeedMethod(string $typeCode, string $methodName, \Illuminate\Support\Collection $items): string
+    {
+        if ($items->isEmpty()) {
+            return <<<PHP
+    private function {$methodName}(): void
+    {
+    }
+PHP;
+        }
+
+        $steps = [];
+        $responsibleParties = [];
+        $notifiedParties = [];
+
+        foreach ($items->sortBy('sort_order')->values() as $item) {
+            $step = [
+                'title' => $item->title,
+                'description' => $item->description,
+                'sort_order' => (int) $item->sort_order,
+                'is_required' => (bool) $item->is_required,
+            ];
+
+            if ($typeCode === 'onboarding') {
+                $step['country'] = $item->country;
+            }
+
+            $steps[] = $step;
+
+            if (filled($item->responsible_parties)) {
+                $responsibleParties[$item->title] = $item->responsible_parties;
+            }
+
+            if (filled($item->notified_parties)) {
+                $notifiedParties[$item->title] = $item->notified_parties;
+            }
+        }
+
+        $exportedSteps = $this->exportPhpArray($steps, 2);
+        $exportedResponsibleParties = $this->exportPhpArray($responsibleParties, 2);
+        $exportedNotifiedParties = $this->exportPhpArray($notifiedParties, 2);
+
+        $groupLabelBlock = '';
+
+        if ($typeCode === 'fap') {
+            $groupLabel = $items->first()->group_label ?: 'Field Apprenticeship Program';
+            $exportedGroupLabel = var_export($groupLabel, true);
+            $groupLabelBlock = "\n        \$groupLabel = {$exportedGroupLabel};\n";
+        }
+
+        $upsertAttributes = match ($typeCode) {
+            'onboarding' => <<<'ATTR'
+                'description' => $step['description'],
+                'sort_order' => $step['sort_order'],
+                'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
+                'notified_parties' => $notifiedParties[$step['title']] ?? null,
+                'is_required' => $step['is_required'],
+                'country' => $step['country'],
+ATTR,
+            'fap' => <<<'ATTR'
+                'description' => $step['description'],
+                'sort_order' => $step['sort_order'],
+                'group_label' => $groupLabel,
+                'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
+                'notified_parties' => $notifiedParties[$step['title']] ?? null,
+                'is_required' => $step['is_required'],
+ATTR,
+            default => <<<'ATTR'
+                'description' => $step['description'],
+                'sort_order' => $step['sort_order'],
+                'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
+                'notified_parties' => $notifiedParties[$step['title']] ?? null,
+                'is_required' => $step['is_required'],
+ATTR,
+        };
+
+        return <<<PHP
+    private function {$methodName}(): void
+    {{$groupLabelBlock}
+        \$steps = {$exportedSteps};
+
+        \$responsibleParties = {$exportedResponsibleParties};
+
+        \$notifiedParties = {$exportedNotifiedParties};
+
+        foreach (\$steps as \$step) {
+            \$this->upsertItem('{$typeCode}', \$step['title'], [
+{$upsertAttributes}
+            ]);
+        }
+    }
 PHP;
     }
 
@@ -872,7 +992,6 @@ PHP;
 
     private function formOptionsFor(array $config): array
     {
-<<<<<<< HEAD
         $types = collect($config['fields'])->pluck('type')->unique()->all();
         $needs = fn (string ...$fieldTypes): bool => array_intersect($types, $fieldTypes) !== [];
 
@@ -906,8 +1025,11 @@ PHP;
             $options['ranks'] = DB::table('ranks')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'code', 'name']);
         }
 
-        if ($needs('apprenticeship_program')) {
-            $options['apprenticeship_programs'] = DB::table('apprenticeship_programs')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']);
+        if ($needs('checklist_type')) {
+            $options['checklist_types'] = ChecklistType::query()
+                ->whereNull('deleted_at')
+                ->orderBy('sort_order')
+                ->get(['id', 'code', 'name']);
         }
 
         if ($needs('calendar_category')) {
@@ -927,59 +1049,11 @@ PHP;
         }
 
         return $options;
-=======
-        return [
-            'users' => DB::table('users')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name', 'email']),
-            'teams' => DB::table('teams')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
-            'training_categories' => DB::table('training_categories')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
-            'training_modules' => DB::table('training_modules')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
-            'assessments' => DB::table('assessments')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
-            'questions' => DB::table('questions')->whereNull('deleted_at')->orderBy('question')->get(['id', 'question']),
-            'ranks' => DB::table('ranks')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'code', 'name']),
-            'apprenticeship_programs' => DB::table('apprenticeship_programs')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
-            'calendar_categories' => DB::table('calendar_categories')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name']),
-            'calendar_event_types' => DB::table('calendar_event_types')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name']),
-            'booking_event_types' => DB::table('booking_event_types')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title']),
-            'availability_schedules' => DB::table('availability_schedules')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
-            'notification_types' => DB::table('notification_types')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name', 'code']),
-            'notification_triggers' => DB::table('notification_triggers')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'name', 'code']),
-            'notification_templates' => DB::table('notification_templates')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name', 'subject']),
-        ];
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
-    }
-
-    private function resourceCategoryOptions(): array
-    {
-        return [
-            'organization' => 'Organization',
-            'checklists' => 'Checklists',
-            'training' => 'Training',
-            'advancement' => 'Rank Advancement',
-            'content' => 'Content & Communication',
-            'calendar' => 'Calendar & Events',
-            'booking' => 'Booking & Scheduling',
-            'notifications' => 'Notifications',
-        ];
-    }
-
-    private function resourceCategory(string $resource): string
-    {
-        return match ($resource) {
-            'ranks', 'teams', 'profile-completion-fields' => 'organization',
-            'onboarding-steps', 'licensing-steps', 'apprenticeship-programs', 'apprenticeship-steps', 'cfm-training-modules' => 'checklists',
-            'training-categories', 'training-modules', 'training-lessons', 'assessments', 'questions', 'answers' => 'training',
-            'rank-requirements' => 'advancement',
-            'resources', 'events', 'announcements', 'badges', 'email-templates' => 'content',
-            'notification-types', 'notification-triggers', 'notification-templates', 'notifications' => 'notifications',
-            'calendar-categories', 'calendar-event-types', 'calendar-events' => 'calendar',
-            'booking-event-types', 'booking-links', 'bookings' => 'booking',
-            default => 'content',
-        };
     }
 
     private function resources(): array
     {
-        return array_merge([
+        return [
             'ranks' => [
                 'table' => 'ranks',
                 'label' => 'Ranks',
@@ -995,7 +1069,6 @@ PHP;
                     ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
                 ],
             ],
-            'profile-completion-fields' => $this->profileCompletionFieldsResource(),
             'teams' => [
                 'table' => 'teams',
                 'label' => 'Teams',
@@ -1012,8 +1085,67 @@ PHP;
                     ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
                 ],
             ],
-            'onboarding-steps' => $this->stepResource('onboarding_steps', 'Onboarding Steps', 'Manage onboarding checklist steps.', true),
-            'licensing-steps' => $this->stepResource('licensing_steps', 'Licensing Steps', 'Manage licensing checklist steps.'),
+            'checklists' => [
+                'table' => 'checklists',
+                'label' => 'Checklists',
+                'description' => 'Manage checklist items for onboarding, licensing, FAP, CFM training, mentoring, and other checklist types.',
+                'use_inline_modals' => false,
+                'order_by' => 'sort_order',
+                'search' => ['title', 'description', 'slug', 'group_label', 'country', 'section_title', 'phase_title'],
+                'columns' => ['checklist_type_id', 'title', 'group_label', 'sort_order', 'is_required', 'is_active'],
+                'fields' => [
+                    ['name' => 'checklist_type_id', 'label' => 'Checklist Type', 'type' => 'checklist_type', 'rules' => ['required', 'integer', 'exists:checklist_types,id']],
+                    ['name' => 'title', 'label' => 'Title', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
+                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'is_required', 'label' => 'Required', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                    ['name' => 'responsible_parties', 'label' => 'Responsible Parties', 'type' => 'responsible_parties', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'notified_parties', 'label' => 'Notified Parties', 'type' => 'notified_parties', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'country', 'label' => 'Country Applicability', 'type' => 'select', 'options' => ['' => 'Global - all countries', 'Canada' => 'Canada', 'United States' => 'United States', 'Philippines' => 'Philippines', 'Mexico' => 'Mexico'], 'rules' => ['nullable', 'string', 'in:Canada,United States,Philippines,Mexico']],
+                    ['name' => 'group_label', 'label' => 'Group Label', 'type' => 'text', 'help' => 'Optional program or grouping label (e.g. Field Apprenticeship Program).', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'phase_number', 'label' => 'Phase Number', 'type' => 'number', 'rules' => ['nullable', 'integer', 'min:1']],
+                    ['name' => 'phase_title', 'label' => 'Phase Title', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'phase_target', 'label' => 'Phase Target', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'section_title', 'label' => 'Section Title', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'slug', 'label' => 'Slug', 'type' => 'text', 'help' => 'Unique per checklist type. Used for CFM mentoring action links.', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'action_url', 'label' => 'Action URL', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:500']],
+                    ['name' => 'action_label', 'label' => 'Action Label', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
+                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                ],
+            ],
+            'checklist-types' => [
+                'table' => 'checklist_types',
+                'label' => 'Checklist Types',
+                'description' => 'Manage checklist categories such as onboarding, licensing, FAP, CFM training, and mentoring.',
+                'order_by' => 'sort_order',
+                'search' => ['code', 'name', 'description'],
+                'columns' => ['code', 'name', 'sort_order', 'is_active'],
+                'fields' => [
+                    ['name' => 'code', 'label' => 'Code', 'type' => 'text', 'help' => 'Stable identifier used in code (lowercase, hyphens).', 'rules' => ['required', 'string', 'max:50'], 'unique' => true],
+                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
+                    ['name' => 'icon', 'label' => 'Icon', 'type' => 'text', 'help' => 'Optional icon key for UI display.', 'rules' => ['nullable', 'string', 'max:100']],
+                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                ],
+            ],
+            'checklist-instructions' => [
+                'table' => 'checklist_instructions',
+                'label' => 'Checklist Instructions',
+                'description' => 'Additional rich-text guidance, manual links, and reference links to help members complete each checklist type.',
+                'use_inline_modals' => false,
+                'order_by' => 'sort_order',
+                'search' => ['instructions', 'doc_link', 'other_link'],
+                'columns' => ['checklist_type_id', 'doc_link', 'other_link', 'sort_order', 'is_active'],
+                'fields' => [
+                    ['name' => 'checklist_type_id', 'label' => 'Checklist Type', 'type' => 'checklist_type', 'rules' => ['required', 'integer', 'exists:checklist_types,id']],
+                    ['name' => 'instructions', 'label' => 'Instructions', 'type' => 'rich_text', 'rows' => 16, 'help' => 'Rich text shown to members completing this checklist (formatting, lists, and links supported).', 'rules' => ['nullable', 'string']],
+                    ['name' => 'doc_link', 'label' => 'Manual / Document Link', 'type' => 'text', 'help' => 'Link to a manual or document library entry. Full URL or site-relative path.', 'rules' => ['nullable', 'string', 'max:500', new UrlOrRelativePath()]],
+                    ['name' => 'other_link', 'label' => 'Other Link', 'type' => 'text', 'help' => 'Optional secondary resource such as a video or external reference.', 'rules' => ['nullable', 'string', 'max:500', new UrlOrRelativePath()]],
+                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                ],
+            ],
             'training-categories' => [
                 'table' => 'training_categories',
                 'label' => 'Training Categories',
@@ -1118,7 +1250,7 @@ PHP;
             'resources' => [
                 'table' => 'resources',
                 'label' => 'Resources',
-                'description' => 'Create and edit document library entries with rich content, then generate PDF files for members to download.',
+                'description' => 'Create and edit document library entries by composing rich content or uploading a PDF file for members to download.',
                 'uses_creator' => true,
                 'use_inline_modals' => false,
                 'order_by' => 'sort_order',
@@ -1350,195 +1482,6 @@ PHP;
                     ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
                 ],
             ],
-            'apprenticeship-programs' => [
-                'table' => 'apprenticeship_programs',
-                'label' => 'Apprenticeship Programs',
-                'description' => 'Manage Field Apprenticeship Program definitions.',
-                'order_by' => 'name',
-                'search' => ['name', 'description'],
-                'columns' => ['name', 'is_active'],
-                'fields' => [
-                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
-                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-                ],
-            ],
-            'apprenticeship-steps' => [
-                'table' => 'apprenticeship_steps',
-                'label' => 'Apprenticeship Steps',
-                'description' => 'Manage Field Apprenticeship Program step definitions.',
-                'order_by' => 'sort_order',
-                'search' => ['title', 'description'],
-                'columns' => ['title', 'responsible_parties', 'notified_parties', 'is_active', 'sort_order'],
-                'fields' => [
-                    ['name' => 'apprenticeship_program_id', 'label' => 'Apprenticeship Program', 'type' => 'apprenticeship_program', 'rules' => ['required', 'integer', 'exists:apprenticeship_programs,id']],
-                    ['name' => 'title', 'label' => 'Title', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
-                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
-                    ['name' => 'responsible_parties', 'label' => 'Responsible Parties', 'type' => 'responsible_parties', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'notified_parties', 'label' => 'Notified Parties', 'type' => 'notified_parties', 'rules' => ['nullable', 'string', 'max:255']],
-                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-                ],
-            ],
-            'cfm-training-modules' => $this->stepResource('cfm_training_modules', 'CFM Training Modules', 'Manage CFM certification training modules.'),
-        ], $this->notificationResources());
-    }
-
-    private function notificationResources(): array
-    {
-        return [
-            'notification-types' => [
-                'table' => 'notification_types',
-                'label' => 'Notification Types',
-                'description' => 'Manage notification categories such as training, mentoring, licensing, and system alerts.',
-                'order_by' => 'sort_order',
-                'search' => ['code', 'name', 'description'],
-                'columns' => ['code', 'name', 'sort_order', 'is_active'],
-                'fields' => [
-                    ['name' => 'code', 'label' => 'Code', 'type' => 'text', 'rules' => ['required', 'string', 'max:60'], 'unique' => true],
-                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
-                    ['name' => 'icon', 'label' => 'Icon', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:100']],
-                    ['name' => 'color', 'label' => 'Color', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:20']],
-                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
-                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-                ],
-            ],
-            'notification-triggers' => [
-                'table' => 'notification_triggers',
-                'label' => 'Notification Triggers',
-                'description' => 'Manage events that can generate notifications and their parent notification type.',
-                'order_by' => 'sort_order',
-                'search' => ['code', 'name', 'event_key', 'description'],
-                'columns' => ['code', 'name', 'notification_type_id', 'event_key', 'is_active'],
-                'fields' => [
-                    ['name' => 'notification_type_id', 'label' => 'Notification Type', 'type' => 'notification_type', 'rules' => ['required', 'integer', 'exists:notification_types,id']],
-                    ['name' => 'code', 'label' => 'Code', 'type' => 'text', 'rules' => ['required', 'string', 'max:60'], 'unique' => true],
-                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
-                    ['name' => 'event_key', 'label' => 'Event Key', 'type' => 'text', 'rules' => ['required', 'string', 'max:120']],
-                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
-                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-                ],
-            ],
-            'notification-templates' => [
-                'table' => 'notification_templates',
-                'label' => 'Notification Templates',
-                'description' => 'Manage reusable notification copy, channels, and placeholders for each trigger.',
-                'order_by' => 'name',
-                'search' => ['name', 'subject', 'body'],
-                'columns' => ['name', 'notification_trigger_id', 'subject', 'is_default', 'is_active'],
-                'fields' => [
-                    ['name' => 'notification_trigger_id', 'label' => 'Notification Trigger', 'type' => 'notification_trigger', 'rules' => ['required', 'integer', 'exists:notification_triggers,id']],
-                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'subject', 'label' => 'Subject', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                    ['name' => 'body', 'label' => 'Body', 'type' => 'textarea', 'rules' => ['required', 'string']],
-                    ['name' => 'channels', 'label' => 'Channels (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
-                    ['name' => 'placeholders', 'label' => 'Placeholders (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
-                    ['name' => 'is_default', 'label' => 'Default Template', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-                ],
-            ],
-            'notifications' => [
-                'table' => 'notifications',
-                'uses_uuid' => true,
-                'label' => 'Notifications',
-                'description' => 'Review and create portal notifications with trigger metadata, recipients, and action links.',
-                'order_by' => 'created_at',
-                'search' => ['type', 'sender_type'],
-                'columns' => ['notification_type_id', 'trigger_id', 'sender_type', 'notifiable_id', 'read_at'],
-                'fields' => [
-                    ['name' => 'notification_type_id', 'label' => 'Notification Type', 'type' => 'notification_type', 'rules' => ['nullable', 'integer', 'exists:notification_types,id']],
-                    ['name' => 'trigger_id', 'label' => 'Notification Trigger', 'type' => 'notification_trigger', 'rules' => ['nullable', 'integer', 'exists:notification_triggers,id']],
-                    ['name' => 'sender_type', 'label' => 'Sender Type', 'type' => 'select', 'options' => ['system' => 'System', 'user' => 'User'], 'rules' => ['required', 'string', 'in:system,user']],
-                    ['name' => 'sender_user_id', 'label' => 'Sender User', 'type' => 'user', 'rules' => ['nullable', 'integer', 'exists:users,id']],
-                    ['name' => 'notifiable_id', 'label' => 'Recipient', 'type' => 'user', 'rules' => ['required', 'integer', 'exists:users,id']],
-                    ['name' => 'type', 'label' => 'Laravel Type', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
-                    ['name' => 'data', 'label' => 'Notification Data (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
-                    ['name' => 'recipients', 'label' => 'Recipients (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
-                    ['name' => 'notification_template', 'label' => 'Template Snapshot (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
-                    ['name' => 'action_link', 'label' => 'Action Link (JSON)', 'type' => 'json', 'rules' => ['nullable', 'json']],
-                ],
-            ],
-        ];
-    }
-
-    private function profileCompletionFieldsResource(): array
-    {
-        $allowedKeys = implode(',', array_keys(ProfileCompletionField::definitions()));
-
-        return [
-            'table' => 'profile_completion_fields',
-            'label' => 'Profile Completion Fields',
-            'description' => 'Configure which member profile fields count toward dashboard completion.',
-            'order_by' => 'sort_order',
-            'search' => ['field_key', 'label'],
-            'columns' => ['field_key', 'label', 'source', 'sort_order', 'is_active'],
-            'fields' => [
-                [
-                    'name' => 'field_key',
-                    'label' => 'Field Key',
-                    'type' => 'select',
-                    'options' => ProfileCompletionField::fieldKeyOptions(),
-                    'rules' => ['required', 'string', 'max:60', "in:{$allowedKeys}"],
-                    'unique' => true,
-                ],
-                ['name' => 'label', 'label' => 'Label', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-                [
-                    'name' => 'source',
-                    'label' => 'Data Source',
-                    'type' => 'select',
-                    'options' => [
-                        'user' => 'User account',
-                        'profile' => 'Member profile',
-                    ],
-                    'rules' => ['required', 'string', 'in:user,profile'],
-                ],
-                ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
-                ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-            ],
-        ];
-    }
-
-    private function stepResource(string $table, string $label, string $description, bool $countryAware = false): array
-    {
-        $columns = ['title', 'responsible_parties', 'notified_parties', 'sort_order', 'is_required'];
-        $fields = [
-            ['name' => 'title', 'label' => 'Title', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
-            ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
-            ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
-            ['name' => 'responsible_parties', 'label' => 'Responsible Parties', 'type' => 'responsible_parties', 'rules' => ['required', 'string', 'max:255']],
-            ['name' => 'notified_parties', 'label' => 'Notified Parties', 'type' => 'notified_parties', 'rules' => ['nullable', 'string', 'max:255']],
-            ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-            ['name' => 'is_required', 'label' => 'Required', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
-        ];
-
-        if ($countryAware) {
-            $columns[] = 'country';
-            $fields[] = [
-                'name' => 'country',
-                'label' => 'Country Applicability',
-                'type' => 'select',
-                'options' => [
-                    '' => 'Global - all countries',
-                    'Canada' => 'Canada',
-                    'United States' => 'United States',
-                    'Philippines' => 'Philippines',
-                    'Mexico' => 'Mexico',
-                ],
-                'rules' => ['nullable', 'string', 'in:Canada,United States,Philippines,Mexico'],
-            ];
-        }
-
-        return [
-            'table' => $table,
-            'label' => $label,
-            'description' => $description,
-            'use_inline_modals' => false,
-            'order_by' => 'sort_order',
-            'search' => $countryAware ? ['title', 'description', 'country'] : ['title', 'description'],
-            'columns' => $columns,
-            'fields' => $fields,
         ];
     }
 }

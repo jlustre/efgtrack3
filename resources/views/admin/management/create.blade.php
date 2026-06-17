@@ -20,11 +20,23 @@
         @endif
 
         <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <form method="POST" action="{{ route('admin.management.store', $resource) }}" class="space-y-5">
-                @csrf
-                @include('admin.management.partials.form')
+            <form
+                method="POST"
+                action="{{ route('admin.management.store', $resource) }}"
+                enctype="multipart/form-data"
+                class="space-y-5"
                 @if ($resource === 'resources')
-                    <label class="flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    x-data="{ contentMode: @js(old('content_source', 'compose')) }"
+                @endif
+            >
+                @csrf
+                @include('admin.management.partials.form', ['resource' => $resource])
+                @if ($resource === 'resources')
+                    <label
+                        x-show="contentMode === 'compose'"
+                        x-cloak
+                        class="flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                    >
                         <input
                             type="checkbox"
                             name="generate_pdf"

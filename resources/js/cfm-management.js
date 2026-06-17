@@ -542,12 +542,12 @@ export default function cfmManagement(initial = {}) {
 
         scoreClass(score) {
             if (score >= 80) {
-                return 'bg-green-600/20 text-green-400';
+                return 'bg-emerald-50 text-emerald-700';
             }
             if (score >= 60) {
-                return 'bg-amber-600/20 text-amber-400';
+                return 'bg-[#FFF9EA] text-[#8A6A1F]';
             }
-            return 'bg-red-600/20 text-red-400';
+            return 'bg-red-50 text-red-700';
         },
 
         statusDotClass(color) {
@@ -563,19 +563,19 @@ export default function cfmManagement(initial = {}) {
 
         statusBadgeClass(color) {
             const map = {
-                green: 'bg-green-500/20 text-green-400',
-                amber: 'bg-amber-500/20 text-amber-400',
-                orange: 'bg-orange-500/20 text-orange-400',
-                red: 'bg-red-500/20 text-red-400',
-                gray: 'bg-gray-500/20 text-gray-400',
+                green: 'bg-emerald-50 text-emerald-700',
+                amber: 'bg-amber-50 text-amber-800',
+                orange: 'bg-orange-50 text-orange-700',
+                red: 'bg-red-50 text-red-700',
+                gray: 'bg-slate-100 text-slate-600',
             };
-            return map[color] ?? 'bg-amber-500/20 text-amber-400';
+            return map[color] ?? 'bg-amber-50 text-amber-800';
         },
 
         hierarchyBadgeClass(cfm) {
             return cfm.inMyHierarchy
-                ? 'bg-green-900/40 text-green-300'
-                : 'bg-blue-900/40 text-blue-300';
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-sky-50 text-sky-700';
         },
 
         getWorkloadWarning() {
@@ -619,28 +619,28 @@ export default function cfmManagement(initial = {}) {
 
         aiBorderClass(item) {
             if (item.statusLabel === 'Recommended') {
-                return 'border-green-500';
+                return 'border-l-emerald-500';
             }
             if (item.statusLabel === 'Use Caution') {
-                return 'border-amber-500';
+                return 'border-l-amber-500';
             }
             if (item.statusLabel === 'Not Recommended') {
-                return 'border-red-500';
+                return 'border-l-red-500';
             }
-            return 'border-gray-600';
+            return 'border-l-slate-400';
         },
 
         aiTitleClass(item) {
             if (item.statusLabel === 'Recommended') {
-                return 'text-green-400';
+                return 'text-emerald-700';
             }
             if (item.statusLabel === 'Use Caution') {
-                return 'text-amber-400';
+                return 'text-amber-700';
             }
             if (item.statusLabel === 'Not Recommended') {
-                return 'text-red-400';
+                return 'text-red-700';
             }
-            return 'text-gray-300';
+            return 'text-slate-600';
         },
     };
 }

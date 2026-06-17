@@ -1,55 +1,55 @@
-<div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-    <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-amber-400">My Trainees</h3>
-        <span class="text-xs text-gray-500">{{ $profile['activeApprentices'] }} active · {{ $profile['completedApprentices'] }} completed</span>
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-[#0B1F3A]">My Trainees</h3>
+        <span class="text-xs text-slate-500">{{ $profile['activeApprentices'] }} active · {{ $profile['completedApprentices'] }} completed</span>
     </div>
 
     @if (count($profile['apprentices']) > 0)
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-800">
-                        <th class="pb-2 font-medium">Name</th>
-                        <th class="pb-2 font-medium">Rank</th>
-                        <th class="pb-2 font-medium">Checklist</th>
-                        <th class="pb-2 font-medium">Status</th>
-                        <th class="pb-2 font-medium text-right">Actions</th>
+                    <tr class="border-b border-slate-200 text-left text-slate-500">
+                        <th class="pb-2 font-semibold">Name</th>
+                        <th class="pb-2 font-semibold">Rank</th>
+                        <th class="pb-2 font-semibold">Checklist</th>
+                        <th class="pb-2 font-semibold">Status</th>
+                        <th class="pb-2 text-right font-semibold">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-800">
+                <tbody class="divide-y divide-slate-200">
                     @foreach ($profile['apprentices'] as $trainee)
                         <tr>
-                            <td class="py-2.5 text-white">{{ $trainee['name'] }}</td>
-                            <td class="py-2.5 text-gray-400">{{ $trainee['rank'] }}</td>
+                            <td class="py-2.5 font-medium text-[#0B1F3A]">{{ $trainee['name'] }}</td>
+                            <td class="py-2.5 text-slate-600">{{ $trainee['rank'] }}</td>
                             <td class="py-2.5">
                                 @if (! empty($trainee['assignmentId']))
                                     <div class="flex items-center gap-2">
-                                        <div class="h-1.5 w-16 overflow-hidden rounded-full bg-gray-800">
-                                            <div class="h-full rounded-full bg-amber-500" style="width: {{ $trainee['checklistPercent'] ?? 0 }}%"></div>
+                                        <div class="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200">
+                                            <div class="h-full rounded-full bg-[#C8A24A]" style="width: {{ $trainee['checklistPercent'] ?? 0 }}%"></div>
                                         </div>
-                                        <span class="text-xs text-gray-400">{{ $trainee['checklistPercent'] ?? 0 }}%</span>
+                                        <span class="text-xs text-slate-500">{{ $trainee['checklistPercent'] ?? 0 }}%</span>
                                     </div>
                                 @else
-                                    <span class="text-xs text-gray-600">—</span>
+                                    <span class="text-xs text-slate-400">—</span>
                                 @endif
                             </td>
                             <td class="py-2.5">
-                                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-gray-800 text-gray-300">
+                                <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
                                     {{ ucfirst($trainee['status']) }}
                                 </span>
                             </td>
-                            <td class="py-2.5 text-right space-x-2">
+                            <td class="space-x-2 py-2.5 text-right">
                                 @if (! empty($trainee['assignmentId']))
                                     <button
                                         type="button"
-                                        class="inline-flex rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-200 transition hover:border-amber-500 hover:text-amber-400"
+                                        class="inline-flex rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0B1F3A] transition hover:border-[#C8A24A] hover:text-[#8A6A1F]"
                                         @click="openTraineeChecklistModal(@js(route('cfm.portal.trainees.checklist', $trainee['assignmentId'])))"
                                     >
                                         View checklist
                                     </button>
                                     <a
                                         href="{{ route('cfm.portal.trainees.checklist', $trainee['assignmentId']) }}"
-                                        class="inline-flex rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-200 transition hover:border-amber-500 hover:text-amber-400"
+                                        class="inline-flex rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0B1F3A] transition hover:border-[#C8A24A] hover:text-[#8A6A1F]"
                                     >
                                         Track mentoring
                                     </a>
@@ -57,12 +57,12 @@
                                 @if (! empty($trainee['needsFirstContact']) && ! empty($trainee['assignmentId']))
                                     <form method="POST" action="{{ route('cfm.portal.assignments.first-contact', $trainee['assignmentId']) }}" class="inline">
                                         @csrf
-                                        <button type="submit" class="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-black transition hover:bg-amber-400">
+                                        <button type="submit" class="rounded-lg bg-[#C8A24A] px-3 py-1.5 text-xs font-bold text-[#0B1F3A] transition hover:bg-[#D8B85F]">
                                             Send first email
                                         </button>
                                     </form>
                                 @elseif (! empty($trainee['assignmentId']) && empty($trainee['needsFirstContact']))
-                                    <span class="text-xs text-emerald-400">Intro sent</span>
+                                    <span class="text-xs font-medium text-emerald-700">Intro sent</span>
                                 @endif
                             </td>
                         </tr>
@@ -71,15 +71,15 @@
             </table>
         </div>
     @else
-        <p class="text-sm text-gray-500">No active trainees assigned yet. Confirm pending assignments above to activate trainees.</p>
+        <p class="text-sm text-slate-500">No active trainees assigned yet. Confirm pending assignments above to activate trainees.</p>
     @endif
 
     @if (! empty($profile['apprenticeBreakdown']))
-        <dl class="mt-5 grid grid-cols-2 gap-2 text-xs border-t border-gray-800 pt-4">
+        <dl class="mt-5 grid grid-cols-2 gap-2 border-t border-slate-200 pt-4 text-xs">
             @foreach ($profile['apprenticeBreakdown'] as $key => $value)
-                <div class="flex justify-between rounded-lg bg-gray-800/50 px-2 py-1.5">
-                    <span class="text-gray-500">{{ str($key)->headline() }}</span>
-                    <span class="text-white font-medium">{{ $value }}</span>
+                <div class="flex justify-between rounded-lg bg-slate-50 px-2 py-1.5">
+                    <span class="text-slate-500">{{ str($key)->headline() }}</span>
+                    <span class="font-medium text-[#0B1F3A]">{{ $value }}</span>
                 </div>
             @endforeach
         </dl>

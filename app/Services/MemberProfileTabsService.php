@@ -2,20 +2,22 @@
 
 namespace App\Services;
 
-use App\Models\OnboardingStep;
+use App\Models\Checklist;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class MemberProfileTabsService
 {
+    public function __construct(private readonly ChecklistService $checklists) {}
+
     public function forUser(User $user): array
     {
         $user->loadMissing(['profile', 'rank', 'mentor']);
 
         $onboarding = $this->onboardingRows($user);
-        $fap = $this->checklistRows($user, $this->apprenticeshipConfig());
-        $cfm = $this->checklistRows($user, $this->cfmTrainingConfig());
+        $fap = $this->checklistRows($user, 'fap', 'Field Apprenticeship Program');
+        $cfm = $this->checklistRows($user, 'cfm-training');
         $recruits = $this->recruitRows($user);
         $annualPremium = $this->annualPremiumRows($user, $onboarding, $fap, $cfm);
         $otherTraining = $this->otherTrainingRows($user);
@@ -40,8 +42,8 @@ class MemberProfileTabsService
         return $this->sumAnnualPremium($this->annualPremiumRows(
             $user,
             $this->onboardingRows($user),
-            $this->checklistRows($user, $this->apprenticeshipConfig()),
-            $this->checklistRows($user, $this->cfmTrainingConfig()),
+            $this->checklistRows($user, 'fap', 'Field Apprenticeship Program'),
+            $this->checklistRows($user, 'cfm-training'),
         ));
     }
 
@@ -55,21 +57,11 @@ class MemberProfileTabsService
 
     private function onboardingRows(User $user): array
     {
-        $steps = OnboardingStep::query()
-            ->applicableToCountry($user->profile?->country)
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('title')
-            ->get();
-
-        $progress = DB::table('user_onboarding_progress')
-            ->where('user_id', $user->id)
-            ->whereIn('onboarding_step_id', $steps->pluck('id'))
-            ->get()
-            ->keyBy('onboarding_step_id');
+        $steps = $this->checklists->activeSteps('onboarding', $user->profile?->country);
+        $progress = $this->checklists->userProgressFor($user->id, $steps->pluck('id'));
 
         return $steps
-            ->map(fn (OnboardingStep $step) => $this->formatChecklistRow(
+            ->map(fn (Checklist $step) => $this->formatChecklistRow(
                 $step->title,
                 $step->country ?: 'Global',
                 (bool) $step->is_required,
@@ -79,22 +71,17 @@ class MemberProfileTabsService
             ->all();
     }
 
-    private function checklistRows(User $user, array $config): array
+    private function checklistRows(User $user, string $typeCode, ?string $groupLabel = null): array
     {
-        $steps = $this->stepsQuery($config)->get();
-
-        $progress = DB::table($config['progressTable'])
-            ->where('user_id', $user->id)
-            ->whereIn($config['foreignKey'], $steps->pluck('id'))
-            ->get()
-            ->keyBy($config['foreignKey']);
+        $steps = $this->checklists->activeSteps($typeCode, null, $groupLabel);
+        $progress = $this->checklists->userProgressFor($user->id, $steps->pluck('id'));
 
         return $steps
-            ->map(function (object $step) use ($progress): array {
+            ->map(function (Checklist $step) use ($progress): array {
                 return $this->formatChecklistRow(
                     $step->title,
                     $step->group_label ?? '—',
-                    (bool) ($step->is_required ?? true),
+                    (bool) $step->is_required,
                     $progress->get($step->id)
                 );
             })
@@ -102,9 +89,9 @@ class MemberProfileTabsService
             ->all();
     }
 
-    private function formatChecklistRow(string $title, string $category, bool $required, ?object $progress): array
+    private function formatChecklistRow(string $title, string $category, bool $required, mixed $progress): array
     {
-        $status = $progress->status ?? 'not_started';
+        $status = $progress?->status ?? 'not_started';
 
         return [
             'item' => $title,
@@ -112,8 +99,8 @@ class MemberProfileTabsService
             'required' => $required ? 'Yes' : 'No',
             'status' => str($status)->replace('_', ' ')->title()->toString(),
             'status_key' => $status,
-            'submitted_at' => $this->formatDate($progress->submitted_at ?? null),
-            'completed_at' => $this->formatDate($progress->completed_at ?? null),
+            'submitted_at' => $this->formatDate($progress?->submitted_at ?? null),
+            'completed_at' => $this->formatDate($progress?->completed_at ?? null),
         ];
     }
 
@@ -288,58 +275,6 @@ class MemberProfileTabsService
             })
             ->values()
             ->all();
-    }
-
-    private function stepsQuery(array $config)
-    {
-        $query = DB::table($config['stepTable'])
-            ->where($config['stepTable'].'.is_active', true)
-            ->whereNull($config['stepTable'].'.deleted_at');
-
-        if ($config['key'] === 'apprenticeship') {
-            $query
-                ->join('apprenticeship_programs', 'apprenticeship_programs.id', '=', 'apprenticeship_steps.apprenticeship_program_id')
-                ->where('apprenticeship_programs.is_active', true)
-                ->whereNull('apprenticeship_programs.deleted_at')
-                ->select(
-                    'apprenticeship_steps.id',
-                    'apprenticeship_steps.title',
-                    'apprenticeship_steps.sort_order',
-                    'apprenticeship_programs.name as group_label'
-                )
-                ->selectRaw('1 as is_required');
-        } else {
-            $query->select(
-                $config['stepTable'].'.id',
-                $config['stepTable'].'.title',
-                $config['stepTable'].'.sort_order',
-                $config['stepTable'].'.is_required'
-            );
-        }
-
-        return $query
-            ->orderBy($config['stepTable'].'.sort_order')
-            ->orderBy($config['stepTable'].'.title');
-    }
-
-    private function apprenticeshipConfig(): array
-    {
-        return [
-            'key' => 'apprenticeship',
-            'stepTable' => 'apprenticeship_steps',
-            'progressTable' => 'user_apprenticeship_progress',
-            'foreignKey' => 'apprenticeship_step_id',
-        ];
-    }
-
-    private function cfmTrainingConfig(): array
-    {
-        return [
-            'key' => 'cfm-training',
-            'stepTable' => 'cfm_training_modules',
-            'progressTable' => 'cfm_training_progress',
-            'foreignKey' => 'cfm_training_module_id',
-        ];
     }
 
     private function formatDate(mixed $value): string

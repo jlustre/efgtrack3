@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('profile_completion_fields')) {
+            return;
+        }
+
         Schema::create('profile_completion_fields', function (Blueprint $table) {
             $table->id();
             $table->string('field_key');

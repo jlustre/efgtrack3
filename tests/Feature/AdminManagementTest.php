@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -95,12 +96,16 @@ class AdminManagementTest extends TestCase
     public function test_admin_can_create_update_archive_and_restore_a_managed_record(): void
     {
         $this->seed(RolePermissionSeeder::class);
+        $this->seed(ChecklistTypeSeeder::class);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
+        $typeId = DB::table('checklist_types')->where('code', 'onboarding')->value('id');
+
         $this->actingAs($admin)
-            ->post(route('admin.management.store', 'onboarding-steps'), [
+            ->post(route('admin.management.store', 'checklists'), [
+                'checklist_type_id' => $typeId,
                 'title' => 'Welcome Call',
                 'description' => 'Complete the first sponsor welcome call.',
                 'sort_order' => 10,
@@ -111,12 +116,13 @@ class AdminManagementTest extends TestCase
             ])
             ->assertRedirect();
 
-        $stepId = DB::table('onboarding_steps')->where('title', 'Welcome Call')->value('id');
+        $stepId = DB::table('checklists')->where('title', 'Welcome Call')->value('id');
 
         $this->assertNotNull($stepId);
 
         $this->actingAs($admin)
-            ->patch(route('admin.management.update', ['onboarding-steps', $stepId]), [
+            ->patch(route('admin.management.update', ['checklists', $stepId]), [
+                'checklist_type_id' => $typeId,
                 'title' => 'Welcome Strategy Call',
                 'description' => 'Complete the first sponsor welcome call.',
                 'sort_order' => 20,
@@ -125,9 +131,9 @@ class AdminManagementTest extends TestCase
                 'is_active' => 0,
                 'is_required' => 1,
             ])
-            ->assertRedirect(route('admin.management.edit', ['onboarding-steps', $stepId]));
+            ->assertRedirect(route('admin.management.edit', ['checklists', $stepId]));
 
-        $this->assertDatabaseHas('onboarding_steps', [
+        $this->assertDatabaseHas('checklists', [
             'id' => $stepId,
             'title' => 'Welcome Strategy Call',
             'sort_order' => 20,
@@ -137,22 +143,22 @@ class AdminManagementTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->patch(route('admin.management.status', ['onboarding-steps', $stepId]))
+            ->patch(route('admin.management.status', ['checklists', $stepId]))
             ->assertRedirect();
 
-        $this->assertTrue((bool) DB::table('onboarding_steps')->where('id', $stepId)->value('is_active'));
+        $this->assertTrue((bool) DB::table('checklists')->where('id', $stepId)->value('is_active'));
 
         $this->actingAs($admin)
-            ->delete(route('admin.management.destroy', ['onboarding-steps', $stepId]))
+            ->delete(route('admin.management.destroy', ['checklists', $stepId]))
             ->assertRedirect();
 
-        $this->assertNotNull(DB::table('onboarding_steps')->where('id', $stepId)->value('deleted_at'));
+        $this->assertNotNull(DB::table('checklists')->where('id', $stepId)->value('deleted_at'));
 
         $this->actingAs($admin)
-            ->patch(route('admin.management.restore', ['onboarding-steps', $stepId]))
-            ->assertRedirect(route('admin.management.edit', ['onboarding-steps', $stepId]));
+            ->patch(route('admin.management.restore', ['checklists', $stepId]))
+            ->assertRedirect(route('admin.management.edit', ['checklists', $stepId]));
 
-        $this->assertNull(DB::table('onboarding_steps')->where('id', $stepId)->value('deleted_at'));
+        $this->assertNull(DB::table('checklists')->where('id', $stepId)->value('deleted_at'));
     }
 
     public function test_agency_owner_can_manage_checklists_but_not_other_setup_tables(): void
@@ -163,11 +169,10 @@ class AdminManagementTest extends TestCase
         $agencyOwner->assignRole('agency-owner');
 
         $this->actingAs($agencyOwner)
-            ->get(route('admin.management.resource.index', 'onboarding-steps'))
+            ->get(route('admin.management.resource.index', 'checklists'))
             ->assertOk()
-            ->assertSee('Onboarding Steps')
-            ->assertSee('Add Item')
-            ->assertSee('Update Seeder');
+            ->assertSee('Checklists')
+            ->assertSee('Add Record');
 
         $this->actingAs($agencyOwner)
             ->get(route('admin.management.resource.index', 'ranks'))
@@ -177,11 +182,15 @@ class AdminManagementTest extends TestCase
     public function test_trainer_can_view_but_not_edit_checklists(): void
     {
         $this->seed(RolePermissionSeeder::class);
+        $this->seed(ChecklistTypeSeeder::class);
 
         $trainer = User::factory()->create();
         $trainer->assignRole('trainer');
 
-        DB::table('cfm_training_modules')->insert([
+        $typeId = DB::table('checklist_types')->where('code', 'cfm-training')->value('id');
+
+        DB::table('checklists')->insert([
+            'checklist_type_id' => $typeId,
             'title' => 'Read Only CFM Module',
             'description' => 'Visible but not editable.',
             'sort_order' => 10,
@@ -193,10 +202,10 @@ class AdminManagementTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $moduleId = DB::table('cfm_training_modules')->where('title', 'Read Only CFM Module')->value('id');
+        $moduleId = DB::table('checklists')->where('title', 'Read Only CFM Module')->value('id');
 
         $this->actingAs($trainer)
-            ->get(route('admin.management.resource.index', 'cfm-training-modules'))
+            ->get(route('admin.management.resource.index', 'checklists'))
             ->assertOk()
             ->assertSee('Read Only CFM Module')
             ->assertSee('View')
@@ -205,16 +214,16 @@ class AdminManagementTest extends TestCase
             ->assertDontSee('Deactivate');
 
         $this->actingAs($trainer)
-            ->get(route('admin.management.show', ['cfm-training-modules', $moduleId]))
+            ->get(route('admin.management.show', ['checklists', $moduleId]))
             ->assertOk()
             ->assertSee('Visible but not editable.');
 
         $this->actingAs($trainer)
-            ->get(route('admin.management.edit', ['cfm-training-modules', $moduleId]))
+            ->get(route('admin.management.edit', ['checklists', $moduleId]))
             ->assertForbidden();
 
         $this->actingAs($trainer)
-            ->patch(route('admin.management.status', ['cfm-training-modules', $moduleId]))
+            ->patch(route('admin.management.status', ['checklists', $moduleId]))
             ->assertForbidden();
     }
 

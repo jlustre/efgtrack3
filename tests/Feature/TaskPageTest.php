@@ -5,7 +5,8 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Support\LocationOptions;
 use Database\Seeders\CountrySeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,11 +23,9 @@ class TaskPageTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             CountrySeeder::class,
-<<<<<<< HEAD
-=======
             TimezoneSeeder::class,
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $agencyOwner = User::factory()->create();
@@ -37,26 +36,21 @@ class TaskPageTest extends TestCase
             'mentor_id' => null,
         ]);
         $member->assignRole('member');
-<<<<<<< HEAD
-        $member->profile()->create(LocationOptions::profileAttributesForStorage([
-            'country' => 'Canada',
-            'is_efg_active_associate' => true,
-            'efg_associate_id' => 'EFG-TASK-1',
-        ]));
-=======
         $member->profile()->create(array_merge([
             'is_efg_active_associate' => true,
             'efg_associate_id' => 'EFG-TASK-1',
         ], LocationOptions::profileLocationIds('Canada')));
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 
-        $stepId = DB::table('onboarding_steps')
-            ->where('title', 'Complete Member Profile')
-            ->value('id');
+        $stepId = DB::table('checklists')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->where('checklist_types.code', 'onboarding')
+            ->where('checklists.title', 'Complete Member Profile')
+            ->value('checklists.id');
 
-        DB::table('user_onboarding_progress')->insert([
+        DB::table('checklist_progress')->insert([
             'user_id' => $member->id,
-            'onboarding_step_id' => $stepId,
+            'checklist_id' => $stepId,
+            'mentor_assignment_id' => null,
             'status' => 'pending_confirmation',
             'submitted_at' => now()->subDay(),
             'completed_at' => null,

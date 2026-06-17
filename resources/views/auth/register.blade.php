@@ -1,15 +1,10 @@
 <x-guest-layout>
     @php
-<<<<<<< HEAD
         $timezones = $locationOptions['timezones'];
         $currentCountry = old('country');
         $currentProvince = old('province');
         $provinceOptions = $locationOptions['provincesByCountry'][$currentCountry] ?? [];
         $provinceIsLegacy = filled($currentProvince) && ! array_key_exists($currentProvince, $provinceOptions) && ! in_array($currentProvince, $provinceOptions, true);
-=======
-        $registrationCountries = collect($locationOptions['countries'])
-            ->filter(fn (string $name): bool => in_array($name, ['Canada', 'United States', 'Philippines', 'Mexico'], true));
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
     @endphp
 
     <div class="min-h-screen bg-[radial-gradient(circle_at_10%_20%,#111111,#000000)] px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
@@ -155,33 +150,25 @@
 
                             <div class="grid gap-5 sm:grid-cols-2">
                                 <div>
-<<<<<<< HEAD
                                     <label for="country" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Country</label>
                                     <select id="country" name="country" required x-model="editCountry" @change="onCountryChange()" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
                                         <option value="" disabled @selected(! old('country'))>Select jurisdiction</option>
                                         @foreach (['Canada', 'United States', 'Philippines', 'Mexico'] as $country)
                                             <option value="{{ $country }}" @selected(old('country') === $country)>{{ $country }}</option>
-=======
-                                    <label for="country_id" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Country</label>
-                                    <select id="country_id" name="country_id" required class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
-                                        <option value="" disabled @selected(! old('country_id'))>Select jurisdiction</option>
-                                        @foreach ($registrationCountries as $id => $country)
-                                            <option value="{{ $id }}" @selected((string) old('country_id') === (string) $id)>{{ $country }}</option>
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                                         @endforeach
                                     </select>
-                                    <x-input-error :messages="$errors->get('country_id')" class="mt-2" />
+                                    <x-input-error :messages="$errors->get('country')" class="mt-2" />
                                 </div>
 
                                 <div>
-                                    <label for="timezone_id" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Timezone</label>
-                                    <select id="timezone_id" name="timezone_id" required class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
-                                        <option value="" disabled @selected(! old('timezone_id'))>Select your local timezone</option>
-                                        @foreach ($locationOptions['timezones'] as $id => $timezoneLabel)
-                                            <option value="{{ $id }}" @selected((string) old('timezone_id') === (string) $id)>{{ $timezoneLabel }}</option>
+                                    <label for="timezone" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Timezone</label>
+                                    <select id="timezone" name="timezone" required class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
+                                        <option value="" disabled @selected(! old('timezone'))>Select your local timezone</option>
+                                        @foreach ($timezones as $timezoneValue => $timezoneLabel)
+                                            <option value="{{ is_numeric($timezoneValue) ? $timezoneLabel : $timezoneValue }}" @selected(old('timezone') === (is_numeric($timezoneValue) ? $timezoneLabel : $timezoneValue))>{{ $timezoneLabel }}</option>
                                         @endforeach
                                     </select>
-                                    <x-input-error :messages="$errors->get('timezone_id')" class="mt-2" />
+                                    <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
                                 </div>
                             </div>
 

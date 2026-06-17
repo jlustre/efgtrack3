@@ -17,6 +17,7 @@
         class="space-y-6"
         x-data="{
             viewMode: 'table',
+            showCategorySidebar: true,
             showPreview: false,
             previewLoading: false,
             previewError: null,
@@ -25,10 +26,20 @@
             init() {
                 const saved = localStorage.getItem('efg-documents-view');
                 this.viewMode = saved === 'cards' ? 'cards' : 'table';
+
+                const savedSidebar = localStorage.getItem('efg-documents-category-sidebar');
+                this.showCategorySidebar = savedSidebar !== 'hidden';
             },
             setView(mode) {
                 this.viewMode = mode;
                 localStorage.setItem('efg-documents-view', mode);
+            },
+            toggleCategorySidebar() {
+                this.showCategorySidebar = ! this.showCategorySidebar;
+                localStorage.setItem(
+                    'efg-documents-category-sidebar',
+                    this.showCategorySidebar ? 'visible' : 'hidden',
+                );
             },
             async openPreview(documentId) {
                 this.showPreview = true;
@@ -85,6 +96,18 @@
                     Run <code class="rounded bg-white/70 px-1 py-0.5 text-xs">php artisan migrate:fresh --seed</code> to restore them.
                     Regenerate stored PDFs from Admin Management after seeding if needed.
                 </p>
+            </div>
+        @endif
+
+        @if (session('status') === 'favorite-added')
+            <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                Document added to My Favorites.
+            </div>
+        @endif
+
+        @if (session('status') === 'favorite-removed')
+            <div class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
+                Document removed from My Favorites.
             </div>
         @endif
 
@@ -152,6 +175,12 @@
 
                     @if ($canManageDocuments)
                         <a
+                            href="{{ route('admin.management.create', 'resources') }}"
+                            class="inline-flex items-center justify-center rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#D8B75F]"
+                        >
+                            New document
+                        </a>
+                        <a
                             href="{{ route('admin.management.resource.index', 'resources') }}"
                             class="inline-flex items-center justify-center rounded-md border border-[#C8A24A] bg-[#FFF9EA] px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#F7E8B8]"
                         >
@@ -179,6 +208,37 @@
             </button>
         </form>
 
+        <div class="overflow-hidden rounded-lg border border-[#C8A24A]/30 bg-white shadow-sm">
+            <div class="border-b border-[#C8A24A]/20 bg-[#C8A24A]/5 px-4 py-3">
+                <h2 class="text-sm font-semibold text-[#0B1F3A]">My Favorites</h2>
+                <p class="mt-1 text-xs text-slate-600">Documents you have starred for quick access.</p>
+            </div>
+            <div x-show="viewMode === 'table'" x-cloak>
+                @include('resources.partials.document-table', [
+                    'documents' => $favoriteRecords,
+                    'categories' => $categories,
+                    'favoriteResourceIds' => $favoriteResourceIds,
+                    'filters' => $filters,
+                    'emptyMessage' => 'No favorites yet. Star a document in the list below to add it here.',
+                ])
+            </div>
+            <div x-show="viewMode === 'cards'" x-cloak class="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
+                @forelse ($favoriteRecords as $document)
+                    @include('resources.partials.document-card', [
+                        'document' => $document,
+                        'categories' => $categories,
+                        'featured' => false,
+                        'favoriteResourceIds' => $favoriteResourceIds,
+                        'filters' => $filters,
+                    ])
+                @empty
+                    <p class="col-span-full px-2 py-6 text-center text-sm text-slate-500">
+                        No favorites yet. Star a document in the list below to add it here.
+                    </p>
+                @endforelse
+            </div>
+        </div>
+
         @if ($featured->isNotEmpty() && ! $activeCategory && ! filled($filters['search']))
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
@@ -190,19 +250,30 @@
                         'documents' => $featured,
                         'categories' => $categories,
                         'showFeaturedBadge' => true,
+                        'favoriteResourceIds' => $favoriteResourceIds,
+                        'filters' => $filters,
                     ])
                 </div>
 
                 <div x-show="viewMode === 'cards'" x-cloak class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     @foreach ($featured as $document)
-                        @include('resources.partials.document-card', ['document' => $document, 'categories' => $categories, 'featured' => true])
+                        @include('resources.partials.document-card', [
+                            'document' => $document,
+                            'categories' => $categories,
+                            'featured' => true,
+                            'favoriteResourceIds' => $favoriteResourceIds,
+                            'filters' => $filters,
+                        ])
                     @endforeach
                 </div>
             </div>
         @endif
 
-        <div class="grid gap-6 xl:grid-cols-[16rem_minmax(0,1fr)]">
-            <aside class="hidden xl:block">
+        <div
+            class="grid gap-6"
+            :class="showCategorySidebar ? 'xl:grid-cols-[16rem_minmax(0,1fr)]' : 'xl:grid-cols-1'"
+        >
+            <aside class="hidden xl:block" x-show="showCategorySidebar" x-cloak>
                 <div class="sticky top-24 space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                     <h2 class="text-sm font-semibold text-[#0B1F3A]">Browse by category</h2>
                     <nav class="space-y-2">
@@ -240,6 +311,18 @@
                         @endif
                     </div>
                     <div class="flex items-center gap-3">
+                        <button
+                            type="button"
+                            @click="toggleCategorySidebar()"
+                            class="hidden items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-[#0B1F3A] transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] xl:inline-flex"
+                            :aria-expanded="showCategorySidebar"
+                            :title="showCategorySidebar ? 'Hide category panel' : 'Show category panel'"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M4 6h16M4 12h10M4 18h16" />
+                            </svg>
+                            <span x-text="showCategorySidebar ? 'Hide categories' : 'Show categories'"></span>
+                        </button>
                         @include('resources.partials.library-view-toggle')
                         <span class="text-sm font-medium text-slate-500">{{ $documents->total() }} result{{ $documents->total() === 1 ? '' : 's' }}</span>
                     </div>
@@ -250,12 +333,20 @@
                         @include('resources.partials.document-table', [
                             'documents' => $documents,
                             'categories' => $categories,
+                            'favoriteResourceIds' => $favoriteResourceIds,
+                            'filters' => $filters,
                         ])
                     </div>
 
                     <div x-show="viewMode === 'cards'" x-cloak class="grid gap-4 md:grid-cols-2">
                         @foreach ($documents as $document)
-                            @include('resources.partials.document-card', ['document' => $document, 'categories' => $categories, 'featured' => false])
+                            @include('resources.partials.document-card', [
+                                'document' => $document,
+                                'categories' => $categories,
+                                'featured' => false,
+                                'favoriteResourceIds' => $favoriteResourceIds,
+                                'filters' => $filters,
+                            ])
                         @endforeach
                     </div>
 
@@ -275,6 +366,10 @@
                         @if (filled($filters['search']) || $activeCategory)
                             <a href="{{ route('resources.documents') }}" class="mt-4 inline-flex rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] hover:bg-[#D8B75F]">
                                 Clear filters
+                            </a>
+                        @elseif ($canManageDocuments)
+                            <a href="{{ route('admin.management.create', 'resources') }}" class="mt-4 inline-flex rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] hover:bg-[#D8B75F]">
+                                New document
                             </a>
                         @endif
                     </div>

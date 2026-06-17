@@ -5,11 +5,13 @@ namespace App\Services;
 use App\Models\CfmMentorProfile;
 use App\Models\User;
 use App\Support\LocationOptions;
-use Illuminate\Support\Facades\DB;
 
 class CfmPortalService
 {
-    public function __construct(private readonly CfmManagementService $cfmManagement) {}
+    public function __construct(
+        private readonly CfmManagementService $cfmManagement,
+        private readonly ChecklistService $checklists,
+    ) {}
 
     public function payloadFor(User $viewer, ?int $cfmUserId = null): array
     {
@@ -46,17 +48,10 @@ class CfmPortalService
                 LocationOptions::profileAttributesForStorage([
                     'phone' => $data['phone'] ?? null,
                     'city' => $data['city'] ?? null,
-<<<<<<< HEAD
-                    'province' => $data['province'] ?? null,
-                    'country' => $data['country'] ?? null,
-                    'timezone' => $data['timezone'] ?? null,
+                    'country' => $data['country_id'] ?? null,
+                    'province' => $data['state_province_id'] ?? null,
+                    'timezone' => $data['timezone_id'] ?? null,
                 ])
-=======
-                    'country_id' => $data['country_id'] ?? null,
-                    'state_province_id' => $data['state_province_id'] ?? null,
-                    'timezone_id' => $data['timezone_id'] ?? null,
-                ]
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             );
 
             $mentorProfile = CfmMentorProfile::firstOrCreate(
@@ -161,10 +156,7 @@ class CfmPortalService
 
     private function trainingProgressFor(User $cfmUser): array
     {
-        $steps = DB::table('cfm_training_modules')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'title', 'is_required']);
+        $steps = $this->checklists->activeSteps('cfm-training');
 
         if ($steps->isEmpty()) {
             return [
@@ -179,15 +171,11 @@ class CfmPortalService
             ];
         }
 
-        $progress = DB::table('cfm_training_progress')
-            ->where('user_id', $cfmUser->id)
-            ->whereIn('cfm_training_module_id', $steps->pluck('id'))
-            ->get()
-            ->keyBy('cfm_training_module_id');
+        $progress = $this->checklists->userProgressFor($cfmUser->id, $steps->pluck('id'));
 
-        $modules = $steps->map(function (object $step) use ($progress): array {
+        $modules = $steps->map(function ($step) use ($progress): array {
             $row = $progress->get($step->id);
-            $status = $row->status ?? 'not_started';
+            $status = $row?->status ?? 'not_started';
 
             return [
                 'title' => $step->title,

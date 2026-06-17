@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\ResourceUrl;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
@@ -42,6 +43,12 @@ class PortalResource extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function favoritedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'resource_favorites', 'resource_id', 'user_id')
+            ->withTimestamps();
     }
 
     public function isDocumentLibraryItem(): bool
@@ -102,6 +109,29 @@ class PortalResource extends Model
         return filled(trim(strip_tags((string) $this->content)));
     }
 
+    public static function isUploadedPdfAttributes(?string $filePath, ?string $fileFormat, ?string $content): bool
+    {
+        return filled($filePath)
+            && ! str_starts_with((string) $filePath, 'http')
+            && strtoupper($fileFormat ?? 'PDF') === 'PDF'
+            && blank(trim(strip_tags((string) $content)));
+    }
+
+    public function isUploadedPdf(): bool
+    {
+        return self::isUploadedPdfAttributes($this->file_path, $this->file_format, $this->content);
+    }
+
+    public function isPdfOnlyDocument(): bool
+    {
+        return $this->hasPdfPreview() && ! $this->hasHtmlPreview();
+    }
+
+    public function shouldOfferListDownload(): bool
+    {
+        return filled($this->resolvedAccessUrl()) && ! $this->isPdfOnlyDocument();
+    }
+
     public function hasPdfPreview(): bool
     {
         if ($this->hasDownloadableFile()) {
@@ -145,7 +175,7 @@ class PortalResource extends Model
     public function inlinePreviewUrl(): ?string
     {
         if ($this->hasDownloadableFile()) {
-            return route('resources.documents.view', $this);
+            return $this->publicFileUrl();
         }
 
         if ($this->hasPdfPreview() && filled($this->url)) {

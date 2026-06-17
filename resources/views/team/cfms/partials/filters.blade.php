@@ -1,45 +1,55 @@
-<div class="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-2xl p-5 mb-8">
-    <div class="flex flex-wrap justify-between items-center mb-4">
-        <h3 class="font-bold text-white">CFM Filters</h3>
-        <button type="button" @click="showFilters = !showFilters" class="text-amber-400 text-sm hover:text-amber-300">Toggle Advanced</button>
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+        <div class="min-w-[200px] flex-1">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Search</label>
+            <input
+                type="search"
+                x-model="searchQuery"
+                placeholder="Name, rank, location…"
+                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+            >
+        </div>
+        <div class="min-w-[160px]">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Hierarchy</label>
+            <select x-model="hierarchyFilter" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                <option value="All Accessible">All Accessible</option>
+                <option value="My Hierarchy">My Hierarchy</option>
+                <option value="External Hierarchy">External Hierarchy</option>
+            </select>
+        </div>
+        <div class="min-w-[140px]">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Workload</label>
+            <select x-model="filterWorkload" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                <option value="">All</option>
+                <option value="Available">Available</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Busy">Busy</option>
+                <option value="Overloaded">Overloaded</option>
+            </select>
+        </div>
+        <div class="min-w-[140px]">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Country</label>
+            <select x-model="filterCountry" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                <option value="">All</option>
+                <template x-for="c in countries" :key="c">
+                    <option :value="c" x-text="c"></option>
+                </template>
+            </select>
+        </div>
+        <div class="min-w-[140px]">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Rank</label>
+            <select x-model="filterRank" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                <option value="">All</option>
+                <template x-for="r in ranks" :key="r">
+                    <option :value="r" x-text="r"></option>
+                </template>
+            </select>
+        </div>
+        <button type="button" @click="clearFilters()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-[#0B1F3A] hover:bg-slate-50 transition">
+            Clear Filters
+        </button>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <input type="search" x-model="searchQuery" placeholder="Search by name, email, phone" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500">
-        <select x-model="hierarchyFilter" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-300 focus:outline-none focus:border-amber-500">
-            <option>All Accessible</option>
-            <option>My Hierarchy</option>
-            <option>Other Hierarchy</option>
-        </select>
-        <select x-model="filterWorkload" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-300 focus:outline-none focus:border-amber-500">
-            <option value="">All workload levels</option>
-            <option value="available">Available</option>
-            <option value="moderate">Moderate</option>
-            <option value="busy">Busy</option>
-            <option value="overloaded">Overloaded</option>
-            <option value="unavailable">Unavailable</option>
-        </select>
-        <button type="button" @click="clearFilters()" class="bg-amber-600/20 text-amber-400 border border-amber-500/50 rounded-xl px-4 py-2 hover:bg-amber-600/30 transition">Clear Filters</button>
-    </div>
-    <div x-show="showFilters" x-transition x-cloak class="grid grid-cols-1 md:grid-cols-5 gap-3 mt-4">
-        <select x-model="filterCountry" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-300">
-            <option value="">All countries</option>
-            @foreach($cfmManagementPayload['filterOptions']['countries'] ?? [] as $country)
-                <option value="{{ $country }}">{{ $country }}</option>
-            @endforeach
-        </select>
-        <input type="text" placeholder="State/Province" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-300 placeholder-gray-500" disabled title="Coming soon">
-        <input type="text" placeholder="City" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-300 placeholder-gray-500" disabled title="Coming soon">
-        <select class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-300" disabled>
-            <option>Timezone</option>
-            @foreach($cfmManagementPayload['filterOptions']['timezones'] ?? [] as $tz)
-                <option>{{ $tz }}</option>
-            @endforeach
-        </select>
-        <select x-model="filterRank" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-300">
-            <option value="">All ranks</option>
-            @foreach($cfmManagementPayload['filterOptions']['ranks'] ?? [] as $rank)
-                <option value="{{ $rank }}">{{ $rank }}</option>
-            @endforeach
-        </select>
-    </div>
+    <p class="mt-3 text-xs text-slate-500">
+        Showing <span class="font-semibold text-[#0B1F3A]" x-text="filteredCfms.length"></span> of <span x-text="cfms.length"></span> CFMs
+    </p>
 </div>

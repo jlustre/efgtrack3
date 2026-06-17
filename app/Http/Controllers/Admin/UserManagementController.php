@@ -88,7 +88,7 @@ class UserManagementController extends Controller
 
     public function edit(User $user): View
     {
-        $user->load(['rank', 'team', 'sponsor', 'roles', 'profile', 'bpEmployee']);
+        $user->load(['rank', 'team', 'sponsor', 'roles', 'profile']);
 
         return view('admin.users.edit', [
             'managedUser' => $user,

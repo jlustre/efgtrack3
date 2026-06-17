@@ -9,20 +9,14 @@
         x-data="{
             showEditProfileModal: @js($openEditProfileModal || $errors->any()),
             profileSaving: false,
-<<<<<<< HEAD
-            editCountry: @js(old('country', $portal['editForm']['country'] ?? '')),
-            editProvince: @js(old('province', $portal['editForm']['province'] ?? '')),
-            editProvinces: @js($portal['locationOptions']['provincesByCountry']),
+            editCountryId: @js(old('country_id', $portal['editForm']['country_id'] ?? '')),
+            editProvinceId: @js(old('state_province_id', $portal['editForm']['state_province_id'] ?? '')),
+            editProvinces: @js($portal['locationOptions']['provincesByCountryId']),
             showTraineeChecklistModal: false,
             checklistModalLoading: false,
             checklistModalError: null,
             checklistModalData: null,
             checklistModalView: 'accomplished',
-=======
-            editCountryId: @js(old('country_id', $portal['editForm']['country_id'] ?? '')),
-            editProvinceId: @js(old('state_province_id', $portal['editForm']['state_province_id'] ?? '')),
-            editProvinces: @js($portal['locationOptions']['provincesByCountryId']),
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             get editProvinceOptions() {
                 return this.editProvinces[String(this.editCountryId)] || {};
             },
@@ -111,53 +105,53 @@
                 $nextTick(() => document.getElementById('cfm-portal-profile-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
             @endif
         "
-        class="cfm-management-page -mx-4 -mt-6 bg-black text-gray-200 font-sans antialiased sm:-mx-6 lg:-mx-8"
+        class="cfm-portal-page space-y-6"
     >
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-            @include('cfm-portal.partials.flash')
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
             @include('cfm-portal.partials.header')
+        </div>
 
-            @include('cfm-portal.partials.pending-assignments')
+        @include('cfm-portal.partials.flash')
+        @include('cfm-portal.partials.pending-assignments')
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-                    <div class="text-amber-400 text-sm font-medium mb-1">Active Trainees</div>
-                    <div class="text-2xl font-bold text-white">{{ $profile['activeApprentices'] }}/{{ $profile['maxApprentices'] }}</div>
-                    <div class="text-xs text-gray-500 mt-1">{{ $profile['pendingApprentices'] }} pending approval</div>
-                </div>
-                <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-                    <div class="text-green-400 text-sm font-medium mb-1">FAP Completion Rate</div>
-                    <div class="text-2xl font-bold text-green-400">{{ $profile['fapCompletionRate'] }}%</div>
-                    <div class="text-xs text-gray-500 mt-1">{{ $profile['completedApprentices'] }} graduates</div>
-                </div>
-                <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-                    <div class="text-amber-400 text-sm font-medium mb-1">Recommendation Score</div>
-                    <div class="text-2xl font-bold text-white">{{ $profile['recommendationScore'] }}/100</div>
-                    <div class="text-xs mt-1" style="color: {{ $profile['recommendationColor'] }}">{{ $profile['recommendationBand'] }}</div>
-                </div>
-                <div class="bg-gray-900/40 backdrop-blur-sm border border-gray-800 rounded-2xl p-4">
-                    <div class="text-amber-400 text-sm font-medium mb-1">Upcoming Sessions</div>
-                    <div class="text-2xl font-bold text-white">{{ $profile['upcomingSessions'] }}</div>
-                    <div class="text-xs text-gray-500 mt-1">Next: {{ $profile['nextSlot'] }}</div>
-                </div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Active Trainees</p>
+                <p class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ $profile['activeApprentices'] }}/{{ $profile['maxApprentices'] }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ $profile['pendingApprentices'] }} pending approval</p>
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                @include('cfm-portal.partials.profile')
-                @include('cfm-portal.partials.achievements')
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">FAP Completion Rate</p>
+                <p class="mt-2 text-2xl font-bold text-emerald-700">{{ $profile['fapCompletionRate'] }}%</p>
+                <p class="mt-1 text-xs text-slate-500">{{ $profile['completedApprentices'] }} graduates</p>
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                @include('cfm-portal.partials.trainees')
-                @include('cfm-portal.partials.training')
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recommendation Score</p>
+                <p class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ $profile['recommendationScore'] }}/100</p>
+                <p class="mt-1 text-xs font-medium" style="color: {{ $profile['recommendationColor'] }}">{{ $profile['recommendationBand'] }}</p>
             </div>
-
-            @include('cfm-portal.partials.rank-structure')
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-                @include('cfm-portal.partials.calendar')
-                @include('cfm-portal.partials.activity')
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Upcoming Sessions</p>
+                <p class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ $profile['upcomingSessions'] }}</p>
+                <p class="mt-1 text-xs text-slate-500">Next: {{ $profile['nextSlot'] }}</p>
             </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            @include('cfm-portal.partials.profile')
+            @include('cfm-portal.partials.achievements')
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            @include('cfm-portal.partials.trainees')
+            @include('cfm-portal.partials.training')
+        </div>
+
+        @include('cfm-portal.partials.rank-structure')
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            @include('cfm-portal.partials.calendar')
+            @include('cfm-portal.partials.activity')
         </div>
 
         @include('cfm-portal.partials.edit-profile-modal')

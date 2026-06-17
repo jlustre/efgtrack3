@@ -6,11 +6,9 @@ use App\Mail\TemplatedMail;
 use App\Models\MentorAssignment;
 use App\Models\User;
 use Database\Seeders\CfmManagementSeeder;
-use Database\Seeders\CfmTrainingModuleSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\EmailTemplateSeeder;
-use Database\Seeders\FieldApprenticeshipProgramSeeder;
-use Database\Seeders\LicensingStepSeeder;
-use Database\Seeders\OnboardingStepSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\TaskScenarioSeeder;
@@ -31,10 +29,8 @@ class CfmAssignmentWorkflowTest extends TestCase
             RolePermissionSeeder::class,
             EmailTemplateSeeder::class,
             TeamSeeder::class,
-            OnboardingStepSeeder::class,
-            LicensingStepSeeder::class,
-            FieldApprenticeshipProgramSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             TaskScenarioSeeder::class,
             CfmManagementSeeder::class,
         ]);

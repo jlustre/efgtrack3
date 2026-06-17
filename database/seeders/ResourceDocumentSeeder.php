@@ -47,95 +47,117 @@ class ResourceDocumentSeeder extends Seeder
             'is_featured' => true,
             'is_published' => true,
             'content' => '<div class="packet">
-        <h1>📘 Associate Welcome Packet</h1>
-        <h2>🎉 Welcome to the Team</h2>
-        <p><strong>Congratulations and welcome!</strong> You are now part of a community committed to your growth, leadership, and long-term success.</p>
-        <p>As a new associate, you have access to <strong>training, mentorship</strong>, and the <strong>EFGTrack</strong> portal to build a strong foundation.</p>
-        <h2>🌟 Our Mission</h2>
-        <p>Help families make informed financial decisions while providing associates with <strong>growth, leadership, and business success</strong> through learning, consistency, and mentorship.</p>
-        <h2>📅 Your First 30 Days</h2>
-        <h3>✅ Week 1: Getting Started</h3>
-        <ul>
-        <li><strong>Objectives:</strong> Account setup, meet sponsor &amp; CFM, learn EFGTrack</li>
-        <li><strong>Actions:</strong> Complete profile, upload docs, attend orientation, schedule mentoring</li>
-        </ul>
-        <div class="tip"><strong>💡 Tip:</strong> Focus on learning, not perfection.</div>
-        <h3>✅ Week 2: Licensing &amp; Learning</h3>
-        <ul>
-        <li><strong>Objectives:</strong> Understand licensing, products, compliance</li>
-        <li><strong>Actions:</strong> Enroll in courses, attend training, complete assessments</li>
-        </ul>
-        <div class="tip"><strong>💡 Tip:</strong> Consistency beats intensity.</div>
-        <h3>✅ Week 3: Field Apprenticeship Prep</h3>
-        <ul>
-        <li><strong>Objectives:</strong> Learn prospecting, observe mentors</li>
-        <li><strong>Actions:</strong> Attend mentorship, review strategies, set goals</li>
-        </ul>
-        <div class="tip"><strong>💡 Tip:</strong> Ask questions often.</div>
-        <h3>✅ Week 4: Building Momentum</h3>
-        <ul>
-        <li><strong>Objectives:</strong> Strengthen knowledge, build habits</li>
-        <li><strong>Actions:</strong> Complete tasks, review progress with mentor, prepare 60-day plan</li>
-        </ul>
-        <div class="tip"><strong>💡 Tip:</strong> Daily activity = success.</div>
-        <h2>🧭 Field Apprenticeship Program (FAP)</h2>
-        <p>Your <strong>Certified Field Mentor (CFM)</strong> guides you through systems, best practices, milestones, and real-world experience. FAP supports growth through <strong>structured learning</strong>.</p>
-        <h2>🤝 Your Support Team</h2>
-        <div class="grid-support">
-        <div class="support-card"><strong>Sponsor</strong> Initial guidance, motivation</div>
-        <div class="support-card"><strong>CFM</strong> Training, licensing, accountability</div>
-        <div class="support-card"><strong>Agency Owner</strong> Mentorship &amp; leadership oversight</div>
-        <div class="support-card"><strong>Support Team</strong> Admin, compliance, licensing, training</div>
-        </div>
-        <h2>💻 EFGTrack Portal &ndash; Quick Guide</h2>
-        <table>
-        <tbody>
-        <tr><th>Section</th><th>Purpose</th></tr>
-        <tr><td><strong>Dashboard</strong></td><td>Daily tasks, events, progress</td></tr>
-        <tr><td><strong>My Tasks</strong></td><td>Deadlines &amp; completion</td></tr>
-        <tr><td><strong>Training Center</strong></td><td>Videos, docs, assessments</td></tr>
-        <tr><td><strong>Licensing Center</strong></td><td>Exam &amp; document tracking</td></tr>
-        <tr><td><strong>FAP Section</strong></td><td>Apprenticeship progress</td></tr>
-        <tr><td><strong>Calendar</strong></td><td>Sessions, mentor meetings</td></tr>
-        <tr><td><strong>Resource Library</strong></td><td>Guides, templates, FAQ</td></tr>
-        </tbody>
-        </table>
-        <h2>🔗 Essential Links</h2>
-        <p>Use these quick-access links for recurring calls, training sessions, and mentor support.</p>
-        <ul>
-        <li><a href="https://zoom.us/j/10000000001">Weekly Team Huddle</a> &mdash; Standing Monday team call for announcements, wins, and weekly priorities.</li>
-        <li><a href="https://zoom.us/j/10000000002">New Associate Fast Start</a> &mdash; Live onboarding session covering portal setup and first-week goals.</li>
-        <li><a href="https://zoom.us/j/10000000003">CFM Office Hours</a> &mdash; Drop-in mentor support for apprenticeship questions and field coaching.</li>
-        <li><a href="https://zoom.us/j/10000000004">Product Training Room</a> &mdash; Recurring product education and case study review sessions.</li>
-        <li><a href="https://zoom.us/j/10000000005">Leadership Development Call</a> &mdash; Monthly leadership call for rank advancement and team-building strategies.</li>
-        <li><a href="https://zoom.us/j/10000000006">National Training Broadcast</a> &mdash; Organization-wide training broadcast and Q&amp;A.</li>
-        <li><a href="https://zoom.us/j/10000000007">Compliance Refresher Session</a> &mdash; Quarterly compliance and AML refresher for licensed associates.</li>
-        <li><a href="https://example.com/book/mentor">Mentor Scheduling Page</a> &mdash; Book one-on-one time with your assigned CFM.</li>
-        </ul>
-        <h2>📌 Daily Habits for Success</h2>
-        <ul>
-        <li>Log into <strong>EFGTrack</strong> daily</li>
-        <li>Complete assigned tasks</li>
-        <li>Attend training &amp; communicate with mentors</li>
-        <li>Review goals &amp; track progress</li>
-        </ul>
-        <h2>❓ Common Questions</h2>
-        <ul>
-        <li><strong>What if I don\'t know what to do next?</strong><br>➜ Check dashboard/tasks, then ask your mentor.</li>
-        <li><strong>How often meet with my mentor?</strong><br>➜ Weekly during first 30&ndash;90 days.</li>
-        <li><strong>What if I fall behind?</strong><br>➜ Tell your mentor immediately.</li>
-        <li><strong>Who to contact first?</strong><br>1. CFM &rarr; 2. Sponsor &rarr; 3. Agency Leader &rarr; 4. Support Team</li>
-        </ul>
-        <div class="success-box">
-        <p>🔑 <strong>Keys to Success</strong></p>
-        <p>Stay coachable, consistent, and positive.</p>
-        <p>Follow the system, complete training, and take action daily.</p>
-        </div>
-        <h2>💪 Welcome Again</h2>
-        <p><strong>Your journey starts today.</strong> Stay committed, stay coachable.</p>
-        <div class="footer"><strong>EFGTrack.com</strong></div>
-        <div class="footer">Training, Mentorship &amp; Performance Tracking</div>
-        </div>',
+                <h2>🎉 Welcome to the Team</h2>
+                <p><strong>Congratulations and welcome!</strong> You are now part of a community committed to your growth, leadership, and long-term success.</p>
+                <p>As a new associate, you have access to <strong>training, mentorship</strong>, and the <strong>EFGTrack</strong> portal to build a strong foundation.</p>
+                <h2>🌟 Our Mission</h2>
+                <p>Help families make informed financial decisions while providing associates with <strong>growth, leadership, and business success</strong> through learning, consistency, and mentorship.</p>
+                <h2>📅 Your First 30 Days</h2>
+                <h3>✅ Week 1: Getting Started</h3>
+                <ul>
+                <li><strong>Objectives:</strong> Account setup, meet sponsor &amp; CFM, learn EFGTrack</li>
+                <li><strong>Actions:</strong> Complete profile, upload docs, attend orientation, schedule mentoring</li>
+                </ul>
+                <div class="tip"><strong>💡 Tip:</strong> Focus on learning, not perfection.</div>
+                <h3>✅ Week 2: Licensing &amp; Learning</h3>
+                <ul>
+                <li><strong>Objectives:</strong> Understand licensing, products, compliance</li>
+                <li><strong>Actions:</strong> Enroll in courses, attend training, complete assessments</li>
+                </ul>
+                <div class="tip"><strong>💡 Tip:</strong> Consistency beats intensity.</div>
+                <h3>✅ Week 3: Field Apprenticeship Prep</h3>
+                <ul>
+                <li><strong>Objectives:</strong> Learn prospecting, observe mentors</li>
+                <li><strong>Actions:</strong> Attend mentorship, review strategies, set goals</li>
+                </ul>
+                <div class="tip"><strong>💡 Tip:</strong> Ask questions often.</div>
+                <h3>✅ Week 4: Building Momentum</h3>
+                <ul>
+                <li><strong>Objectives:</strong> Strengthen knowledge, build habits</li>
+                <li><strong>Actions:</strong> Complete tasks, review progress with mentor, prepare 60-day plan</li>
+                </ul>
+                <div class="tip"><strong>💡 Tip:</strong> Daily activity = success.</div>
+                <h2>🧭 Field Apprenticeship Program (FAP)</h2>
+                <p>Your <strong>Certified Field Mentor (CFM)</strong> guides you through systems, best practices, milestones, and real-world experience. FAP supports growth through <strong>structured learning</strong>.</p>
+                <h2>🤝 Your Support Team</h2>
+                <div class="grid-support">
+                <div class="support-card"><strong>Sponsor</strong> Initial guidance, motivation</div>
+                <div class="support-card"><strong>CFM</strong> Training, licensing, accountability</div>
+                <div class="support-card"><strong>Agency Owner</strong> Mentorship &amp; leadership oversight</div>
+                <div class="support-card"><strong>Support Team</strong> Admin, compliance, licensing, training</div>
+                </div>
+                <h2>💻 EFGTrack Portal &ndash; Quick Guide</h2>
+                <table>
+                <tbody>
+                <tr>
+                <th>Section</th>
+                <th>Purpose</th>
+                </tr>
+                <tr>
+                <td><strong>Dashboard</strong></td>
+                <td>Daily tasks, events, progress</td>
+                </tr>
+                <tr>
+                <td><strong>My Tasks</strong></td>
+                <td>Deadlines &amp; completion</td>
+                </tr>
+                <tr>
+                <td><strong>Training Center</strong></td>
+                <td>Videos, docs, assessments</td>
+                </tr>
+                <tr>
+                <td><strong>Licensing Center</strong></td>
+                <td>Exam &amp; document tracking</td>
+                </tr>
+                <tr>
+                <td><strong>FAP Section</strong></td>
+                <td>Apprenticeship progress</td>
+                </tr>
+                <tr>
+                <td><strong>Calendar</strong></td>
+                <td>Sessions, mentor meetings</td>
+                </tr>
+                <tr>
+                <td><strong>Resource Library</strong></td>
+                <td>Guides, templates, FAQ</td>
+                </tr>
+                </tbody>
+                </table>
+                <h2>🔗 Essential Links</h2>
+                <p>Use these quick-access links for recurring calls, training sessions, and mentor support.</p>
+                <ul>
+                <li><a href="https://zoom.us/j/10000000001">Weekly Team Huddle</a> &mdash; Standing Monday team call for announcements, wins, and weekly priorities.</li>
+                <li><a href="https://zoom.us/j/10000000002">New Associate Fast Start</a> &mdash; Live onboarding session covering portal setup and first-week goals.</li>
+                <li><a href="https://zoom.us/j/10000000003">CFM Office Hours</a> &mdash; Drop-in mentor support for apprenticeship questions and field coaching.</li>
+                <li><a href="https://zoom.us/j/10000000004">Product Training Room</a> &mdash; Recurring product education and case study review sessions.</li>
+                <li><a href="https://zoom.us/j/10000000005">Leadership Development Call</a> &mdash; Monthly leadership call for rank advancement and team-building strategies.</li>
+                <li><a href="https://zoom.us/j/10000000006">National Training Broadcast</a> &mdash; Organization-wide training broadcast and Q&amp;A.</li>
+                <li><a href="https://zoom.us/j/10000000007">Compliance Refresher Session</a> &mdash; Quarterly compliance and AML refresher for licensed associates.</li>
+                <li><a href="https://example.com/book/mentor">Mentor Scheduling Page</a> &mdash; Book one-on-one time with your assigned CFM.</li>
+                </ul>
+                <h2>📌 Daily Habits for Success</h2>
+                <ul>
+                <li>Log into <strong>EFGTrack</strong> daily</li>
+                <li>Complete assigned tasks</li>
+                <li>Attend training &amp; communicate with mentors</li>
+                <li>Review goals &amp; track progress</li>
+                </ul>
+                <h2>❓ Common Questions</h2>
+                <ul>
+                <li><strong>What if I don\'t know what to do next?</strong><br>➜ Check dashboard/tasks, then ask your mentor.</li>
+                <li><strong>How often meet with my mentor?</strong><br>➜ Weekly during first 30&ndash;90 days.</li>
+                <li><strong>What if I fall behind?</strong><br>➜ Tell your mentor immediately.</li>
+                <li><strong>Who to contact first?</strong><br>1. CFM &rarr; 2. Sponsor &rarr; 3. Agency Leader &rarr; 4. Support Team</li>
+                </ul>
+                <div class="success-box">
+                <p>🔑 <strong>Keys to Success</strong></p>
+                <p>Stay coachable, consistent, and positive.&nbsp;Follow the system, complete training, and take action daily.</p>
+                </div>
+                <h2>💪 Welcome Again</h2>
+                <p><strong>Your journey starts today.</strong> Stay committed, stay coachable.</p>
+                <div class="footer"><strong>EFGTrack.com</strong></div>
+                <div class="footer">Training, Mentorship &amp; Performance Tracking</div>
+                </div>',
             'url' => 'resources/welcome-packet.pdf',
             'file_format' => 'PDF',
           ],
@@ -153,6 +175,19 @@ class ResourceDocumentSeeder extends Seeder
           ],
           4 => 
           [
+            'title' => 'How To Invite',
+            'description' => 'A Practical Guide to Introducing Your Business Opportunity and
+                Services to Warm Contacts Using Proven Relationship-Marketing and Posture Architecture',
+            'category' => 'guides',
+            'sort_order' => 10,
+            'type' => 'document',
+            'is_featured' => true,
+            'is_published' => true,
+            'url' => 'storage/resources/documents/how-to-invite-6.pdf',
+            'file_format' => 'PDF',
+          ],
+          5 => 
+          [
             'title' => 'Prospecting Weekly Activity Guide',
             'description' => 'Weekly prospecting targets, tracking tips, and follow-up cadence.',
             'category' => 'guides',
@@ -163,19 +198,20 @@ class ResourceDocumentSeeder extends Seeder
             'url' => 'https://example.com/resources/prospecting-guide.pdf',
             'file_format' => 'PDF',
           ],
-          5 => 
+          6 => 
           [
-            'title' => 'Warm Market Introduction Script',
-            'description' => 'Conversational script for introducing your business to warm contacts.',
-            'category' => 'scripts',
-            'sort_order' => 10,
+            'title' => 'Building Your Prospects List',
+            'description' => 'A Complete Guide to Developing, Expanding, and Managing Your
+                Prospect Pipeline to Ensure Sustainable Financial Advisory and Agency Expansion Velocity',
+            'category' => 'guides',
+            'sort_order' => 20,
             'type' => 'document',
             'is_featured' => true,
             'is_published' => true,
-            'url' => 'https://example.com/resources/warm-market-script.pdf',
+            'url' => 'storage/resources/documents/building-your-prospects-list-20.pdf',
             'file_format' => 'PDF',
           ],
-          6 => 
+          7 => 
           [
             'title' => 'Client Fact Finder Worksheet',
             'description' => 'Printable fact finder used during initial client meetings.',
@@ -187,7 +223,7 @@ class ResourceDocumentSeeder extends Seeder
             'url' => 'https://example.com/resources/fact-finder.pdf',
             'file_format' => 'PDF',
           ],
-          7 => 
+          8 => 
           [
             'title' => 'Code of Conduct Summary',
             'description' => 'High-level summary of conduct, privacy, and regulatory expectations.',
@@ -199,7 +235,7 @@ class ResourceDocumentSeeder extends Seeder
             'url' => 'https://example.com/resources/code-of-conduct.pdf',
             'file_format' => 'PDF',
           ],
-          8 => 
+          9 => 
           [
             'title' => 'Field Apprenticeship Program Overview',
             'description' => 'Explains FAP phases, mentor expectations, and completion requirements.',
@@ -209,26 +245,26 @@ class ResourceDocumentSeeder extends Seeder
             'is_featured' => true,
             'is_published' => true,
             'content' => '<div class="packet">
-        <h1>Field Apprenticeship Program Overview</h1>
-        <p>The Field Apprenticeship Program (FAP) pairs you with a Certified Field Mentor who guides licensing progress, field activity, and milestone completion.</p>
-        <h2>Program Phases</h2>
-        <ol>
-        <li><strong>Orientation</strong> &mdash; Portal setup, expectations, and mentor introduction.</li>
-        <li><strong>Foundation</strong> &mdash; Licensing prep, product basics, and compliance fundamentals.</li>
-        <li><strong>Field Activity</strong> &mdash; Prospecting rhythm, presentations, and mentor shadowing.</li>
-        <li><strong>Advancement Readiness</strong> &mdash; Rank requirements, leadership habits, and next-step planning.</li>
-        </ol>
-        <h2>Live Support Links</h2>
-        <ul>
-        <li><a href="https://zoom.us/j/10000000003">CFM Office Hours</a> &mdash; Ask apprenticeship and field-coaching questions.</li>
-        <li><a href="https://zoom.us/j/10000000004">Product Training Room</a> &mdash; Reinforce product knowledge between mentor sessions.</li>
-        <li><a href="https://example.com/book/mentor">Mentor Scheduling Page</a> &mdash; Book structured one-on-one mentor time.</li>
-        </ul>
-        </div>',
+                        <h1>Field Apprenticeship Program Overview</h1>
+                        <p>The Field Apprenticeship Program (FAP) pairs you with a Certified Field Mentor who guides licensing progress, field activity, and milestone completion.</p>
+                        <h2>Program Phases</h2>
+                        <ol>
+                        <li><strong>Orientation</strong> &mdash; Portal setup, expectations, and mentor introduction.</li>
+                        <li><strong>Foundation</strong> &mdash; Licensing prep, product basics, and compliance fundamentals.</li>
+                        <li><strong>Field Activity</strong> &mdash; Prospecting rhythm, presentations, and mentor shadowing.</li>
+                        <li><strong>Advancement Readiness</strong> &mdash; Rank requirements, leadership habits, and next-step planning.</li>
+                        </ol>
+                        <h2>Live Support Links</h2>
+                        <ul>
+                        <li><a href="https://zoom.us/j/10000000003">CFM Office Hours</a> &mdash; Ask apprenticeship and field-coaching questions.</li>
+                        <li><a href="https://zoom.us/j/10000000004">Product Training Room</a> &mdash; Reinforce product knowledge between mentor sessions.</li>
+                        <li><a href="https://example.com/book/mentor">Mentor Scheduling Page</a> &mdash; Book structured one-on-one mentor time.</li>
+                        </ul>
+                        </div>',
             'url' => 'https://example.com/resources/fap-overview.pdf',
             'file_format' => 'PDF',
           ],
-          9 => 
+          10 => 
           [
             'title' => 'Licensing Exam Prep Checklist',
             'description' => 'Step-by-step checklist from enrollment through license issuance.',
@@ -238,25 +274,25 @@ class ResourceDocumentSeeder extends Seeder
             'is_featured' => false,
             'is_published' => true,
             'content' => '<div class="packet">
-        <h1>Licensing Exam Prep Checklist</h1>
-        <p>Use this checklist from enrollment through license issuance.</p>
-        <ol>
-        <li>Confirm jurisdiction requirements with your CFM.</li>
-        <li>Complete pre-licensing coursework on schedule.</li>
-        <li>Schedule and pass the licensing exam.</li>
-        <li>Submit appointment paperwork and background materials.</li>
-        <li>Track approval status in EFGTrack.</li>
-        </ol>
-        <h2>Helpful Sessions</h2>
-        <ul>
-        <li><a href="https://zoom.us/j/10000000002">New Associate Fast Start</a> &mdash; Licensing overview for new associates.</li>
-        <li><a href="https://zoom.us/j/10000000007">Compliance Refresher Session</a> &mdash; Regulatory expectations after licensing.</li>
-        </ul>
-        </div>',
+                        <h1>Licensing Exam Prep Checklist</h1>
+                        <p>Use this checklist from enrollment through license issuance.</p>
+                        <ol>
+                        <li>Confirm jurisdiction requirements with your CFM.</li>
+                        <li>Complete pre-licensing coursework on schedule.</li>
+                        <li>Schedule and pass the licensing exam.</li>
+                        <li>Submit appointment paperwork and background materials.</li>
+                        <li>Track approval status in EFGTrack.</li>
+                        </ol>
+                        <h2>Helpful Sessions</h2>
+                        <ul>
+                        <li><a href="https://zoom.us/j/10000000002">New Associate Fast Start</a> &mdash; Licensing overview for new associates.</li>
+                        <li><a href="https://zoom.us/j/10000000007">Compliance Refresher Session</a> &mdash; Regulatory expectations after licensing.</li>
+                        </ul>
+                        </div>',
             'url' => 'https://example.com/resources/licensing-checklist.pdf',
             'file_format' => 'PDF',
           ],
-          10 => 
+          11 => 
           [
             'title' => 'Needs Analysis Presentation Outline',
             'description' => 'Structured outline for conducting a needs analysis presentation.',
@@ -266,6 +302,88 @@ class ResourceDocumentSeeder extends Seeder
             'is_featured' => false,
             'is_published' => true,
             'url' => 'https://example.com/resources/needs-analysis-outline.pdf',
+            'file_format' => 'PDF',
+          ],
+          12 => 
+          [
+            'title' => 'The Professional Presentation System',
+            'description' => 'A Step-by-Step Guide to Presenting Financial Services, Insurance Solutions, and Business Opportunities with Confidence',
+            'category' => 'guides',
+            'sort_order' => 20,
+            'type' => 'document',
+            'is_featured' => true,
+            'is_published' => true,
+            'url' => 'storage/resources/documents/the-professional-presentation-system-21.pdf',
+            'file_format' => 'PDF',
+          ],
+          13 => 
+          [
+            'title' => 'The Follow-Up System',
+            'description' => 'A Complete Guide to Following Up with Prospects Professionally, Consistently, and Effectively to Maximize Capital Expansion and Recruiting Pipelines',
+            'category' => 'guides',
+            'sort_order' => 30,
+            'type' => 'document',
+            'is_featured' => true,
+            'is_published' => true,
+            'url' => 'storage/resources/documents/the-follow-up-system-22.pdf',
+            'file_format' => 'PDF',
+          ],
+          14 => 
+          [
+            'title' => 'Helping Prospects Become Clients',
+            'description' => 'A Professional Guide to Understanding Needs, Solving Problems, and Creating Value-Based Client Relationships.',
+            'category' => 'guides',
+            'sort_order' => 40,
+            'type' => 'document',
+            'is_featured' => true,
+            'is_published' => true,
+            'url' => 'storage/resources/documents/helping-prospects-become-clients-23.pdf',
+            'file_format' => 'PDF',
+          ],
+          15 => 
+          [
+            'title' => 'Helping Clients Become  EFG Associates',
+            'description' => 'A Professional Guide to Identifying, Developing, and Transitioning Happy Clients into Successful Team Members',
+            'category' => 'guides',
+            'sort_order' => 50,
+            'type' => 'document',
+            'is_featured' => true,
+            'is_published' => true,
+            'url' => 'storage/resources/documents/helping-clients-become-efg-associates-24.pdf',
+            'file_format' => 'PDF',
+          ],
+          16 => 
+          [
+            'title' => 'Mastering Objection  Handling',
+            'description' => 'A Complete Guide to Understanding, Preventing, and Responding to Objections Throughout the Prospect-to-Client-to-Associate Journey',
+            'category' => 'onboarding',
+            'sort_order' => 70,
+            'type' => 'document',
+            'is_featured' => true,
+            'is_published' => true,
+            'url' => 'storage/resources/documents/mastering-objection-handling-25.pdf',
+            'file_format' => 'PDF',
+          ],
+          17 => 
+          [
+            'title' => 'GOAL SETTING FOR  SUCCESS',
+            'description' => 'A Complete Guide to Achieving Personal, Professional, Financial, and Leadership Success Through Strategic Goal Setting',
+            'category' => 'onboarding',
+            'sort_order' => 80,
+            'type' => 'document',
+            'is_featured' => true,
+            'is_published' => true,
+          ],
+          18 => 
+          [
+            'title' => 'Goal Setting For Success',
+            'description' => 'A Complete Guide to Achieving Personal, Professional, Financial, and Leadership Success Through Strategic Goal Setting',
+            'category' => 'guides',
+            'sort_order' => 80,
+            'type' => 'document',
+            'is_featured' => true,
+            'is_published' => true,
+            'url' => 'storage/resources/documents/goal-setting-for-success-19.pdf',
             'file_format' => 'PDF',
           ],
         ];

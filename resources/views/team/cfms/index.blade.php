@@ -15,11 +15,15 @@
         ])))"
         x-init="init()"
         wire:ignore
-        class="cfm-management-page -mx-4 -mt-6 bg-black text-gray-200 font-sans antialiased sm:-mx-6 lg:-mx-8"
+        class="cfm-management-page space-y-6"
     >
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-            @include('team.cfms.partials.flash')
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
             @include('team.cfms.partials.header')
+        </div>
+
+        @include('team.cfms.partials.flash')
+
+        <div class="space-y-6">
             @include('team.cfms.partials.stats')
             @include('team.cfms.partials.rank-structure')
             @include('team.cfms.partials.legend')

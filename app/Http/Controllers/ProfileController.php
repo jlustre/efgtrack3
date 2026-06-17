@@ -12,7 +12,7 @@ use App\Models\User;
 use App\Services\DownlineHierarchyService;
 use App\Services\MemberProfileTabsService;
 use App\Services\MemberUplineService;
-use App\Services\PreEmploymentSyncService;
+use App\Services\ProfileCompletionService;
 use App\Services\ProfilePhotoService;
 use App\Support\LocationOptions;
 use Illuminate\Http\RedirectResponse;
@@ -27,9 +27,9 @@ class ProfileController extends Controller
     public function __construct(
         private readonly MemberProfileTabsService $memberProfileTabs,
         private readonly MemberUplineService $memberUpline,
-        private readonly PreEmploymentSyncService $preEmploymentSync,
         private readonly ProfilePhotoService $profilePhotos,
         private readonly DownlineHierarchyService $downlineHierarchy,
+        private readonly ProfileCompletionService $profileCompletion,
     ) {}
 
     /**
@@ -60,9 +60,7 @@ class ProfileController extends Controller
         $user->unsetRelation('profile');
 
         $user->load([
-            'profile.countryRecord',
-            'profile.stateProvince',
-            'profile.timezoneRecord',
+            'profile',
             'rank',
             'team.owner',
             'team',
@@ -96,6 +94,7 @@ class ProfileController extends Controller
             'invitationTemplate' => $invitationTemplate,
             'invitationEmails' => $invitationEmails,
             'memberTabs' => $this->memberProfileTabs->forUser($user),
+            'profileCompletion' => $this->profileCompletion->snapshot($user),
             'profileContext' => [
                 'readonly' => $this->memberUpline->contextFor($user),
                 'locationOptions' => LocationOptions::forPortal(),
@@ -123,27 +122,13 @@ class ProfileController extends Controller
 
         $user->save();
 
-        $user->profile()->updateOrCreate(
-            ['user_id' => $user->id],
-            LocationOptions::profileAttributesForStorage([
-                'phone' => $validated['phone'] ?? null,
-                'city' => $validated['city'] ?? null,
-                'country_id' => $validated['country_id'] ?? null,
-                'state_province_id' => $validated['state_province_id'] ?? null,
-                'timezone_id' => $validated['timezone_id'] ?? null,
-                'best_contact_time' => $validated['best_contact_time'] ?? null,
-                'license_number' => $validated['license_number'] ?? null,
-<<<<<<< HEAD
-=======
-                'efg_associate_id' => $validated['efg_associate_id'] ?? null,
-                'efg_invite_link' => $validated['efg_invite_link'] ?? null,
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
-                'bio' => $validated['bio'] ?? null,
-            ])
-        );
+        $profileAttributes = $this->profileAttributesFromRequest($request, $validated);
 
-        if (! $user->isEmployee()) {
-            $this->preEmploymentSync->sync($user->fresh(['profile', 'rank']));
+        if ($profileAttributes !== []) {
+            $user->profile()->updateOrCreate(
+                ['user_id' => $user->id],
+                $profileAttributes,
+            );
         }
 
         $redirectRoute = $request->input('redirect_to') === 'dashboard'
@@ -172,7 +157,12 @@ class ProfileController extends Controller
             ],
         );
 
-        return Redirect::route('profile.edit')->with('status', 'efg-invite-link-saved');
+        return Redirect::route('profile.edit')
+            ->with('status', 'efg-invite-link-saved')
+            ->with('efg_details_feedback', [
+                'type' => 'success',
+                'message' => 'Your EFG details were saved.',
+            ]);
     }
 
     public function updatePhoto(UpdateProfilePhotoRequest $request): RedirectResponse
@@ -183,10 +173,20 @@ class ProfileController extends Controller
         $user->unsetRelation('profile');
         $user->setRelation('profile', $profile);
 
-        return Redirect::route('profile.edit', ['tab' => 'profile'])->with('profile_feedback', [
+        $redirectRoute = $request->input('redirect_to') === 'dashboard'
+            ? route('dashboard')
+            : route('profile.edit', ['tab' => 'profile']);
+
+        $redirect = Redirect::to($redirectRoute)->with('profile_feedback', [
             'type' => 'success',
             'message' => 'Your profile photo was updated.',
         ]);
+
+        if ($request->input('redirect_to') === 'dashboard') {
+            $redirect->with('show_profile_completion_modal', true);
+        }
+
+        return $redirect;
     }
 
     public function destroyPhoto(Request $request): RedirectResponse
@@ -197,10 +197,20 @@ class ProfileController extends Controller
         $user->unsetRelation('profile');
         $user->load('profile');
 
-        return Redirect::route('profile.edit', ['tab' => 'profile'])->with('profile_feedback', [
+        $redirectRoute = $request->input('redirect_to') === 'dashboard'
+            ? route('dashboard')
+            : route('profile.edit', ['tab' => 'profile']);
+
+        $redirect = Redirect::to($redirectRoute)->with('profile_feedback', [
             'type' => 'success',
             'message' => 'Your profile photo was removed.',
         ]);
+
+        if ($request->input('redirect_to') === 'dashboard') {
+            $redirect->with('show_profile_completion_modal', true);
+        }
+
+        return $redirect;
     }
 
     public function createInvitation(Request $request): RedirectResponse
@@ -335,5 +345,43 @@ class ProfileController extends Controller
         $encodedUrl = htmlspecialchars($registrationUrl, ENT_QUOTES, 'UTF-8');
 
         return $encodedUrl !== $registrationUrl && str_contains($message, $encodedUrl);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function profileAttributesFromRequest(ProfileUpdateRequest $request, array $validated): array
+    {
+        $attributes = [];
+
+        foreach ([
+            'phone',
+            'city',
+            'country_id',
+            'state_province_id',
+            'timezone_id',
+            'best_contact_time',
+            'license_number',
+            'bio',
+        ] as $field) {
+            if ($request->has($field)) {
+                $attributes[$field] = $validated[$field] ?? null;
+            }
+        }
+
+        if ($request->has('efg_associate_id')) {
+            $attributes['efg_associate_id'] = filled($validated['efg_associate_id'] ?? null)
+                ? $validated['efg_associate_id']
+                : null;
+        }
+
+        if ($request->has('efg_invite_link')) {
+            $attributes['efg_invite_link'] = filled($validated['efg_invite_link'] ?? null)
+                ? $validated['efg_invite_link']
+                : null;
+        }
+
+        return $attributes;
     }
 }

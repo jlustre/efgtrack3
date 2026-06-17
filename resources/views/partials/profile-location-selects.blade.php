@@ -6,6 +6,7 @@
     'countryModel' => 'editCountryId',
     'provinceModel' => 'editProvinceId',
     'provincesSource' => 'editProvinces',
+    'provinceOptionsGetter' => 'editProvinceOptions',
     'countryChangeHandler' => 'onCountryChange()',
     'countryIdName' => 'country_id',
     'provinceIdName' => 'state_province_id',
@@ -42,14 +43,14 @@
 
 <div>
     <x-input-label :for="$provinceInputId" :value="__('Province / State')" />
+    <input type="hidden" name="{{ $provinceIdName }}" x-model="{{ $provinceModel }}">
     <select
         id="{{ $provinceInputId }}"
-        name="{{ $provinceIdName }}"
         x-model="{{ $provinceModel }}"
         class="{{ $selectClass }}"
     >
         <option value="">Select province / state</option>
-        <template x-for="(label, value) in editProvinceOptions" :key="value">
+        <template x-for="(label, value) in {{ $provinceOptionsGetter }}" :key="value">
             <option :value="value" x-text="label"></option>
         </template>
     </select>

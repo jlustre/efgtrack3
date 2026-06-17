@@ -91,6 +91,23 @@ class ProfilePhotoTest extends TestCase
             ->post(route('profile.photo.update'), [
                 'photo' => UploadedFile::fake()->create('notes.txt', 100, 'text/plain'),
             ])
-            ->assertSessionHasErrors('photo', null, 'profilePhoto');
+            ->assertSessionHasErrors('photo');
+    }
+
+    public function test_profile_photo_can_be_uploaded_from_dashboard_completion_modal(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('profile.photo.update'), [
+                'photo' => UploadedFile::fake()->image('dashboard.jpg', 400, 400),
+                'redirect_to' => 'dashboard',
+            ])
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('show_profile_completion_modal', true);
+
+        $this->assertNotNull($user->fresh()->profile?->profile_photo_path);
     }
 }

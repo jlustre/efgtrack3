@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\Booking;
 use App\Models\BookingEventType;
 use App\Models\CalendarCategory;
+use App\Models\Checklist;
+use App\Models\ChecklistProgress;
 use App\Models\CfmAdvancementGuideline;
 use App\Models\CfmMentorProfile;
 use App\Models\CfmRankTier;
@@ -15,7 +17,6 @@ use App\Models\User;
 use App\Models\UserTask;
 use App\Support\LocationOptions;
 use App\Services\DownlineHierarchyService;
-use App\Support\LocationOptions;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -167,11 +168,7 @@ class CfmManagementSeeder extends Seeder
             $apprentice = $this->member($email, 'Maria Apprentice '.($index + 1), $agencyOwner->team_id, $agencyOwner->id, $maria->id, $rankFa);
             $apprentice->profile()->updateOrCreate(
                 ['user_id' => $apprentice->id],
-<<<<<<< HEAD
                 LocationOptions::profileAttributesForStorage([
-=======
-                $this->normalizeProfileLocation([
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                     'country' => 'Canada',
                     'province' => $index === 0 ? 'Ontario' : 'Quebec',
                     'city' => $index === 0 ? 'Toronto' : 'Montreal',
@@ -289,11 +286,7 @@ class CfmManagementSeeder extends Seeder
             $associate = $this->member($row['email'], $row['name'], $teamId, $agencyOwner->id, null, $rankFa);
             $associate->profile()->updateOrCreate(
                 ['user_id' => $associate->id],
-<<<<<<< HEAD
                 LocationOptions::profileAttributesForStorage([
-=======
-                $this->normalizeProfileLocation([
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                     'country' => $row['country'],
                     'province' => $row['province'],
                     'city' => $row['city'],
@@ -424,11 +417,7 @@ class CfmManagementSeeder extends Seeder
         $user->syncRoles(['certified-field-mentor']);
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-<<<<<<< HEAD
             LocationOptions::profileAttributesForStorage([
-=======
-            $this->normalizeProfileLocation([
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                 'country' => 'Canada',
                 'province' => 'British Columbia',
                 'city' => 'Victoria',
@@ -468,14 +457,10 @@ class CfmManagementSeeder extends Seeder
         );
 
         $user->syncRoles(['certified-field-mentor']);
-<<<<<<< HEAD
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
             LocationOptions::profileAttributesForStorage($profile)
         );
-=======
-        $user->profile()->updateOrCreate(['user_id' => $user->id], $this->normalizeProfileLocation($profile));
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 
         return $user;
     }
@@ -556,18 +541,27 @@ class CfmManagementSeeder extends Seeder
 
     private function seedApprenticeshipProgress(User $apprentice, int $completedSteps, bool $stale = false): void
     {
-        $stepIds = DB::table('apprenticeship_steps')->orderBy('sort_order')->limit(6)->pluck('id');
+        $stepIds = Checklist::query()
+            ->forTypeCode('fap')
+            ->active()
+            ->orderBy('sort_order')
+            ->limit(6)
+            ->pluck('id');
 
         foreach ($stepIds as $index => $stepId) {
             $isCompleted = $index < $completedSteps;
-            DB::table('user_apprenticeship_progress')->updateOrInsert(
-                ['user_id' => $apprentice->id, 'apprenticeship_step_id' => $stepId],
+
+            ChecklistProgress::query()->updateOrCreate(
+                [
+                    'user_id' => $apprentice->id,
+                    'checklist_id' => $stepId,
+                    'mentor_assignment_id' => null,
+                ],
                 [
                     'status' => $isCompleted ? 'completed' : ($stale ? 'not_started' : 'in_progress'),
                     'completed_at' => $isCompleted ? now()->subDays(10 - $index) : null,
                     'updated_at' => $stale && ! $isCompleted ? now()->subDays(21) : now()->subDays(2),
-                    'created_at' => now()->subMonths(2),
-                ]
+                ],
             );
         }
     }
@@ -764,11 +758,7 @@ class CfmManagementSeeder extends Seeder
 
             $user->profile()->updateOrCreate(
                 ['user_id' => $user->id],
-<<<<<<< HEAD
                 LocationOptions::profileAttributesForStorage($definition['location'])
-=======
-                $this->normalizeProfileLocation($definition['location'])
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             );
 
             $this->seedProfile($user, $definition['mentor']);
@@ -895,21 +885,12 @@ class CfmManagementSeeder extends Seeder
     ): void {
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-<<<<<<< HEAD
             LocationOptions::profileAttributesForStorage([
                 'country' => $country,
                 'province' => $province,
                 'city' => $city,
                 'timezone' => $timezone,
             ])
-=======
-            array_merge(
-                [
-                    'city' => $city,
-                ],
-                LocationOptions::profileLocationIds($country, $province, $timezone),
-            )
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         );
     }
 

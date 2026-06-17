@@ -53,7 +53,7 @@
                     @if ($managedUser->isEmployee())
                         Hired{{ $managedUser->profile?->recruited_at ? ' · '.$managedUser->profile->recruited_at->format('M j, Y') : '' }}
                     @else
-                        Pre-employment
+                        Applicant
                     @endif
                 </div>
             </div>
@@ -75,10 +75,10 @@
                 <section class="rounded-lg border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
                     <h2 class="text-lg font-semibold text-emerald-900">Hire Applicant</h2>
                     <p class="mt-2 text-sm text-emerald-800">
-                        Copy this member's pre-employment record into the official employee tables and mark them as hired.
+                        Mark this member as hired by recording their hire date on the profile.
                     </p>
 
-                    <form method="POST" action="{{ route('admin.users.hire', $managedUser) }}" class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" onsubmit="return confirm('Hire this applicant and copy their pre-employment data to employee records?');">
+                    <form method="POST" action="{{ route('admin.users.hire', $managedUser) }}" class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" onsubmit="return confirm('Mark this applicant as hired?');">
                         @csrf
                         <div>
                             <label for="hire_date" class="block text-sm font-semibold text-emerald-900">Hire Date</label>

@@ -13,7 +13,7 @@
     aria-labelledby="profile-completion-modal-title"
 >
     <div
-        class="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-[#C8A24A]/30 bg-white shadow-2xl"
+        class="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-[#C8A24A]/30 bg-white shadow-2xl"
         x-on:click.outside="dismissProfileCompletion()"
     >
         <div class="shrink-0 border-b border-slate-200 bg-gradient-to-r from-[#0B1F3A] to-[#132F55] px-6 py-5 text-white">
@@ -51,8 +51,8 @@
             </div>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-y-auto">
-            <div class="grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div class="flex min-h-0 flex-1 flex-col sm:flex-row">
+            <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
             <form id="profile-completion-form" method="post" action="{{ route('profile.update') }}" class="space-y-5" @submit="profileSaving = true">
                 @csrf
                 @method('patch')
@@ -69,7 +69,16 @@
                     </div>
                 @endif
 
+                @if (session('profile_feedback') && (session('profile_feedback')['type'] ?? '') === 'success')
+                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+                        {{ session('profile_feedback')['message'] }}
+                    </div>
+                @endif
+
                 <div class="grid gap-4 md:grid-cols-2">
+                    @include('dashboard.partials.profile-completion-photo-field', ['user' => $user])
+
+                    <div class="md:col-span-2 grid gap-4 md:grid-cols-2">
                     <div>
                         <x-input-label for="completion_name" :value="__('Name')" />
                         <x-text-input id="completion_name" name="name" type="text" class="mt-1 block w-full" x-model="form.name" required autocomplete="name" />
@@ -110,13 +119,13 @@
 
                     <div>
                         <x-input-label for="completion_efg_associate_id" :value="__('EFG Associate ID')" />
-                        <x-text-input id="completion_efg_associate_id" name="efg_associate_id" type="text" class="mt-1 block w-full" x-model="form.efg_associate_id" />
+                        <x-text-input id="completion_efg_associate_id" name="efg_associate_id" type="text" class="mt-1 block w-full" x-model="form.efg_associate_id" placeholder="EFG-1001" />
                         <x-input-error class="mt-2" :messages="$errors->get('efg_associate_id')" />
                     </div>
 
                     <div>
-                        <x-input-label for="completion_efg_invite_link" :value="__('EFG Invite Link')" />
-                        <x-text-input id="completion_efg_invite_link" name="efg_invite_link" type="url" class="mt-1 block w-full" x-model="form.efg_invite_link" placeholder="https://..." />
+                        <x-input-label for="completion_efg_invite_link" :value="__('Experior invite URL')" />
+                        <x-text-input id="completion_efg_invite_link" name="efg_invite_link" type="text" class="mt-1 block w-full" x-model="form.efg_invite_link" placeholder="https://experiorfinancial.com/invite/..." inputmode="url" autocomplete="url" />
                         <x-input-error class="mt-2" :messages="$errors->get('efg_invite_link')" />
                     </div>
 
@@ -134,10 +143,13 @@
                         'countryModel' => 'form.country_id',
                         'provinceModel' => 'form.state_province_id',
                         'timezoneModel' => 'form.timezone_id',
+                        'provinceOptionsGetter' => 'completionProvinceOptions',
+                        'countryChangeHandler' => 'onCompletionCountryChange()',
                         'countryInputId' => 'completion_country_id',
                         'provinceInputId' => 'completion_state_province_id',
                         'timezoneInputId' => 'completion_timezone_id',
                     ])
+                    </div>
                 </div>
 
                 <div>
@@ -154,8 +166,9 @@
                 </div>
 
             </form>
+            </div>
 
-            <aside class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <aside class="shrink-0 overflow-y-auto border-t border-slate-200 bg-slate-50 p-4 sm:w-56 sm:border-l sm:border-t-0 md:w-60">
                 <p class="text-xs font-semibold uppercase tracking-wide text-[#C8A24A]">Required fields</p>
                 <p class="mt-1 text-xs text-slate-500">Checked automatically when a field has a value.</p>
                 <div class="mt-4 space-y-2.5">
@@ -175,7 +188,6 @@
                     </template>
                 </div>
             </aside>
-            </div>
         </div>
 
         <div class="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4">

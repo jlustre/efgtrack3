@@ -1,5 +1,8 @@
 @php
     $isOwnProfile = $isOwnProfile ?? true;
+    $hasNonEfgValidationErrors = $errors->any() && collect($errors->keys())->contains(
+        fn (string $key): bool => ! in_array($key, ['efg_associate_id', 'efg_invite_link'], true)
+    );
     $tabs = [
         'profile' => 'Profile Details',
         'onboarding' => 'Onboarding',
@@ -32,7 +35,7 @@
         },
     }"
     x-init="
-        @if (session('profile_feedback') || $errors->any())
+        @if (session('profile_feedback') || $hasNonEfgValidationErrors)
             activeTab = 'profile';
             $nextTick(() => document.getElementById('member-profile-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
         @endif

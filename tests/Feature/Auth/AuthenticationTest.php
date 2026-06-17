@@ -97,6 +97,44 @@ class AuthenticationTest extends TestCase
             ->assertViewHas('forceProfileCompletionModal', false);
     }
 
+    public function test_profile_completion_modal_persists_province_and_efg_fields(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+            ProfileCompletionFieldSeeder::class,
+        ]);
+
+        $user = User::factory()->create([
+            'name' => 'Modal Member',
+            'email' => 'modal@example.com',
+        ]);
+        $user->assignRole('member');
+
+        $this->actingAs($user)
+            ->patch(route('profile.update'), [
+                'redirect_to' => 'dashboard',
+                'name' => 'Modal Member',
+                'email' => 'modal@example.com',
+                'city' => 'Toronto',
+                'country_id' => LocationOptions::resolveCountryId('Canada'),
+                'state_province_id' => LocationOptions::resolveStateProvinceId('Canada', 'Ontario'),
+                'timezone_id' => LocationOptions::resolveTimezoneId('Canada Eastern Time'),
+                'efg_associate_id' => 'EFG-MODAL-1',
+                'efg_invite_link' => 'https://experiorfinancial.com/invite/modal-1',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('dashboard'));
+
+        $user->refresh()->load('profile.stateProvince');
+
+        $this->assertSame('Ontario', $user->profile->province);
+        $this->assertSame('EFG-MODAL-1', $user->profile->efg_associate_id);
+        $this->assertSame('https://experiorfinancial.com/invite/modal-1', $user->profile->efg_invite_link);
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

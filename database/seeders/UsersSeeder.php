@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Services\DownlineHierarchyService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -55,5 +56,7 @@ class UsersSeeder extends Seeder
                 'updated_at' => now(),
             ]);
         }
+
+        app(DownlineHierarchyService::class)->rebuild();
     }
 }

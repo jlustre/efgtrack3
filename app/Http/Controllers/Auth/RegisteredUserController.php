@@ -4,14 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Events\NewMemberRegistered;
 use App\Http\Controllers\Controller;
-use App\Models\Rank;
 use App\Models\RegistrationInvitation;
+use App\Models\Profile;
+use App\Models\Rank;
 use App\Models\User;
-<<<<<<< HEAD
+use App\Services\ProfileCompletionService;
 use App\Services\Prospects\ProspectConversionService;
-=======
-use App\Services\PreEmploymentSyncService;
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 use App\Support\LocationOptions;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -27,10 +24,6 @@ use Spatie\Permission\Models\Role;
 
 class RegisteredUserController extends Controller
 {
-    public function __construct(
-        private readonly PreEmploymentSyncService $preEmploymentSync,
-    ) {}
-
     /**
      * Display the registration view.
      */
@@ -49,11 +42,7 @@ class RegisteredUserController extends Controller
 
         return view('auth.register', [
             'invitation' => $invitation,
-<<<<<<< HEAD
             'locationOptions' => LocationOptions::forPortal(),
-=======
-            'locationOptions' => \App\Support\LocationOptions::forPortal(),
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         ]);
     }
 
@@ -62,7 +51,7 @@ class RegisteredUserController extends Controller
      *
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, ProfileCompletionService $profileCompletion): RedirectResponse
     {
         $request->validate([
             'registration_code' => ['required', 'string', 'exists:registration_invitations,code'],
@@ -71,21 +60,9 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'efg_associate_id' => ['required', 'string', 'max:100', 'unique:profiles,efg_associate_id'],
             'city' => ['required', 'string', 'max:120'],
-<<<<<<< HEAD
             'province' => ['required', 'string', 'max:120'],
             'country' => ['required', 'string', 'in:Canada,United States,Philippines,Mexico'],
             'timezone' => ['required', 'string', 'max:120'],
-=======
-            'country_id' => [
-                'required',
-                'integer',
-                Rule::exists('countries', 'id')->where(fn ($query) => $query->whereIn(
-                    'name',
-                    ['Canada', 'United States', 'Philippines', 'Mexico']
-                )),
-            ],
-            'timezone_id' => ['required', 'integer', 'exists:timezones,id'],
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             'sponsor_confirmed' => ['accepted'],
             'active_associate_confirmed' => ['accepted'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -147,14 +124,9 @@ class RegisteredUserController extends Controller
             $user->profile()->create([
                 'efg_associate_id' => $request->string('efg_associate_id')->toString(),
                 'city' => $request->string('city')->toString(),
-<<<<<<< HEAD
                 'country_id' => $locationIds['country_id'],
                 'state_province_id' => $locationIds['state_province_id'],
                 'timezone_id' => $locationIds['timezone_id'],
-=======
-                'country_id' => $request->integer('country_id'),
-                'timezone_id' => $request->integer('timezone_id'),
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                 'is_efg_active_associate' => true,
             ]);
 
@@ -169,13 +141,9 @@ class RegisteredUserController extends Controller
                 'uses_count' => $invitation->uses_count + 1,
             ])->save();
 
-<<<<<<< HEAD
             if ($invitation->prospect_id) {
                 app(ProspectConversionService::class)->completeAssociateConversion($invitation, $user);
             }
-=======
-            $this->preEmploymentSync->sync($user);
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
 
             return $user;
         });
@@ -185,7 +153,12 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false))
-            ->with('show_profile_completion_modal', true);
+        $redirect = redirect(route('dashboard', absolute: false));
+
+        if (! $profileCompletion->isComplete($user)) {
+            $redirect->with('show_profile_completion_modal', true);
+        }
+
+        return $redirect;
     }
 }

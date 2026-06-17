@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CfmTraineeChecklistItem;
+use App\Models\Checklist;
 use App\Models\MentorAssignment;
 use App\Services\CfmTraineeChecklistService;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +37,7 @@ class CfmTraineeChecklistController extends Controller
         ]);
     }
 
-    public function update(Request $request, MentorAssignment $assignment, CfmTraineeChecklistItem $item): RedirectResponse
+    public function update(Request $request, MentorAssignment $assignment, Checklist $item): RedirectResponse
     {
         $validated = $request->validate([
             'completed' => ['required', 'boolean'],

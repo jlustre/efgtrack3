@@ -1,24 +1,24 @@
 <div
     x-show="showAddCfmModal"
     x-cloak
-    class="fixed inset-0 z-[60] overflow-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+    class="fixed inset-0 z-[60] flex items-center justify-center overflow-auto bg-slate-900/50 p-4 backdrop-blur-sm"
     @keydown.escape.window="showAddCfmModal = false"
 >
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl" @click.stop>
-        <div class="flex items-center justify-between mb-4">
+    <div class="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-xl" @click.stop>
+        <div class="mb-4 flex items-center justify-between">
             <div>
-                <h3 class="text-xl font-bold text-white">Add Certified Field Mentor</h3>
-                <p class="text-xs text-gray-500 mt-1">Nominate a team member for CFM certification and mentorship duties</p>
+                <h3 class="text-xl font-semibold text-[#0B1F3A]">Add Certified Field Mentor</h3>
+                <p class="mt-1 text-xs text-slate-500">Nominate a team member for CFM certification and mentorship duties</p>
             </div>
-            <button type="button" @click="showAddCfmModal = false" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+            <button type="button" @click="showAddCfmModal = false" class="text-2xl leading-none text-slate-400 hover:text-[#0B1F3A]">&times;</button>
         </div>
 
         <form method="POST" action="{{ route('team.cfms.store') }}" class="space-y-3">
             @csrf
 
             <div>
-                <label class="text-xs font-medium text-gray-400">Select team member</label>
-                <select name="user_id" x-model="addCfmForm.userId" required class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-200 focus:border-amber-500 focus:outline-none">
+                <label class="text-xs font-semibold text-slate-600">Select team member</label>
+                <select name="user_id" x-model="addCfmForm.userId" required class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                     <option value="">Choose member…</option>
                     <template x-for="candidate in cfmCandidates" :key="'cand-' + candidate.id">
                         <option :value="candidate.id" x-text="candidate.name + ' (' + candidate.rank + ')'"></option>
@@ -27,8 +27,8 @@
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-400">Target CFM rank tier</label>
-                <select name="target_rank" x-model="addCfmForm.targetRank" class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-200 focus:border-amber-500 focus:outline-none">
+                <label class="text-xs font-semibold text-slate-600">Target CFM rank tier</label>
+                <select name="target_rank" x-model="addCfmForm.targetRank" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                     <option value="Associate Mentor">Associate Mentor</option>
                     <option value="CFM I">CFM I</option>
                     <option value="CFM II">CFM II</option>
@@ -37,28 +37,28 @@
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-400">Nomination notes</label>
-                <textarea name="notes" x-model="addCfmForm.notes" rows="3" placeholder="Why is this member ready for CFM status?" class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none">{{ old('notes') }}</textarea>
+                <label class="text-xs font-semibold text-slate-600">Nomination notes</label>
+                <textarea name="notes" x-model="addCfmForm.notes" rows="3" placeholder="Why is this member ready for CFM status?" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">{{ old('notes') }}</textarea>
             </div>
 
-            <div class="space-y-2 text-sm text-gray-300">
+            <div class="space-y-2 text-sm text-slate-700">
                 <label class="flex items-center gap-2">
                     <input type="hidden" name="require_approval" value="0">
-                    <input type="checkbox" name="require_approval" value="1" x-model="addCfmForm.requireApproval" class="rounded border-gray-600 bg-gray-800 text-amber-500">
+                    <input type="checkbox" name="require_approval" value="1" x-model="addCfmForm.requireApproval" class="rounded border-gray-300 text-[#C8A24A] focus:ring-[#C8A24A]">
                     Require admin approval before activation
                 </label>
                 <label class="flex items-center gap-2">
                     <input type="hidden" name="notify_candidate" value="0">
-                    <input type="checkbox" name="notify_candidate" value="1" x-model="addCfmForm.notifyCandidate" class="rounded border-gray-600 bg-gray-800 text-amber-500">
+                    <input type="checkbox" name="notify_candidate" value="1" x-model="addCfmForm.notifyCandidate" class="rounded border-gray-300 text-[#C8A24A] focus:ring-[#C8A24A]">
                     Notify candidate by email
                 </label>
             </div>
 
-            <p x-show="cfmCandidates.length === 0" class="text-xs text-amber-300 bg-amber-900/20 border border-amber-500/20 rounded-lg p-3">No eligible team members found in your accessible downline.</p>
+            <p x-show="cfmCandidates.length === 0" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">No eligible team members found in your accessible downline.</p>
 
             <div class="flex gap-3 pt-2">
-                <button type="button" @click="showAddCfmModal = false" class="flex-1 border border-gray-700 py-2.5 rounded-xl text-gray-300 hover:bg-gray-800 transition">Cancel</button>
-                <button type="submit" class="flex-1 bg-amber-600 text-black font-bold py-2.5 rounded-xl hover:bg-amber-500 transition disabled:opacity-40 disabled:cursor-not-allowed">Submit Nomination</button>
+                <button type="button" @click="showAddCfmModal = false" class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-[#0B1F3A] transition hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="flex-1 rounded-lg bg-[#C8A24A] py-2.5 font-bold text-[#0B1F3A] transition hover:bg-[#D8B85F] disabled:cursor-not-allowed disabled:opacity-40">Submit Nomination</button>
             </div>
         </form>
     </div>

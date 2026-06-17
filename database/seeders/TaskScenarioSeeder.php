@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Checklist;
+use App\Models\ChecklistProgress;
 use App\Models\Rank;
 use App\Models\User;
 use App\Support\LocationOptions;
@@ -104,41 +106,10 @@ class TaskScenarioSeeder extends Seeder
             'timezone' => 'CST',
         ]);
 
-        $this->pendingChecklist(
-            'user_onboarding_progress',
-            'onboarding_steps',
-            'onboarding_step_id',
-            'Complete Member Profile',
-            $onboardingMember->id,
-            now()->subDays(3)
-        );
-
-        $this->pendingChecklist(
-            'user_licensing_progress',
-            'licensing_steps',
-            'licensing_step_id',
-            'Pass Licensing Exam',
-            $licensingMember->id,
-            now()->subDays(2)
-        );
-
-        $this->pendingChecklist(
-            'user_apprenticeship_progress',
-            'apprenticeship_steps',
-            'apprenticeship_step_id',
-            'Receive FAP Approval',
-            $fapMember->id,
-            now()->subDay()
-        );
-
-        $this->pendingChecklist(
-            'cfm_training_progress',
-            'cfm_training_modules',
-            'cfm_training_module_id',
-            'CFM Certification Review',
-            $cfmCandidate->id,
-            now()->subDays(4)
-        );
+        $this->pendingChecklist('onboarding', 'Complete Member Profile', $onboardingMember->id, now()->subDays(3));
+        $this->pendingChecklist('licensing', 'Pass Licensing Exam', $licensingMember->id, now()->subDays(2));
+        $this->pendingChecklist('fap', 'Receive FAP Approval', $fapMember->id, now()->subDay());
+        $this->pendingChecklist('cfm-training', 'CFM Certification Review', $cfmCandidate->id, now()->subDays(4));
 
         $this->invitation($agencyOwner->id, 'prospect.one@example.com');
         $this->invitation($agencyOwner->id, 'prospect.two@example.com');
@@ -228,35 +199,26 @@ class TaskScenarioSeeder extends Seeder
 
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-<<<<<<< HEAD
-            LocationOptions::profileAttributesForStorage(array_merge([
-                'phone' => '555-0100',
-                'city' => 'Vancouver',
-                'province' => 'British Columbia',
-                'country' => 'Canada',
-                'timezone' => 'Canada Pacific Time',
-                'efg_associate_id' => 'EFG-DEMO-'.$user->id,
-                'is_efg_active_associate' => true,
-                'recruited_at' => now()->subDays(6)->toDateString(),
-            ], $overrides))
-=======
             array_merge($data, $locationIds)
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         );
     }
 
-    private function pendingChecklist(string $progressTable, string $stepTable, string $foreignKey, string $title, int $userId, $submittedAt): void
+    private function pendingChecklist(string $typeCode, string $title, int $userId, $submittedAt): void
     {
-        $stepId = DB::table($stepTable)->where('title', $title)->value('id');
+        $checklistId = Checklist::query()
+            ->forTypeCode($typeCode)
+            ->where('title', $title)
+            ->value('id');
 
-        if (! $stepId) {
+        if (! $checklistId) {
             return;
         }
 
-        DB::table($progressTable)->updateOrInsert(
+        ChecklistProgress::query()->updateOrCreate(
             [
                 'user_id' => $userId,
-                $foreignKey => $stepId,
+                'checklist_id' => $checklistId,
+                'mentor_assignment_id' => null,
             ],
             [
                 'status' => 'pending_confirmation',
@@ -265,9 +227,7 @@ class TaskScenarioSeeder extends Seeder
                 'reviewed_by' => null,
                 'reviewed_at' => null,
                 'review_comments' => null,
-                'created_at' => $submittedAt,
-                'updated_at' => $submittedAt,
-            ]
+            ],
         );
     }
 

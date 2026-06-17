@@ -7,9 +7,8 @@ use App\Services\DashboardStatsService;
 use App\Services\ProfileCompletionService;
 use App\Support\LocationOptions;
 use Database\Seeders\CountrySeeder;
-use Database\Seeders\FieldApprenticeshipProgramSeeder;
-use Database\Seeders\LicensingStepSeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\ProfileCompletionFieldSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StateProvinceSeeder;
@@ -69,9 +68,8 @@ class DashboardPageTest extends TestCase
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
             ProfileCompletionFieldSeeder::class,
-            OnboardingStepSeeder::class,
-            LicensingStepSeeder::class,
-            FieldApprenticeshipProgramSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $user = User::factory()->create();
@@ -81,39 +79,48 @@ class DashboardPageTest extends TestCase
             'efg_associate_id' => 'EFG-DASH-1',
         ], LocationOptions::profileLocationIds('Canada')));
 
-        $onboardingStepId = DB::table('onboarding_steps')
-            ->where('title', 'Complete Member Profile')
-            ->value('id');
+        $onboardingStepId = DB::table('checklists')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->where('checklist_types.code', 'onboarding')
+            ->where('checklists.title', 'Complete Member Profile')
+            ->value('checklists.id');
 
-        DB::table('user_onboarding_progress')->insert([
+        DB::table('checklist_progress')->insert([
             'user_id' => $user->id,
-            'onboarding_step_id' => $onboardingStepId,
+            'checklist_id' => $onboardingStepId,
+            'mentor_assignment_id' => null,
             'status' => 'completed',
             'completed_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $licensingStepId = DB::table('licensing_steps')
-            ->where('title', 'Confirm Licensing Jurisdiction')
-            ->value('id');
+        $licensingStepId = DB::table('checklists')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->where('checklist_types.code', 'licensing')
+            ->where('checklists.title', 'Confirm Licensing Jurisdiction')
+            ->value('checklists.id');
 
-        DB::table('user_licensing_progress')->insert([
+        DB::table('checklist_progress')->insert([
             'user_id' => $user->id,
-            'licensing_step_id' => $licensingStepId,
+            'checklist_id' => $licensingStepId,
+            'mentor_assignment_id' => null,
             'status' => 'completed',
             'completed_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $apprenticeshipStepId = DB::table('apprenticeship_steps')
-            ->where('title', 'FAP Orientation With Sponsor And CFM')
-            ->value('id');
+        $apprenticeshipStepId = DB::table('checklists')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->where('checklist_types.code', 'fap')
+            ->where('checklists.title', 'FAP Orientation With Sponsor And CFM')
+            ->value('checklists.id');
 
-        DB::table('user_apprenticeship_progress')->insert([
+        DB::table('checklist_progress')->insert([
             'user_id' => $user->id,
-            'apprenticeship_step_id' => $apprenticeshipStepId,
+            'checklist_id' => $apprenticeshipStepId,
+            'mentor_assignment_id' => null,
             'status' => 'completed',
             'completed_at' => now(),
             'created_at' => now(),
@@ -155,7 +162,8 @@ class DashboardPageTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             ProfileCompletionFieldSeeder::class,
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $user = User::factory()->create();

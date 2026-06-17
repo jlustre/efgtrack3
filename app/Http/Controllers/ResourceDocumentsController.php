@@ -27,13 +27,46 @@ class ResourceDocumentsController extends Controller
             category: $request->string('category')->toString() ?: null,
         );
 
+        $favoriteResourceIds = $request->user()
+            ->favoritePortalResources()
+            ->where('type', 'document')
+            ->where('is_published', true)
+            ->pluck('resources.id')
+            ->all();
+
+        $favoriteRecords = $request->user()
+            ->favoritePortalResources()
+            ->where('type', 'document')
+            ->where('is_published', true)
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->get();
+
         return view('resources.documents', [
             'user' => $request->user(),
             'library' => $payload,
+            'favoriteResourceIds' => $favoriteResourceIds,
+            'favoriteRecords' => $favoriteRecords,
             'canManageDocuments' => $request->user()->canManageDocuments(),
             'canUpdateDocumentSeeder' => $request->user()->canUpdateDocumentSeeder(),
             'previewDocumentId' => $request->integer('document') ?: null,
         ]);
+    }
+
+    public function toggleFavorite(Request $request, PortalResource $portalResource): RedirectResponse
+    {
+        abort_unless($portalResource->is_published && $portalResource->isDocumentLibraryItem(), 404);
+
+        $attached = $request->user()->favoritePortalResources()->toggle($portalResource->id);
+
+        $status = $attached['attached'] === [] ? 'favorite-removed' : 'favorite-added';
+
+        return redirect()
+            ->route('resources.documents', array_filter([
+                'search' => $request->string('search')->toString() ?: null,
+                'category' => $request->string('category')->toString() ?: null,
+            ]))
+            ->with('status', $status);
     }
 
     public function updateSeeder(Request $request): RedirectResponse

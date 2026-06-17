@@ -1,5 +1,4 @@
 import './page-chrome';
-import Alpine from 'alpinejs';
 import taskManagement from './task-management';
 import cfmManagement from './cfm-management';
 import profileTableFilter from './profile-table-filter';
@@ -11,19 +10,16 @@ import genealogyTreePan from './genealogy-tree-pan';
 import dashboardStats from './dashboard-stats';
 import prospectKanbanBoard from './prospect-kanban-board';
 
-window.Alpine = Alpine;
-
+// Register Alpine data on Livewire's Alpine instance (started by @livewireScripts).
 document.addEventListener('alpine:init', () => {
-    Alpine.data('taskManagement', taskManagement);
-    Alpine.data('cfmManagement', cfmManagement);
-    Alpine.data('profileTableFilter', profileTableFilter);
-    Alpine.data('orgChartBoard', orgChartBoard);
-    Alpine.data('downlineHierarchyTable', downlineHierarchyTable);
-    Alpine.data('profilePhotoUpload', profilePhotoUpload);
-    Alpine.data('prospectActivitiesModal', prospectActivitiesModal);
-    Alpine.data('genealogyTreePan', genealogyTreePan);
-    Alpine.data('dashboardStats', dashboardStats);
-    Alpine.data('prospectKanbanBoard', prospectKanbanBoard);
+    window.Alpine.data('taskManagement', taskManagement);
+    window.Alpine.data('cfmManagement', cfmManagement);
+    window.Alpine.data('profileTableFilter', profileTableFilter);
+    window.Alpine.data('orgChartBoard', orgChartBoard);
+    window.Alpine.data('downlineHierarchyTable', downlineHierarchyTable);
+    window.Alpine.data('profilePhotoUpload', profilePhotoUpload);
+    window.Alpine.data('prospectActivitiesModal', prospectActivitiesModal);
+    window.Alpine.data('genealogyTreePan', genealogyTreePan);
+    window.Alpine.data('dashboardStats', dashboardStats);
+    window.Alpine.data('prospectKanbanBoard', prospectKanbanBoard);
 });
-
-Alpine.start();

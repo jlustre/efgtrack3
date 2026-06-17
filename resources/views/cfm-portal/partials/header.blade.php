@@ -1,40 +1,63 @@
-<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-    <div>
-        <p class="text-amber-400/80 text-sm font-medium tracking-wide uppercase">Certified Field Mentor</p>
-        <h1 class="text-3xl md:text-4xl font-bold text-white mt-1">CFM Portal</h1>
-        <p class="text-gray-400 mt-2">{{ $todayLabel }}</p>
-    </div>
+@php
+    $profile = $portal['profile'];
+@endphp
 
-    @if ($portal['isAdminView'] && count($portal['cfmOptions']) > 0)
-        <form method="GET" action="{{ route('cfm.portal') }}" class="flex items-center gap-3">
-            <label for="cfm-select" class="text-sm text-gray-400 whitespace-nowrap">Viewing CFM:</label>
-            <select
-                id="cfm-select"
-                name="cfm"
-                onchange="this.form.submit()"
-                class="rounded-xl bg-gray-900 border border-gray-700 text-white text-sm px-3 py-2 min-w-[220px] focus:border-amber-500 focus:ring-amber-500"
-            >
-                @foreach ($portal['cfmOptions'] as $option)
-                    <option value="{{ $option['id'] }}" @selected($option['id'] === $portal['selectedCfmId'])>{{ $option['name'] }}</option>
-                @endforeach
-            </select>
-        </form>
-    @endif
+<div class="bg-[#0B1F3A] px-6 py-6 text-white">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+            <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Certified Field Mentor</p>
+            <h1 class="mt-2 text-2xl font-semibold">{{ $profile['name'] }}</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-200">
+                {{ $profile['rank'] }} · {{ $profile['rankName'] }} — manage trainees, training progress, calendar availability, and mentor profile details from your CFM portal.
+            </p>
+            <p class="mt-3 text-xs text-slate-300">
+                {{ $todayLabel }} · {{ $profile['certificationStatus'] }} · {{ $profile['workloadStatus'] }}
+                @if ($user ?? null)
+                    · {{ $user->roles->pluck('name')->first() ?? 'member' }} · {{ $user->team?->name ?? 'Unassigned' }}
+                @endif
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            @if ($portal['isAdminView'] && count($portal['cfmOptions']) > 0)
+                <form method="GET" action="{{ route('cfm.portal') }}" class="inline-flex items-center gap-2">
+                    <label for="cfm-select" class="whitespace-nowrap text-xs font-semibold text-slate-300">Viewing CFM:</label>
+                    <select
+                        id="cfm-select"
+                        name="cfm"
+                        onchange="this.form.submit()"
+                        class="min-w-[200px] rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-slate-100 focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+                    >
+                        @foreach ($portal['cfmOptions'] as $option)
+                            <option value="{{ $option['id'] }}" @selected($option['id'] === $portal['selectedCfmId'])>{{ $option['name'] }}</option>
+                        @endforeach
+                    </select>
+                </form>
+            @endif
+
+            <a href="{{ route('cfm-training.index') }}" class="inline-flex items-center gap-1.5 rounded-md border border-[#C8A24A]/50 px-3.5 py-2 text-sm font-medium text-[#C8A24A] transition hover:bg-[#C8A24A]/10">
+                CFM Training
+            </a>
+            <a href="{{ route('calendar.index') }}" class="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-3.5 py-2 text-sm text-slate-100 transition hover:border-[#C8A24A] hover:bg-white/15">
+                My Calendar
+            </a>
+
+            @if ($portal['canEditProfile'])
+                <button
+                    type="button"
+                    @click="showEditProfileModal = true"
+                    class="inline-flex items-center gap-1.5 rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm transition hover:bg-[#D8B75F]"
+                >
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit Profile
+                </button>
+            @endif
+        </div>
+    </div>
 </div>
 
 @if ($portal['isAdminView'])
-    <div class="mb-6 rounded-xl border border-blue-700/40 bg-blue-900/20 px-4 py-3 text-sm text-blue-200">
+    <div class="border-t border-slate-200 bg-sky-50 px-6 py-3 text-sm text-sky-800">
         Admin view — you are reviewing {{ $portal['cfmUser']->name }}'s CFM portal.
     </div>
 @endif
-
-<div class="flex items-center gap-4 mb-8">
-    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-2xl font-bold text-black">
-        {{ $profile['initials'] }}
-    </div>
-    <div>
-        <h2 class="text-2xl font-bold text-white">{{ $profile['name'] }}</h2>
-        <p class="text-amber-400">{{ $profile['rank'] }} · {{ $profile['rankName'] }}</p>
-        <p class="text-sm text-gray-400 mt-1">{{ $profile['certificationStatus'] }} · {{ $profile['workloadStatus'] }}</p>
-    </div>
-</div>

@@ -150,14 +150,7 @@ class CalendarModuleTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('name="category_ids[]"', false)
-<<<<<<< HEAD
-            ->assertSee('New Associate Fast Start')
-=======
             ->assertSee('New Associate Fast Start', false)
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
-            ->assertDontSee('Licensing Milestone Review');
-
-        $this->assertSame(
             [$training->id],
             UserCalendarPreference::where('user_id', $user->id)->firstOrFail()->visible_calendar_categories
         );
@@ -165,11 +158,7 @@ class CalendarModuleTest extends TestCase
         $this->actingAs($user)
             ->get(route('calendar.index'))
             ->assertOk()
-<<<<<<< HEAD
-            ->assertSee('New Associate Fast Start')
-=======
             ->assertSee('New Associate Fast Start', false)
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             ->assertDontSee('Licensing Milestone Review');
     }
 

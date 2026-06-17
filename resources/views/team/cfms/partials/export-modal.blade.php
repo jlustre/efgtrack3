@@ -1,58 +1,58 @@
 <div
     x-show="showExportModal"
     x-cloak
-    class="fixed inset-0 z-[60] overflow-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+    class="fixed inset-0 z-[60] flex items-center justify-center overflow-auto bg-slate-900/50 p-4 backdrop-blur-sm"
     @keydown.escape.window="showExportModal = false"
 >
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl" @click.outside="showExportModal = false">
-        <div class="flex items-center justify-between mb-4">
+    <div class="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-xl" @click.outside="showExportModal = false">
+        <div class="mb-4 flex items-center justify-between">
             <div>
-                <h3 class="text-xl font-bold text-white">Export CFM Report</h3>
-                <p class="text-xs text-gray-500 mt-1">Download mentor directory and workload summary</p>
+                <h3 class="text-xl font-semibold text-[#0B1F3A]">Export CFM Report</h3>
+                <p class="mt-1 text-xs text-slate-500">Download mentor directory and workload summary</p>
             </div>
-            <button type="button" @click="showExportModal = false" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+            <button type="button" @click="showExportModal = false" class="text-2xl leading-none text-slate-400 hover:text-[#0B1F3A]">&times;</button>
         </div>
 
         <div class="space-y-4">
             <div>
-                <label class="text-xs font-medium text-gray-400">Export scope</label>
-                <select x-model="exportForm.scope" class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-200 focus:border-amber-500 focus:outline-none">
+                <label class="text-xs font-semibold text-slate-600">Export scope</label>
+                <select x-model="exportForm.scope" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                     <option value="filtered">Current filtered view</option>
                     <option value="all">All accessible CFMs</option>
                 </select>
             </div>
 
             <div>
-                <label class="text-xs font-medium text-gray-400">Format</label>
-                <select x-model="exportForm.format" class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-gray-200 focus:border-amber-500 focus:outline-none">
+                <label class="text-xs font-semibold text-slate-600">Format</label>
+                <select x-model="exportForm.format" class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                     <option value="csv">CSV spreadsheet</option>
                 </select>
             </div>
 
-            <div class="rounded-xl border border-gray-800 bg-gray-800/30 p-3 space-y-2 text-sm text-gray-300">
-                <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Include in export</p>
+            <div class="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Include in export</p>
                 <label class="flex items-center gap-2">
-                    <input type="checkbox" x-model="exportForm.includeStats" class="rounded border-gray-600 bg-gray-800 text-amber-500">
+                    <input type="checkbox" x-model="exportForm.includeStats" class="rounded border-gray-300 text-[#C8A24A] focus:ring-[#C8A24A]">
                     Summary dashboard stats
                 </label>
                 <label class="flex items-center gap-2">
-                    <input type="checkbox" x-model="exportForm.includeWorkload" class="rounded border-gray-600 bg-gray-800 text-amber-500" checked disabled>
+                    <input type="checkbox" x-model="exportForm.includeWorkload" class="rounded border-gray-300 text-[#C8A24A] focus:ring-[#C8A24A]" checked disabled>
                     Workload &amp; readiness columns
                 </label>
                 <label class="flex items-center gap-2">
-                    <input type="checkbox" x-model="exportForm.includeCalendar" class="rounded border-gray-600 bg-gray-800 text-amber-500" checked disabled>
+                    <input type="checkbox" x-model="exportForm.includeCalendar" class="rounded border-gray-300 text-[#C8A24A] focus:ring-[#C8A24A]" checked disabled>
                     Calendar availability columns
                 </label>
             </div>
 
-            <div class="rounded-xl border border-amber-500/20 bg-amber-900/10 p-3 text-xs text-gray-400">
-                <span class="text-amber-300 font-medium" x-text="exportRows.length"></span> CFM record(s) will be exported.
+            <div class="rounded-xl border border-[#C8A24A]/20 bg-[#FFF9EA] p-3 text-xs text-slate-600">
+                <span class="font-semibold text-[#8A6A1F]" x-text="exportRows.length"></span> CFM record(s) will be exported.
                 External hierarchy CFMs may include limited fields based on visibility permissions.
             </div>
 
             <div class="flex gap-3 pt-2">
-                <button type="button" @click="showExportModal = false" class="flex-1 border border-gray-700 py-2.5 rounded-xl text-gray-300 hover:bg-gray-800 transition">Cancel</button>
-                <button type="button" @click="exportReport()" :disabled="exportRows.length === 0" class="flex-1 bg-amber-600 text-black font-bold py-2.5 rounded-xl hover:bg-amber-500 transition disabled:opacity-40 disabled:cursor-not-allowed">Download Report</button>
+                <button type="button" @click="showExportModal = false" class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-[#0B1F3A] transition hover:bg-slate-50">Cancel</button>
+                <button type="button" @click="exportReport()" :disabled="exportRows.length === 0" class="flex-1 rounded-lg bg-[#C8A24A] py-2.5 font-bold text-[#0B1F3A] transition hover:bg-[#D8B85F] disabled:cursor-not-allowed disabled:opacity-40">Download Report</button>
             </div>
         </div>
     </div>

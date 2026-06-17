@@ -1,5 +1,5 @@
-<div x-show="filteredCfms.length === 0" x-cloak class="text-center py-12 bg-gray-900/30 rounded-2xl border border-gray-800 mb-10">
-    <div class="text-5xl mb-4 opacity-60">👥</div>
-    <div class="text-gray-400">No CFMs found matching your criteria.</div>
-    <button type="button" @click="clearFilters()" class="mt-4 text-amber-400 hover:text-amber-300 text-sm font-medium">Clear Filters</button>
+<div x-show="filteredCfms.length === 0" x-cloak class="rounded-xl border border-slate-200 bg-white py-12 text-center shadow-sm">
+    <div class="mb-4 text-5xl opacity-60">👥</div>
+    <div class="text-slate-600">No CFMs found matching your criteria.</div>
+    <button type="button" @click="clearFilters()" class="mt-4 text-sm font-semibold text-[#8A6A1F] hover:text-[#C8A24A]">Clear Filters</button>
 </div>

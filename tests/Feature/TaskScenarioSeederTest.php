@@ -3,10 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Database\Seeders\CfmTrainingModuleSeeder;
-use Database\Seeders\FieldApprenticeshipProgramSeeder;
-use Database\Seeders\LicensingStepSeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\TaskManagementSeeder;
@@ -26,10 +24,8 @@ class TaskScenarioSeederTest extends TestCase
             RankSeeder::class,
             RolePermissionSeeder::class,
             TeamSeeder::class,
-            OnboardingStepSeeder::class,
-            LicensingStepSeeder::class,
-            FieldApprenticeshipProgramSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             TaskScenarioSeeder::class,
             TaskManagementSeeder::class,
         ]);
@@ -42,10 +38,10 @@ class TaskScenarioSeederTest extends TestCase
             'mentor_id' => null,
         ]);
 
-        $this->assertSame(1, DB::table('user_onboarding_progress')->where('status', 'pending_confirmation')->count());
-        $this->assertSame(1, DB::table('user_licensing_progress')->where('status', 'pending_confirmation')->count());
-        $this->assertSame(1, DB::table('user_apprenticeship_progress')->where('status', 'pending_confirmation')->count());
-        $this->assertSame(1, DB::table('cfm_training_progress')->where('status', 'pending_confirmation')->count());
+        $this->assertSame(1, $this->pendingProgressCount('onboarding'));
+        $this->assertSame(1, $this->pendingProgressCount('licensing'));
+        $this->assertSame(1, $this->pendingProgressCount('fap'));
+        $this->assertSame(1, $this->pendingProgressCount('cfm-training'));
         $this->assertSame(2, DB::table('registration_invitations')->where('sponsor_id', $agencyOwner->id)->whereNull('last_emailed_at')->count());
         $this->assertSame(1, DB::table('user_rank_progress')->where('status', 'ready_for_review')->count());
 
@@ -59,5 +55,16 @@ class TaskScenarioSeederTest extends TestCase
             ->assertSee('prospect.one@example.com')
             ->assertSee('Rank advancement')
             ->assertSee('Manage users');
+    }
+
+    private function pendingProgressCount(string $typeCode): int
+    {
+        return DB::table('checklist_progress')
+            ->join('checklists', 'checklists.id', '=', 'checklist_progress.checklist_id')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->where('checklist_types.code', $typeCode)
+            ->where('checklist_progress.status', 'pending_confirmation')
+            ->whereNull('checklist_progress.mentor_assignment_id')
+            ->count();
     }
 }

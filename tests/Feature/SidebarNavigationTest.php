@@ -12,7 +12,7 @@ class SidebarNavigationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_pre_employment_member_sees_my_dashboard_pre_employment_and_my_messages(): void
+    public function test_member_sees_my_dashboard_and_my_messages(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
@@ -28,34 +28,11 @@ class SidebarNavigationTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('My Dashboard', false)
-            ->assertSee('Pre-employment', false)
-            ->assertSee('My Messages', false)
-            ->assertDontSee('My Employment', false);
-    }
-
-    public function test_employee_sees_my_employment_instead_of_pre_employment(): void
-    {
-        $this->seed(RolePermissionSeeder::class);
-
-        $user = User::factory()->create();
-        $user->assignRole('member');
-
-        Profile::query()->create([
-            'user_id' => $user->id,
-            'is_efg_active_associate' => true,
-            'recruited_at' => now()->toDateString(),
-        ]);
-
-        $this->actingAs($user)
-            ->get(route('dashboard'))
-            ->assertOk()
-            ->assertSee('My Dashboard', false)
-            ->assertSee('My Employment', false)
             ->assertSee('My Messages', false)
             ->assertDontSee('Pre-employment', false);
     }
 
-    public function test_employment_link_highlights_on_employment_page(): void
+    public function test_hired_member_sees_dashboard_without_pre_employment_link(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
@@ -64,30 +41,16 @@ class SidebarNavigationTest extends TestCase
 
         Profile::query()->create([
             'user_id' => $user->id,
+            'is_efg_active_associate' => true,
             'recruited_at' => now()->toDateString(),
         ]);
 
         $this->actingAs($user)
-            ->get(route('employment.index'))
+            ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('data-server-active-item="top-my-employment"', false);
-    }
-
-    public function test_pre_employment_link_highlights_on_pre_employment_page(): void
-    {
-        $this->seed(RolePermissionSeeder::class);
-
-        $user = User::factory()->create();
-        $user->assignRole('member');
-
-        Profile::query()->create([
-            'user_id' => $user->id,
-        ]);
-
-        $this->actingAs($user)
-            ->get(route('pre-employment.index'))
-            ->assertOk()
-            ->assertSee('data-server-active-item="top-pre-employment"', false);
+            ->assertSee('My Dashboard', false)
+            ->assertSee('My Messages', false)
+            ->assertDontSee('Pre-employment', false);
     }
 
     public function test_messages_link_highlights_on_messages_page(): void

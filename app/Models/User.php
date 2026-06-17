@@ -6,9 +6,9 @@ use App\Support\UserAvatar;
 use App\Support\UserRankRoleLabel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -71,29 +71,14 @@ class User extends Authenticatable
         });
     }
 
-    public function notifications(): MorphMany
-    {
-        return $this->morphMany(Notification::class, 'notifiable')->latest();
-    }
-
-    public function sentNotifications(): HasMany
-    {
-        return $this->hasMany(Notification::class, 'sender_user_id')->latest();
-    }
-
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
     }
 
-    public function peEmployee(): HasOne
+    public function isEmployee(): bool
     {
-        return $this->hasOne(PeEmployee::class);
-    }
-
-    public function bpEmployee(): HasOne
-    {
-        return $this->hasOne(BpEmployee::class);
+        return $this->profile?->recruited_at !== null;
     }
 
     public function rank(): BelongsTo
@@ -149,6 +134,13 @@ class User extends Authenticatable
     public function registrationInvitations(): HasMany
     {
         return $this->hasMany(RegistrationInvitation::class, 'sponsor_id');
+    }
+
+    public function favoritePortalResources(): BelongsToMany
+    {
+        return $this->belongsToMany(PortalResource::class, 'resource_favorites', 'user_id', 'resource_id')
+            ->withTimestamps()
+            ->withTrashed();
     }
 
     public function mentor(): BelongsTo
@@ -234,7 +226,6 @@ class User extends Authenticatable
         return $this->hasRole('certified-field-mentor');
     }
 
-<<<<<<< HEAD
     public function canManageDocuments(): bool
     {
         return $this->hasAnyRole([
@@ -272,11 +263,6 @@ class User extends Authenticatable
         $createdBy = $record->created_by ?? null;
 
         return $createdBy !== null && (int) $createdBy === (int) $this->id;
-=======
-    public function isEmployee(): bool
-    {
-        return $this->profile?->recruited_at !== null;
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
     }
 
     public function initials(): string

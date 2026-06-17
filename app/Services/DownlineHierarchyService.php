@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Checklist;
+use App\Models\ChecklistProgress;
 use App\Models\User;
 use App\Support\MemberDisplayName;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class DownlineHierarchyService
 {
+    public function __construct(private readonly ChecklistService $checklists) {}
     public function rebuild(): void
     {
         DB::transaction(function (): void {
@@ -94,7 +97,17 @@ class DownlineHierarchyService
      */
     public function dashboardMembersQuery(User $viewer): Builder
     {
+        $this->ensureSelfHierarchyPath($viewer);
+
         return $this->hierarchyMembersQuery($viewer);
+    }
+
+    public function ensureSelfHierarchyPath(User $user): void
+    {
+        DB::table('user_hierarchy_paths')->updateOrInsert(
+            ['ancestor_id' => $user->id, 'descendant_id' => $user->id],
+            ['depth' => 0, 'created_at' => now(), 'updated_at' => now()]
+        );
     }
 
     private function hierarchyMembersQuery(User $viewer): Builder
@@ -153,12 +166,20 @@ class DownlineHierarchyService
     public function progressSummary(User $member): array
     {
         return [
-            'licensing' => $this->percentComplete('user_licensing_progress', $member->id),
-            'onboarding' => $this->percentComplete('user_onboarding_progress', $member->id),
+            'licensing' => $this->checklistTypePercent('licensing', $member->id),
+            'onboarding' => $this->checklistTypePercent('onboarding', $member->id),
             'training' => $this->percentComplete('training_progress', $member->id),
-            'apprenticeship' => $this->percentComplete('user_apprenticeship_progress', $member->id),
+            'apprenticeship' => $this->checklistTypePercent('fap', $member->id),
             'rank' => $this->percentComplete('user_rank_progress', $member->id),
         ];
+    }
+
+    public function checklistTypePercent(string $typeCode, int $userId): int
+    {
+        return $this->checklists->checklistPercent(
+            $this->checklists->activeChecklistIdsForType($typeCode),
+            $userId,
+        );
     }
 
     public function percentComplete(string $table, int $userId): int

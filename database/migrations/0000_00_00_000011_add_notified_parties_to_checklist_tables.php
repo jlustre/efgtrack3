@@ -1,36 +1,16 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        foreach ($this->tables() as $tableName) {
-            Schema::table($tableName, function (Blueprint $table): void {
-                $table->string('notified_parties')->nullable()->after('responsible_parties');
-            });
-        }
+        // Legacy checklist step tables consolidated into checklists.
     }
 
     public function down(): void
     {
-        foreach (array_reverse($this->tables()) as $tableName) {
-            Schema::table($tableName, function (Blueprint $table): void {
-                $table->dropColumn('notified_parties');
-            });
-        }
-    }
-
-    private function tables(): array
-    {
-        return [
-            'onboarding_steps',
-            'licensing_steps',
-            'apprenticeship_steps',
-            'cfm_training_modules',
-        ];
+        //
     }
 };

@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\CfmManagementService;
 use Database\Seeders\CfmManagementSeeder;
-use Database\Seeders\CfmTrainingModuleSeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\TaskScenarioSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +20,8 @@ class CfmManagementPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $owner = User::factory()->create();
@@ -40,8 +41,8 @@ class CfmManagementPageTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 
@@ -74,8 +75,8 @@ class CfmManagementPageTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 

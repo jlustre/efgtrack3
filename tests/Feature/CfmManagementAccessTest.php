@@ -4,7 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Rank;
 use App\Models\User;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,7 +19,8 @@ class CfmManagementAccessTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $owner = User::factory()->create();
@@ -35,7 +37,8 @@ class CfmManagementAccessTest extends TestCase
         $this->seed([
             RankSeeder::class,
             RolePermissionSeeder::class,
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $ed = User::factory()->create([
@@ -52,7 +55,8 @@ class CfmManagementAccessTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $member = User::factory()->create();
@@ -67,7 +71,8 @@ class CfmManagementAccessTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $cfm = User::factory()->create();

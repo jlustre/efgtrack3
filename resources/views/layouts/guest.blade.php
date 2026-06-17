@@ -15,6 +15,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans text-gray-900 antialiased">
+        @include('layouts.partials.page-chrome')
         @if (request()->routeIs('register.invitation')
             || request()->routeIs('login')
             || request()->routeIs('fna.client.*')
@@ -36,7 +37,5 @@
                 </div>
             </div>
         @endif
-
-        @include('layouts.partials.page-chrome')
     </body>
 </html>

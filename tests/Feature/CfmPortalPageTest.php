@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Support\LocationOptions;
 use Database\Seeders\CfmManagementSeeder;
-use Database\Seeders\CfmTrainingModuleSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\CountrySeeder;
-use Database\Seeders\OnboardingStepSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StateProvinceSeeder;
 use Database\Seeders\TaskScenarioSeeder;
@@ -27,8 +27,8 @@ class CfmPortalPageTest extends TestCase
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 
@@ -54,8 +54,8 @@ class CfmPortalPageTest extends TestCase
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 
@@ -95,8 +95,8 @@ class CfmPortalPageTest extends TestCase
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 
@@ -118,8 +118,8 @@ class CfmPortalPageTest extends TestCase
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 
@@ -153,8 +153,8 @@ class CfmPortalPageTest extends TestCase
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 
@@ -185,8 +185,8 @@ class CfmPortalPageTest extends TestCase
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 
@@ -209,8 +209,8 @@ class CfmPortalPageTest extends TestCase
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
             TaskScenarioSeeder::class,
-            OnboardingStepSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             CfmManagementSeeder::class,
         ]);
 
@@ -229,7 +229,8 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $member = User::factory()->create();
@@ -244,7 +245,8 @@ class CfmPortalPageTest extends TestCase
     {
         $this->seed([
             RolePermissionSeeder::class,
-            OnboardingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $owner = User::factory()->create();

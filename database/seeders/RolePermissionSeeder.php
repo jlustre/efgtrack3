@@ -87,6 +87,9 @@ class RolePermissionSeeder extends Seeder
             'view fna financial details',
             'export fna records',
             'manage fna settings',
+            'manage goals',
+            'view team goals',
+            'coach goals',
         ];
 
         foreach ($permissions as $permission) {
@@ -181,6 +184,9 @@ class RolePermissionSeeder extends Seeder
                 'view fna agency reports',
                 'view fna financial details',
                 'export fna records',
+                'manage goals',
+                'view team goals',
+                'coach goals',
             ],
             'certified-field-mentor' => [
                 'view dashboard',
@@ -220,6 +226,9 @@ class RolePermissionSeeder extends Seeder
                 'review trainee fna records',
                 'view fna financial details',
                 'export fna records',
+                'manage goals',
+                'view team goals',
+                'coach goals',
             ],
             'trainer' => [
                 'view dashboard',
@@ -282,6 +291,8 @@ class RolePermissionSeeder extends Seeder
                 'submit fna for review',
                 'view fna financial details',
                 'export fna records',
+                'manage goals',
+                'view team goals',
             ],
             'associate' => [
                 'view dashboard',
@@ -317,6 +328,7 @@ class RolePermissionSeeder extends Seeder
                 'submit fna for review',
                 'view fna financial details',
                 'export fna records',
+                'manage goals',
             ],
             'new-recruit' => [
                 'view dashboard',

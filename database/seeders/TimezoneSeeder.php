@@ -18,11 +18,8 @@ class TimezoneSeeder extends Seeder
             'MST' => null,
             'CST' => null,
             'EST' => null,
-<<<<<<< HEAD
             'HST' => null,
             'Halifax Time' => 'Canada',
-=======
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
             'Canada Pacific Time' => 'Canada',
             'Canada Mountain Time' => 'Canada',
             'Canada Central Time' => 'Canada',

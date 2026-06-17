@@ -9,8 +9,8 @@ use App\Services\DownlineHierarchyService;
 use App\Support\LocationOptions;
 use Database\Seeders\CountrySeeder;
 use Database\Seeders\RankSeeder;
-use Database\Seeders\LicensingStepSeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\ProfileCompletionFieldSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StateProvinceSeeder;
@@ -37,8 +37,8 @@ class DashboardStatDetailsTest extends TestCase
             TimezoneSeeder::class,
             ProfileCompletionFieldSeeder::class,
             TeamSeeder::class,
-            OnboardingStepSeeder::class,
-            LicensingStepSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
     }
 
@@ -315,16 +315,19 @@ class DashboardStatDetailsTest extends TestCase
 
     private function seedOnboardingProgress(int $userId, bool $completed): void
     {
-        $stepIds = DB::table('onboarding_steps')
-            ->where('is_active', true)
-            ->whereNull('deleted_at')
-            ->pluck('id');
+        $stepIds = DB::table('checklists')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->where('checklist_types.code', 'onboarding')
+            ->where('checklists.is_active', true)
+            ->whereNull('checklists.deleted_at')
+            ->pluck('checklists.id');
 
         foreach ($stepIds as $stepId) {
-            DB::table('user_onboarding_progress')->updateOrInsert(
+            DB::table('checklist_progress')->updateOrInsert(
                 [
                     'user_id' => $userId,
-                    'onboarding_step_id' => $stepId,
+                    'checklist_id' => $stepId,
+                    'mentor_assignment_id' => null,
                 ],
                 [
                     'status' => $completed ? 'completed' : 'not_started',

@@ -87,6 +87,7 @@ class ResourceDocumentsPageTest extends TestCase
             $this->actingAs($user)
                 ->get(route('resources.documents'))
                 ->assertOk()
+                ->assertSee('New document', false)
                 ->assertSee('Manage documents', false);
         }
     }
@@ -102,6 +103,7 @@ class ResourceDocumentsPageTest extends TestCase
             $this->actingAs($user)
                 ->get(route('resources.documents'))
                 ->assertOk()
+                ->assertDontSee('New document', false)
                 ->assertDontSee('Manage documents', false);
         }
     }
@@ -229,6 +231,9 @@ class ResourceDocumentsPageTest extends TestCase
         $this->assertStringContainsString("viewMode: 'table'", $response->getContent());
         $this->assertStringContainsString('x-show="viewMode === \'table\'"', $response->getContent());
         $response->assertSee('Format', false);
+        $response->assertSee('toggleCategorySidebar', false);
+        $response->assertSee('Hide categories', false);
+        $response->assertSee('Browse by category', false);
     }
 
     public function test_member_can_preview_html_document_content(): void
@@ -259,9 +264,10 @@ class ResourceDocumentsPageTest extends TestCase
             ->get(route('resources.documents', ['document' => $document->id]))
             ->assertOk()
             ->assertSee('View', false)
-            ->assertSee('Document Preview', false)
+            ->assertSee('Close preview', false)
             ->assertSee('Rich Text', false)
-            ->assertSee('PDF', false);
+            ->assertSee('PDF', false)
+            ->assertDontSee('Document Preview', false);
     }
 
     public function test_preview_includes_both_rtf_and_pdf_when_available(): void
@@ -291,7 +297,7 @@ class ResourceDocumentsPageTest extends TestCase
             ->assertJsonPath('has_rtf', true)
             ->assertJsonPath('has_pdf', true)
             ->assertJsonPath('default_view', 'rtf')
-            ->assertJsonPath('pdf_url', route('resources.documents.view', $document));
+            ->assertJsonPath('pdf_url', Storage::disk('public')->url('resources/combo-guide.pdf'));
     }
 
     public function test_member_can_view_pdf_inline_without_download(): void
@@ -347,5 +353,134 @@ class ResourceDocumentsPageTest extends TestCase
             ->get(route('resources.documents.download', $document))
             ->assertOk()
             ->assertDownload('sample-guide.pdf');
+    }
+
+    public function test_pdf_only_document_list_shows_view_and_hides_download(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('resources/uploaded-member-guide.pdf', '%PDF-1.4 sample');
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+
+        $document = PortalResource::query()->create([
+            'title' => 'Uploaded Member Guide',
+            'type' => 'document',
+            'category' => 'guides',
+            'sort_order' => 1,
+            'file_path' => 'resources/uploaded-member-guide.pdf',
+            'file_format' => 'PDF',
+            'is_published' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('resources.documents'))
+            ->assertOk()
+            ->assertSee('aria-label="View PDF for Uploaded Member Guide"', false)
+            ->assertDontSee('aria-label="Download Uploaded Member Guide"', false);
+    }
+
+    public function test_pdf_only_document_preview_defaults_to_pdf_with_download_option(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('resources/uploaded-member-guide.pdf', '%PDF-1.4 sample');
+        $this->seed(RolePermissionSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+
+        $document = PortalResource::query()->create([
+            'title' => 'Uploaded Member Guide',
+            'type' => 'document',
+            'category' => 'guides',
+            'sort_order' => 1,
+            'file_path' => 'resources/uploaded-member-guide.pdf',
+            'file_format' => 'PDF',
+            'is_published' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('resources.documents.preview', $document))
+            ->assertOk()
+            ->assertJsonPath('default_view', 'pdf')
+            ->assertJsonPath('has_pdf', true)
+            ->assertJsonPath('has_rtf', false)
+            ->assertJsonPath('pdf_url', Storage::disk('public')->url('resources/uploaded-member-guide.pdf'))
+            ->assertJsonPath('download_url', route('resources.documents.download', $document));
+    }
+
+    public function test_super_admin_sees_edit_and_pdf_icons_in_document_tables(): void
+    {
+        $this->seedDocuments();
+
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole('super-admin');
+
+        $this->actingAs($superAdmin)
+            ->get(route('resources.documents'))
+            ->assertOk()
+            ->assertSee('aria-label="View PDF for Warm Market Introduction Script"', false)
+            ->assertSee('aria-label="Edit Warm Market Introduction Script"', false);
+    }
+
+    public function test_member_can_toggle_document_favorite_from_library(): void
+    {
+        $this->seedDocuments();
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+
+        $document = PortalResource::query()
+            ->where('title', 'Associate Welcome Packet')
+            ->firstOrFail();
+
+        $this->actingAs($user)
+            ->post(route('resources.documents.favorite', $document))
+            ->assertRedirect(route('resources.documents'))
+            ->assertSessionHas('status', 'favorite-added');
+
+        $this->assertDatabaseHas('resource_favorites', [
+            'user_id' => $user->id,
+            'resource_id' => $document->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('resources.documents'))
+            ->assertOk()
+            ->assertSee('My Favorites', false)
+            ->assertSee('Associate Welcome Packet', false)
+            ->assertSee('Add to My Favorites', false)
+            ->assertSee('Remove from My Favorites', false);
+
+        $this->actingAs($user)
+            ->post(route('resources.documents.favorite', $document))
+            ->assertRedirect(route('resources.documents'))
+            ->assertSessionHas('status', 'favorite-removed');
+
+        $this->assertDatabaseMissing('resource_favorites', [
+            'user_id' => $user->id,
+            'resource_id' => $document->id,
+        ]);
+    }
+
+    public function test_member_cannot_favorite_unpublished_document(): void
+    {
+        $this->seedDocuments();
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+
+        $document = PortalResource::query()->create([
+            'title' => 'Hidden Draft',
+            'type' => 'document',
+            'category' => 'general',
+            'sort_order' => 99,
+            'is_published' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('resources.documents.favorite', $document))
+            ->assertNotFound();
     }
 }

@@ -28,7 +28,7 @@
         'assessment',
         'question',
         'rank',
-        'apprenticeship_program',
+        'checklist_type',
         'calendar_category',
         'calendar_event_type',
         'booking_event_type',
@@ -40,6 +40,34 @@
 @endphp
 
 @foreach ($config['fields'] as $field)
+    @if (($resource ?? null) === 'resources' && $field['name'] === 'content')
+        @include('admin.management.partials.resource-document-content-field', [
+            'field' => $field,
+            'record' => $record ?? null,
+        ])
+        @php
+            $urlField = collect($config['fields'])->firstWhere('name', 'url');
+            $isUploadedPdfRecord = ($record ?? null)
+                && \App\Models\PortalResource::isUploadedPdfAttributes(
+                    $record->file_path ?? null,
+                    $record->file_format ?? null,
+                    $record->content ?? null,
+                );
+        @endphp
+        @if ($urlField && ! $isUploadedPdfRecord)
+            @include('admin.management.partials.resource-document-url-field', [
+                'field' => $urlField,
+                'record' => $record ?? null,
+                'fieldValue' => $fieldValue,
+            ])
+        @endif
+        @continue
+    @endif
+
+    @if (($resource ?? null) === 'resources' && $field['name'] === 'url')
+        @continue
+    @endif
+
     @php
         $value = $fieldValue($field['name']);
         $fieldId = trim(($fieldIdPrefix ?? '').'_'.$field['name'], '_');
@@ -167,7 +195,7 @@
                     'assessment' => 'assessments',
                     'question' => 'questions',
                     'rank' => 'ranks',
-                    'apprenticeship_program' => 'apprenticeship_programs',
+                    'checklist_type' => 'checklist_types',
                     'calendar_category' => 'calendar_categories',
                     'calendar_event_type' => 'calendar_event_types',
                     'booking_event_type' => 'booking_event_types',
@@ -202,11 +230,7 @@
             >
         @endif
 
-<<<<<<< HEAD
-        @if (! in_array($type, array_merge(['textarea', 'rich_text', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url'], $relationshipSelectTypes), true))
-=======
-        @if (! in_array($type, array_merge(['textarea', 'json', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url'], $relationshipSelectTypes), true))
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
+        @if (! in_array($type, array_merge(['textarea', 'rich_text', 'json', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url'], $relationshipSelectTypes), true))
             <input
                 id="{{ $fieldId }}"
                 name="{{ $field['name'] }}"

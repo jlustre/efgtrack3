@@ -13,6 +13,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="bg-[#050505] font-sans text-white antialiased" x-data="{ mobileMenuOpen: false, scrolled: false, heroIndex: 0, heroCount: 6 }" x-init="window.addEventListener('scroll', () => { scrolled = window.scrollY > 50 }); setInterval(() => { heroIndex = (heroIndex + 1) % heroCount }, 12000)">
+        @include('layouts.partials.page-chrome')
         @php
             $loginUrl = Route::has('login') ? route('login') : '#';
             $dashboardUrl = Route::has('dashboard') ? route('dashboard') : $loginUrl;

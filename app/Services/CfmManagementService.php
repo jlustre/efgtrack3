@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\Checklist;
+use App\Models\ChecklistProgress;
 use App\Models\CfmAdvancementGuideline;
 use App\Models\CfmMentorProfile;
 use App\Models\CfmRankTier;
@@ -27,6 +29,7 @@ class CfmManagementService
         private readonly CfmRecommendationEngine $recommendations,
         private readonly CfmAssignmentWorkflowService $assignmentWorkflow,
         private readonly CfmTraineeChecklistService $traineeChecklist,
+        private readonly ChecklistService $checklists,
     ) {}
 
     public function rankStructureFor(): array
@@ -624,10 +627,17 @@ class CfmManagementService
             ->where('started_at', '<=', now()->subDays(75))
             ->count();
 
-        $behindSchedule = $activeIds->isEmpty()
+        $fapChecklistIds = Checklist::query()
+            ->forTypeCode('fap')
+            ->active()
+            ->pluck('id');
+
+        $behindSchedule = $activeIds->isEmpty() || $fapChecklistIds->isEmpty()
             ? 0
-            : (int) DB::table('user_apprenticeship_progress')
+            : (int) ChecklistProgress::query()
                 ->whereIn('user_id', $activeIds)
+                ->memberProgress()
+                ->whereIn('checklist_id', $fapChecklistIds)
                 ->whereIn('status', ['pending_confirmation', 'not_started'])
                 ->where('updated_at', '<', now()->subDays(14))
                 ->distinct()
@@ -682,15 +692,20 @@ class CfmManagementService
             return 0;
         }
 
-        $stepCount = (int) DB::table('apprenticeship_steps')->count();
+        $stepCount = Checklist::query()
+            ->forTypeCode('fap')
+            ->active()
+            ->count();
 
         if ($stepCount === 0) {
             return 0;
         }
 
-        $completedSteps = (int) DB::table('user_apprenticeship_progress')
+        $completedSteps = (int) ChecklistProgress::query()
             ->whereIn('user_id', $apprenticeIds)
-            ->where('status', 'completed')
+            ->memberProgress()
+            ->whereIn('checklist_id', $this->checklists->activeChecklistIdsForType('fap'))
+            ->completed()
             ->count();
 
         return (int) round(($completedSteps / ($apprenticeIds->count() * $stepCount)) * 100);

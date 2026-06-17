@@ -8,14 +8,8 @@ use App\Models\RegistrationInvitation;
 use App\Models\User;
 use App\Services\DownlineHierarchyService;
 use App\Support\LocationOptions;
-<<<<<<< HEAD
-use Database\Seeders\CountrySeeder;
-=======
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
-use Database\Seeders\CfmTrainingModuleSeeder;
-use Database\Seeders\CountrySeeder;
-use Database\Seeders\FieldApprenticeshipProgramSeeder;
-use Database\Seeders\OnboardingStepSeeder;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StateProvinceSeeder;
@@ -47,8 +41,42 @@ class ProfileTest extends TestCase
             ->assertSee('Recruits', false)
             ->assertSee('Annual Premium', false)
             ->assertSee('Other Training', false)
-            ->assertSee('Experior Invite Link', false)
-            ->assertSee('Save Invite Link', false);
+            ->assertSee('EFG Details', false)
+            ->assertSee('Experior invite URL', false)
+            ->assertSee('Save EFG Details', false)
+            ->assertSee('Profile Completion', false)
+            ->assertSee('Profile Tracking', false);
+    }
+
+    public function test_profile_page_shows_completion_checklist_with_missing_fields(): void
+    {
+        $this->seed([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+            \Database\Seeders\ProfileCompletionFieldSeeder::class,
+        ]);
+
+        $user = User::factory()->create([
+            'name' => 'Checklist Member',
+            'email' => 'checklist@example.com',
+        ]);
+
+        Profile::query()->create(array_merge([
+            'user_id' => $user->id,
+            'phone' => '555-0100',
+        ], LocationOptions::profileLocationIds('Canada', 'Ontario', 'Canada Eastern Time')));
+
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('Profile Completion', false)
+            ->assertSee('Still needed', false)
+            ->assertSee('License number', false)
+            ->assertSee('EFG associate ID', false)
+            ->assertSee('Profile photo', false)
+            ->assertSee('Complete profile details', false)
+            ->assertSee('Phone number', false);
     }
 
     public function test_profile_page_shows_tab_listing_tables_with_seeded_data(): void
@@ -57,9 +85,8 @@ class ProfileTest extends TestCase
             RolePermissionSeeder::class,
             RankSeeder::class,
             TeamSeeder::class,
-            OnboardingStepSeeder::class,
-            FieldApprenticeshipProgramSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
             TaskScenarioSeeder::class,
         ]);
 
@@ -87,13 +114,9 @@ class ProfileTest extends TestCase
             RankSeeder::class,
             CountrySeeder::class,
             StateProvinceSeeder::class,
-<<<<<<< HEAD
             TimezoneSeeder::class,
-=======
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
-            OnboardingStepSeeder::class,
-            FieldApprenticeshipProgramSeeder::class,
-            CfmTrainingModuleSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
         $sponsor = User::factory()->create(['name' => 'Tab Sponsor']);
@@ -104,19 +127,10 @@ class ProfileTest extends TestCase
             'is_active' => true,
         ]);
         $levelOne->assignRole('certified-field-mentor');
-<<<<<<< HEAD
-        Profile::query()->create(LocationOptions::profileAttributesForStorage([
-            'user_id' => $levelOne->id,
-            'phone' => '+1 416-555-0100',
-            'province' => 'Ontario',
-            'country' => 'Canada',
-        ]));
-=======
         Profile::query()->create(array_merge([
             'user_id' => $levelOne->id,
             'phone' => '+1 416-555-0100',
         ], LocationOptions::profileLocationIds('Canada', 'Ontario')));
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
         User::factory()->create([
             'name' => 'Recruit Level Two',
             'email' => 'recruit.level2@example.com',
@@ -288,7 +302,13 @@ class ProfileTest extends TestCase
             ->get(route('profile.edit'))
             ->assertOk()
             ->assertSee('EFG Details')
-            ->assertSee($inviteLink, false);
+            ->assertSee('EFG Associate ID', false)
+            ->assertSee('EFG-2001', false)
+            ->assertSee($inviteLink, false)
+            ->assertSee('Share Experior invite link', false)
+            ->assertSee('Share invite link', false)
+            ->assertSee('Copy link', false)
+            ->assertSee('Open in email', false);
     }
 
     public function test_experior_invite_link_must_be_a_valid_url(): void
@@ -304,7 +324,9 @@ class ProfileTest extends TestCase
 
         $response
             ->assertRedirect(route('profile.edit'))
-            ->assertSessionHasErrors('efg_invite_link');
+            ->assertSessionHasErrors('efg_invite_link')
+            ->assertSessionHas('efg_details_feedback', fn (array $feedback) => $feedback['type'] === 'error')
+            ->assertSessionMissing('profile_feedback');
 
         $this->assertDatabaseMissing('profiles', [
             'user_id' => $user->id,
@@ -331,6 +353,42 @@ class ProfileTest extends TestCase
             ->assertRedirect(route('profile.edit'));
 
         $this->assertNull($user->fresh()->profile->efg_invite_link);
+    }
+
+    public function test_saving_profile_details_does_not_clear_efg_invite_link(): void
+    {
+        $this->seed([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+        ]);
+
+        $user = User::factory()->create();
+        Profile::query()->create(array_merge([
+            'user_id' => $user->id,
+            'efg_invite_link' => 'https://experiorfinancial.com/invite/persist-me',
+            'efg_associate_id' => 'EFG-KEEP',
+        ], LocationOptions::profileLocationIds('Canada', 'Ontario', 'Canada Eastern Time')));
+
+        $this->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => '555-9999',
+                'city' => 'Toronto',
+                'country_id' => LocationOptions::resolveCountryId('Canada'),
+                'state_province_id' => LocationOptions::resolveStateProvinceId('Canada', 'Ontario'),
+                'timezone_id' => LocationOptions::resolveTimezoneId('Canada Eastern Time'),
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit', ['tab' => 'profile']));
+
+        $user->refresh()->load('profile.stateProvince');
+
+        $this->assertSame('555-9999', $user->profile->phone);
+        $this->assertSame('Ontario', $user->profile->province);
+        $this->assertSame('https://experiorfinancial.com/invite/persist-me', $user->profile->efg_invite_link);
+        $this->assertSame('EFG-KEEP', $user->profile->efg_associate_id);
     }
 
     public function test_member_can_create_invitation_link_from_profile(): void

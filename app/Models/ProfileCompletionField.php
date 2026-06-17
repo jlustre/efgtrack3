@@ -43,6 +43,7 @@ class ProfileCompletionField extends Model
             'efg_associate_id' => ['label' => 'EFG associate ID', 'source' => 'profile'],
             'efg_invite_link' => ['label' => 'EFG invite link', 'source' => 'profile'],
             'bio' => ['label' => 'Member bio', 'source' => 'profile'],
+            'profile_photo_path' => ['label' => 'Profile photo', 'source' => 'profile'],
         ];
     }
 

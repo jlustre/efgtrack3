@@ -38,14 +38,39 @@
             @include('admin.management.partials.resource-document-panel', ['canUpdateRecord' => $canUpdateRecord ?? true])
         @endif
 
+        @php
+            $contentSource = old('content_source');
+            if ($contentSource === null) {
+                $hasUploadedPdf = filled($record->file_path)
+                    && ! str_starts_with((string) $record->file_path, 'http')
+                    && blank(strip_tags((string) ($record->content ?? '')));
+                $contentSource = $hasUploadedPdf ? 'upload' : 'compose';
+            }
+        @endphp
+
         <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <form method="POST" action="{{ route('admin.management.update', [$resource, $record->id]) }}" class="space-y-5" @if ($resource === 'resources' && ! ($canUpdateRecord ?? true)) x-data x-on:submit.prevent="alert('You can only update documents that you created. Contact an administrator if this record needs changes.')" @endif>
+            <form
+                method="POST"
+                action="{{ route('admin.management.update', [$resource, $record->id]) }}"
+                enctype="multipart/form-data"
+                class="space-y-5"
+                @if ($resource === 'resources')
+                    x-data="{ contentMode: @js($contentSource) }"
+                    @if (! ($canUpdateRecord ?? true))
+                        x-on:submit.prevent="alert('You can only update documents that you created. Contact an administrator if this record needs changes.')"
+                    @endif
+                @endif
+            >
                 @csrf
                 @method('PATCH')
                 <fieldset @disabled($resource === 'resources' && ! ($canUpdateRecord ?? true))>
-                @include('admin.management.partials.form')
+                @include('admin.management.partials.form', ['resource' => $resource, 'record' => $record])
                 @if ($resource === 'resources')
-                    <label class="flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    <label
+                        x-show="contentMode === 'compose'"
+                        x-cloak
+                        class="flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                    >
                         <input
                             type="checkbox"
                             name="generate_pdf"

@@ -84,6 +84,10 @@
                 <dt class="text-xs font-semibold uppercase text-slate-500">EFG Associate ID</dt>
                 <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->efg_associate_id ?? 'Not added' }}</dd>
             </div>
+            <div class="sm:col-span-2">
+                <dt class="text-xs font-semibold uppercase text-slate-500">Experior Invite URL</dt>
+                <dd class="mt-1 break-all text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->efg_invite_link ?? 'Not added' }}</dd>
+            </div>
             <div>
                 <dt class="text-xs font-semibold uppercase text-slate-500">City</dt>
                 <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->city ?? 'Not added' }}</dd>
@@ -176,21 +180,6 @@
             </div>
 
             <div>
-<<<<<<< HEAD
-=======
-                <x-input-label for="efg_associate_id" :value="__('EFG Associate ID')" />
-                <x-text-input id="efg_associate_id" name="efg_associate_id" type="text" class="mt-1 block w-full" :value="old('efg_associate_id', $user->profile?->efg_associate_id)" />
-                <x-input-error class="mt-2" :messages="$errors->get('efg_associate_id')" />
-            </div>
-
-            <div>
-                <x-input-label for="efg_invite_link" :value="__('EFG Invite Link')" />
-                <x-text-input id="efg_invite_link" name="efg_invite_link" type="url" class="mt-1 block w-full" :value="old('efg_invite_link', $user->profile?->efg_invite_link)" placeholder="https://..." />
-                <x-input-error class="mt-2" :messages="$errors->get('efg_invite_link')" />
-            </div>
-
-            <div>
->>>>>>> 2ae99211b388cde4b56062c1cfbbc9ca81c523b0
                 <x-input-label for="city" :value="__('City')" />
                 <x-text-input id="city" name="city" type="text" class="mt-1 block w-full" :value="old('city', $user->profile?->city)" />
                 <x-input-error class="mt-2" :messages="$errors->get('city')" />
