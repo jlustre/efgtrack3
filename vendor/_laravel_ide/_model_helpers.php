@@ -2103,13 +2103,13 @@ namespace App\Models {
 	 * @property \Illuminate\Support\Carbon $ends_at
 	 * @property \Illuminate\Support\Carbon $starts_at
 	 * @property string $status
+	 * @property int|null $related_checklist_id
 	 * @property string|null $related_prospect_id
 	 * @property int|null $trainee_id
 	 * @property int $cfm_id
 	 * @property int|null $calendar_event_id
 	 * @property int|null $availability_schedule_id
 	 * @property int|null $booking_link_id
-	 * @property int|null $related_checklist_id
 	 * @property int $booking_event_type_id
 	 * @property string $public_id
 	 * @property int $id
@@ -2134,13 +2134,13 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking wherePublicId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereBookingEventTypeId($value)
-	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereRelatedChecklistId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereBookingLinkId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereAvailabilityScheduleId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereCalendarEventId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereCfmId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereTraineeId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereRelatedProspectId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereRelatedChecklistId($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereStatus($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereStartsAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereEndsAt($value)
@@ -10193,6 +10193,7 @@ namespace App\Models {
 	 * @property string|null $notified_parties
 	 * @property string|null $responsible_parties
 	 * @property boolean $is_required
+	 * @property int|null $nth_day
 	 * @property integer $sort_order
 	 * @property string|null $description
 	 * @property string $title
@@ -10206,6 +10207,7 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<Checklist>|Checklist whereTitle($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Checklist>|Checklist whereDescription($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Checklist>|Checklist whereSortOrder($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<Checklist>|Checklist whereNthDay($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Checklist>|Checklist whereIsRequired($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Checklist>|Checklist whereResponsibleParties($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<Checklist>|Checklist whereNotifiedParties($value)
@@ -11256,6 +11258,7 @@ namespace App\Models {
 	 * @property \Illuminate\Support\Carbon|null $updated_at
 	 * @property \Illuminate\Support\Carbon|null $created_at
 	 * @property boolean $is_active
+	 * @property int|null $max_complete_days
 	 * @property integer $sort_order
 	 * @property string|null $icon
 	 * @property string|null $description
@@ -11272,6 +11275,7 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<ChecklistType>|ChecklistType whereDescription($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ChecklistType>|ChecklistType whereIcon($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ChecklistType>|ChecklistType whereSortOrder($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<ChecklistType>|ChecklistType whereMaxCompleteDays($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ChecklistType>|ChecklistType whereIsActive($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ChecklistType>|ChecklistType whereCreatedAt($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<ChecklistType>|ChecklistType whereUpdatedAt($value)
@@ -39917,6 +39921,16 @@ namespace App\Models {
 	 * @property \Illuminate\Support\Carbon|null $created_at
 	 * @property bool $is_published
 	 * @property int $sort_order
+	 * @property bool $drip_enabled
+	 * @property bool $sequential_required
+	 * @property bool $is_featured
+	 * @property string $status
+	 * @property string|null $tags
+	 * @property string|null $thumbnail_path
+	 * @property int|null $instructor_id
+	 * @property int|null $duration_minutes
+	 * @property string $difficulty
+	 * @property string $course_type
 	 * @property string|null $description
 	 * @property string $slug
 	 * @property string $title
@@ -39929,6 +39943,16 @@ namespace App\Models {
 	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereTitle($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereSlug($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereDescription($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereCourseType($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereDifficulty($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereDurationMinutes($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereInstructorId($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereThumbnailPath($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereTags($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereStatus($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereIsFeatured($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereSequentialRequired($value)
+	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereDripEnabled($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereSortOrder($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereIsPublished($value)
 	 * @method static \Illuminate\Database\Eloquent\Builder<TrainingModule>|TrainingModule whereCreatedAt($value)
