@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\ChecklistService;
 use App\Services\DownlineHierarchyService;
 use App\Services\MemberProfileTabsService;
 use App\Support\MemberDisplayName;
@@ -16,6 +17,7 @@ class DownlineController extends Controller
     public function __construct(
         private readonly DownlineHierarchyService $hierarchy,
         private readonly MemberProfileTabsService $memberProfileTabs,
+        private readonly ChecklistService $checklists,
     ) {}
 
     public function index(Request $request): View
@@ -209,6 +211,8 @@ class DownlineController extends Controller
             'metrics' => $this->hierarchy->memberMetrics($user),
             'progress' => $this->progressSummary($user),
             'canSeeSensitive' => $request->user()->can('viewSensitive', $user),
+            'checklistTypePanel' => $this->checklists->checklistTypeManagementPanel($user),
+            'canStartChecklists' => $this->checklists->canStartChecklistTypesFor($request->user(), $user),
         ]);
     }
 

@@ -97,7 +97,7 @@
                                         rel="noopener noreferrer"
                                         title="View PDF"
                                         aria-label="View PDF for {{ $document->title }}"
-                                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition hover:border-red-300 hover:bg-red-100 hover:text-red-800"
+                                        class="group efg-icon-btn-danger"
                                     >
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
@@ -115,7 +115,7 @@
                                         @click="openPreview({{ $document->id }})"
                                         title="Preview"
                                         aria-label="Preview {{ $document->title }}"
-                                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                        class="group efg-icon-btn"
                                     >
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                             <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
@@ -131,7 +131,7 @@
                                         href="{{ route('admin.management.edit', ['resources', $document->id]) }}"
                                         title="Edit"
                                         aria-label="Edit {{ $document->title }}"
-                                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                        class="group efg-icon-btn"
                                     >
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                             <path d="M12 20h9" />
@@ -148,7 +148,7 @@
                                         @if (! $document->hasDownloadableFile()) target="_blank" rel="noopener noreferrer" @endif
                                         title="{{ $document->hasDownloadableFile() ? 'Download' : 'Open' }}"
                                         aria-label="{{ $document->hasDownloadableFile() ? 'Download' : 'Open' }} {{ $document->title }}"
-                                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#0B1F3A] bg-[#0B1F3A] text-white transition hover:bg-[#13345f]"
+                                        class="group efg-icon-btn-primary"
                                     >
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                             <path d="M12 3v12" />

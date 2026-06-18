@@ -109,7 +109,7 @@
                 <x-input-label for="efg_invite_link" :value="__('Experior invite URL')" />
                 <button
                     type="button"
-                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white text-[#0B1F3A] transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] disabled:cursor-not-allowed disabled:opacity-40"
+                    class="efg-icon-btn"
                     x-on:click="toggleSharePanel()"
                     :disabled="! hasInviteLink()"
                     :title="hasInviteLink() ? 'Share invite link' : 'Enter and save an invite URL first'"

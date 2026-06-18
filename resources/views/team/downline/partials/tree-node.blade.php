@@ -16,7 +16,7 @@
                     <a
                         href="{{ route('team.member.tree', $node['id']) }}"
                         title="Make this member the top card"
-                        class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#C8A24A]/70 bg-[#101B2B] text-[#C8A24A] transition hover:bg-[#C8A24A] hover:text-[#0B1F3A]"
+                        class="efg-icon-btn-dark"
                     >
                         <span class="sr-only">Make this member the top card</span>
                         <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -27,7 +27,7 @@
                     <a
                         href="{{ $node['upline_tree_url'] }}"
                         title="Show direct upline"
-                        class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#C8A24A]/70 bg-[#101B2B] text-[#C8A24A] transition hover:bg-[#C8A24A] hover:text-[#0B1F3A]"
+                        class="efg-icon-btn-dark"
                     >
                         <span class="sr-only">Show direct upline</span>
                         <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -79,10 +79,12 @@
 
             <div class="mt-4 space-y-2">
                 <div class="h-2 overflow-hidden rounded-full bg-slate-200">
-                    <div class="h-full rounded-full bg-[#C8A24A]" style="width: {{ $node['progress']['onboarding'] }}%"></div>
+                    <div class="h-full rounded-full bg-[#C8A24A]" style="width: {{ \App\Support\ChecklistProgressDisplay::percent($node['progress']['onboarding'] ?? 0) }}%"></div>
                 </div>
                 <div class="font-semibold text-slate-700">
-                    Onboarding {{ $node['progress']['onboarding'] }}% &middot; Licensing {{ $node['progress']['licensing'] }}% &middot; Training {{ $node['progress']['training'] }}%
+                    Onboarding {{ \App\Support\ChecklistProgressDisplay::label($node['progress']['onboarding'] ?? 0) }}
+                    &middot; Licensing {{ \App\Support\ChecklistProgressDisplay::label($node['progress']['licensing'] ?? 0) }}
+                    &middot; Training {{ $node['progress']['training'] ?? 0 }}%
                 </div>
             </div>
         </div>

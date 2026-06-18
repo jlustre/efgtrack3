@@ -10,7 +10,7 @@
         title="{{ $isFavorited ? 'Remove from My Favorites' : 'Add to My Favorites' }}"
         aria-label="{{ $isFavorited ? 'Remove from My Favorites' : 'Add to My Favorites' }}"
         aria-pressed="{{ $isFavorited ? 'true' : 'false' }}"
-        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border transition {{ $isFavorited ? 'border-[#C8A24A] bg-[#C8A24A]/15 text-[#8A6A1F] hover:bg-[#C8A24A]/25' : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#8A6A1F]' }}"
+        class="group {{ $isFavorited ? 'efg-icon-btn-favorite-active' : 'efg-icon-btn-favorite' }}"
     >
         @if ($isFavorited)
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

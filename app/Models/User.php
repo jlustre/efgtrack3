@@ -153,6 +153,11 @@ class User extends Authenticatable
         return $this->hasMany(MentorAssignment::class, 'mentor_id');
     }
 
+    public function checklistTypeStarts(): HasMany
+    {
+        return $this->hasMany(UserChecklistTypeStart::class);
+    }
+
     public function apprenticeshipAssignments(): HasMany
     {
         return $this->hasMany(MentorAssignment::class, 'apprentice_id');

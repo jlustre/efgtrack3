@@ -47,7 +47,7 @@
                 <button
                     type="button"
                     @click="closePreview()"
-                    class="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#0B1F3A]/90 text-xl leading-none text-white shadow-lg backdrop-blur-sm transition hover:bg-white/20 sm:h-10 sm:w-10"
+                    class="efg-icon-btn-overlay text-xl leading-none sm:h-8 sm:w-8"
                     aria-label="Close preview"
                 >&times;</button>
             </div>

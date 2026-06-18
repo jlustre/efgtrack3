@@ -125,7 +125,7 @@
                                                     x-show="row.make_top_url"
                                                     :href="row.make_top_url"
                                                     title="Make this member the topmost"
-                                                    class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#C8A24A] bg-[#FFF4CF] text-[#8A6A1F] transition hover:bg-[#C8A24A] hover:text-[#0B1F3A]"
+                                                    class="efg-icon-btn-dark-accent"
                                                 >
                                                     <span class="sr-only">Make this member the topmost</span>
                                                     <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -138,7 +138,7 @@
                                                     x-show="row.upline_hierarchy_url"
                                                     :href="row.upline_hierarchy_url"
                                                     title="Make direct upline the topmost"
-                                                    class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#0B1F3A] bg-[#0B1F3A] text-[#C8A24A] transition hover:bg-[#132F55] hover:text-[#FFF4CF]"
+                                                    class="efg-icon-btn-primary"
                                                 >
                                                     <span class="sr-only">Make direct upline the topmost</span>
                                                     <svg class="h-3 w-3 rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -149,7 +149,7 @@
                                             <button
                                                 type="button"
                                                 x-on:click="openProfile(row)"
-                                                class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-400 bg-slate-100 text-slate-600 transition hover:border-slate-500 hover:bg-slate-200 hover:text-slate-800"
+                                                class="efg-icon-btn-xs"
                                                 title="View member summary"
                                             >
                                                 <span class="sr-only">View summary</span>

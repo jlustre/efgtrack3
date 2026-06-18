@@ -1,3 +1,19 @@
+function progressLabel(entry) {
+    if (entry && typeof entry === 'object') {
+        return entry.started ? `${entry.percent ?? 0}%` : 'Not started';
+    }
+
+    return `${entry ?? 0}%`;
+}
+
+function progressWidth(entry) {
+    if (entry && typeof entry === 'object') {
+        return entry.started ? (entry.percent ?? 0) : 0;
+    }
+
+    return entry ?? 0;
+}
+
 export default function downlineHierarchyTable(config = {}) {
     const rows = config.rows ?? [];
     const searchMembers = config.searchMembers ?? rows;
@@ -27,6 +43,9 @@ export default function downlineHierarchyTable(config = {}) {
         memberSearchHighlight: -1,
         profileModalOpen: false,
         selectedProfile: null,
+
+        progressLabel,
+        progressWidth,
 
         openProfile(row) {
             this.selectedProfile = row.profile ?? null;

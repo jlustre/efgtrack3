@@ -12,6 +12,12 @@
         'recruits' => 'Recruits',
         'annual-premium' => 'Annual Premium',
     ];
+
+    $checklistTabs = [
+        'onboarding' => $memberTabs['onboarding_started'] ?? false,
+        'fap' => $memberTabs['fap_started'] ?? false,
+        'cfm' => $memberTabs['cfm_started'] ?? false,
+    ];
 @endphp
 
 <section
@@ -45,6 +51,7 @@
     <div class="border-b border-slate-200 bg-slate-50/80 px-4 pt-4">
         <nav class="-mb-px flex flex-wrap gap-2" aria-label="Member profile sections">
             @foreach ($tabs as $key => $label)
+                @continue(in_array($key, ['onboarding', 'fap', 'cfm'], true) && ! ($checklistTabs[$key] ?? false))
                 <button
                     type="button"
                     @click="activeTab = @js($key)"

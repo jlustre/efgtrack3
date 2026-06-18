@@ -21,10 +21,25 @@ class OnboardingController extends Controller
         ]);
         $country = $user->profile?->country;
 
+        if (! $this->checklists->hasTypeStarted($user, 'onboarding')) {
+            return view('checklists.not-started', $this->checklists->notStartedViewData(
+                $user,
+                $user,
+                'onboarding',
+                'Onboarding',
+            ));
+        }
+
         $steps = $this->checklists->activeSteps('onboarding', $country);
+        $typeStartDate = $this->checklists->typeStartDate($user, 'onboarding');
+        $typeCompletionDueDate = $typeStartDate
+            ? $this->checklists->typeCompletionDueDate($typeStartDate, 'onboarding')
+            : null;
+        $typeMaxCompleteDays = $this->checklists->maxCompleteDaysForType('onboarding');
         $progress = $this->checklists->userProgressFor($user->id, $steps->pluck('id'));
 
-        $steps = $steps->map(function (Checklist $step) use ($progress): Checklist {
+        $steps = $this->checklists->enrichStepsWithSchedule(
+            $steps->map(function (Checklist $step) use ($progress): Checklist {
             $stepProgress = $progress->get($step->id);
             $step->progress = $stepProgress;
             $step->status = $stepProgress?->status ?? 'not_started';
@@ -33,7 +48,9 @@ class OnboardingController extends Controller
             $step->is_rejected = $step->status === 'rejected';
 
             return $step;
-        });
+            }),
+            $typeStartDate,
+        );
 
         $total = $steps->count();
         $completed = $steps->where('is_completed', true)->count();
@@ -55,6 +72,9 @@ class OnboardingController extends Controller
         return view('onboarding.index', [
             'user' => $user,
             'steps' => $steps,
+            'typeStartDate' => $typeStartDate,
+            'typeCompletionDueDate' => $typeCompletionDueDate,
+            'typeMaxCompleteDays' => $typeMaxCompleteDays,
             'confirmationItems' => $confirmationItems,
             'stats' => compact(
                 'total',
@@ -76,6 +96,7 @@ class OnboardingController extends Controller
     public function update(Request $request, Checklist $step): RedirectResponse
     {
         abort_if($step->trashed() || ! $step->is_active, 404);
+        abort_unless($this->checklists->hasTypeStarted($request->user(), 'onboarding'), 404);
 
         $country = $request->user()->loadMissing('profile.countryRecord')->profile?->country;
         abort_unless($this->checklists->onboardingChecklistApplicable($step, $country), 404);

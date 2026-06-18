@@ -57,7 +57,7 @@
                             <p class="text-xs font-bold uppercase tracking-wide text-[#C8A24A]">Create</p>
                             <h2 class="text-sm font-semibold text-[#0B1F3A]">Schedule Event</h2>
                         </div>
-                        <button type="button" x-on:click="createOpen = true" class="flex h-9 w-9 items-center justify-center rounded-full bg-[#C8A24A] text-[#0B1F3A] shadow-sm transition hover:bg-[#D8B75F]" title="Create event">
+                        <button type="button" x-on:click="createOpen = true" class="efg-icon-btn-accent" title="Create event">
                             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
                         </button>
                     </div>
@@ -184,7 +184,7 @@
                                         <span class="mr-1 text-xs font-semibold text-slate-500">{{ $events->where('calendar_category_id', $category->id)->count() }}</span>
 
                                         @if (($category->user_id && $category->user_id === auth()->id()) || ($category->user_id === null && auth()->user()->can('manage organization calendar')))
-                                            <button type="button" x-on:click="editOpen = true" title="Customize calendar" class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#C8A24A]/40 bg-[#FFF9EA] text-[#0B1F3A] transition hover:bg-[#F7E8B8]">
+                                            <button type="button" x-on:click="editOpen = true" title="Customize calendar" class="efg-icon-btn-accent">
                                                 <span class="sr-only">Customize {{ $category->name }}</span>
                                                 <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                     <path d="m13.586 3.586 2.828 2.828-9.193 9.193a2 2 0 0 1-.878.51l-3.03.757a.75.75 0 0 1-.91-.91l.757-3.03a2 2 0 0 1 .51-.878l9.193-9.193ZM15 2.172a2 2 0 0 1 2.828 0 2 2 0 0 1 0 2.828l-.414.414-2.828-2.828.414-.414Z" />
@@ -195,7 +195,7 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <input type="hidden" name="return_to" value="{{ url()->full() }}">
-                                                <button type="submit" title="Delete calendar" class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100" onclick="return confirm('Delete this calendar category? Existing events will remain, but this calendar group will be hidden.')">
+                                                <button type="submit" title="Delete calendar" class="efg-icon-btn-danger" onclick="return confirm('Delete this calendar category? Existing events will remain, but this calendar group will be hidden.')">
                                                     <span class="sr-only">Delete {{ $category->name }}</span>
                                                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                         <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75V4.5H3.75a.75.75 0 0 0 0 1.5h.32l.67 10.03A2.75 2.75 0 0 0 7.48 18h5.04a2.75 2.75 0 0 0 2.74-1.97L15.93 6h.32a.75.75 0 0 0 0-1.5H14v-.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM7.5 4.5v-.75c0-.69.56-1.25 1.25-1.25h2.5c.69 0 1.25.56 1.25 1.25v.75h-5Z" clip-rule="evenodd" />
@@ -218,7 +218,7 @@
                                                                 <p class="text-xs font-bold uppercase tracking-wide text-[#C8A24A]">Customize Calendar</p>
                                                                 <h3 class="text-lg font-semibold text-[#0B1F3A]">{{ $category->name }}</h3>
                                                             </div>
-                                                            <button type="button" x-on:click="editOpen = false" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close customize modal">
+                                                            <button type="button" x-on:click="editOpen = false" class="efg-icon-btn-close" aria-label="Close customize modal">
                                                                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
                                                             </button>
                                                         </div>
@@ -443,7 +443,7 @@
                                 <p class="text-xs font-bold uppercase tracking-wide text-[#C8A24A]">My Calendars</p>
                                 <h3 class="text-lg font-semibold text-[#0B1F3A]">Add Calendar Category</h3>
                             </div>
-                            <button type="button" x-on:click="addCategoryOpen = false" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close add calendar modal">
+                            <button type="button" x-on:click="addCategoryOpen = false" class="efg-icon-btn-close" aria-label="Close add calendar modal">
                                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
                             </button>
                         </div>

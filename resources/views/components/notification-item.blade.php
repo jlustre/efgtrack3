@@ -52,7 +52,7 @@
                         x-on:click="expanded = ! expanded"
                         :aria-expanded="expanded"
                         :title="expanded ? 'Collapse notification' : 'Expand notification'"
-                        class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] hover:text-[#0B1F3A]"
+                        class="efg-icon-btn mt-0.5"
                     >
                         <span class="sr-only" x-text="expanded ? 'Collapse' : 'Expand'"></span>
                         <svg

@@ -42,6 +42,10 @@ class DashboardOverviewService
      */
     private function onboarding(User $user): array
     {
+        if (! $this->checklists->hasTypeStarted($user, 'onboarding')) {
+            return $this->inactiveChecklistOverview();
+        }
+
         $steps = Checklist::query()
             ->forTypeCode('onboarding')
             ->applicableToCountry($user->profile?->country)
@@ -63,6 +67,10 @@ class DashboardOverviewService
      */
     private function licensing(User $user): array
     {
+        if (! $this->checklists->hasTypeStarted($user, 'licensing')) {
+            return $this->inactiveChecklistOverview();
+        }
+
         $steps = Checklist::query()
             ->forTypeCode('licensing')
             ->where('is_active', true)
@@ -83,6 +91,10 @@ class DashboardOverviewService
      */
     private function fap(User $user): array
     {
+        if (! $this->checklists->hasTypeStarted($user, 'fap')) {
+            return $this->inactiveChecklistOverview();
+        }
+
         $steps = Checklist::query()
             ->forTypeCode('fap')
             ->where('is_active', true)
@@ -153,7 +165,7 @@ class DashboardOverviewService
         }
 
         $cfmTraining = null;
-        if (! $this->stats->userIsCfm($user)) {
+        if (! $this->stats->userIsCfm($user) && $this->checklists->hasTypeStarted($user, 'cfm-training')) {
             $cfmOverview = $this->cfmTrainingOverview($user);
             if ($cfmOverview['total'] > 0) {
                 $cfmTraining = [
@@ -394,11 +406,27 @@ class DashboardOverviewService
             ->all();
 
         return [
+            'started' => true,
             'percent' => $percent,
             'completed' => $completed,
             'total' => $steps->count(),
             'next_steps' => $nextSteps,
             'route' => $route,
+        ];
+    }
+
+    /**
+     * @return array{started: false, percent: int, completed: int, total: int, next_steps: list<array{title: string, status: string}>, route: null}
+     */
+    private function inactiveChecklistOverview(): array
+    {
+        return [
+            'started' => false,
+            'percent' => 0,
+            'completed' => 0,
+            'total' => 0,
+            'next_steps' => [],
+            'route' => null,
         ];
     }
 

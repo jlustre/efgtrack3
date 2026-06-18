@@ -84,41 +84,46 @@
             <div>
                 <h2 class="text-lg font-semibold text-[#0B1F3A]">{{ $tracker['checklistTitle'] }}</h2>
                 <p class="mt-1 text-sm text-slate-600">{{ $tracker['checklistDescription'] }}</p>
+                @if (! empty($typeStartDate))
+                    <p class="mt-1 text-xs font-medium text-slate-500">Schedule starts {{ $typeStartDate->format('M j, Y') }} (Day 1).</p>
+                @endif
+                @if (! empty($typeMaxCompleteDays) && ! empty($typeCompletionDueDate))
+                    <p class="mt-1 text-xs font-medium text-slate-500">Target completion by Day {{ $typeMaxCompleteDays }} ({{ $typeCompletionDueDate->format('M j, Y') }}).</p>
+                @endif
             </div>
             <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $steps->count() }} {{ $tracker['itemCountLabel'] }}</span>
         </div>
 
-        <div class="divide-y divide-slate-100">
+        <div>
             @forelse ($steps as $step)
-                    <div x-data="{ expanded: false }" class="grid gap-4 px-6 py-5 transition hover:bg-white/65 lg:grid-cols-[auto_1fr_auto] lg:items-start">
-                    <form method="POST" action="{{ route($tracker['updateRoute'], $step->id) }}" class="pt-1">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="completed" value="0">
-                        <input
-                            type="checkbox"
-                            name="completed"
-                            value="1"
-                            class="h-5 w-5 rounded border-2 border-slate-500 text-[#C8A24A] focus:ring-[#C8A24A] checked:border-[#C8A24A]"
-                            @checked($step->is_completed || $step->is_pending)
-                            @disabled($step->is_completed)
-                            onchange="this.form.submit()"
-                            aria-label="Submit {{ $step->title }} for confirmation"
-                        >
-                    </form>
-
-                    <div class="min-w-0">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="font-semibold {{ $step->is_completed ? 'text-slate-500 line-through' : 'text-[#0B1F3A]' }}">{{ $step->title }}</h3>
+                    <div x-data="{ expanded: false }" @class([
+                        'efg-checklist-item',
+                        'efg-checklist-item--odd' => $loop->odd,
+                        'efg-checklist-item--even' => $loop->even,
+                    ])>
+                    <div class="flex items-start gap-3">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <form method="POST" action="{{ route($tracker['updateRoute'], $step->id) }}" class="flex h-5 shrink-0 items-center">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="completed" value="0">
+                                    <input
+                                        type="checkbox"
+                                        name="completed"
+                                        value="1"
+                                        class="h-4 w-4 rounded border-2 border-slate-500 text-[#C8A24A] focus:ring-[#C8A24A] checked:border-[#C8A24A]"
+                                        @checked($step->is_completed || $step->is_pending)
+                                        @disabled($step->is_completed)
+                                        onchange="this.form.submit()"
+                                        aria-label="Submit {{ $step->title }} for confirmation"
+                                    >
+                                </form>
+                                <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                    <h3 class="text-sm font-semibold leading-5 {{ $step->is_completed ? 'text-slate-500 line-through' : 'text-[#0B1F3A]' }}">{{ $step->title }}</h3>
                                     @if ($step->description)
-                                        <span class="group relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
-                                            ?
-                                            <span class="pointer-events-none absolute left-1/2 top-7 z-20 hidden w-72 -translate-x-1/2 rounded-md bg-[#0B1F3A] px-3 py-2 text-left text-xs font-medium leading-5 text-white shadow-lg group-hover:block">
-                                                {{ $step->description }}
-                                            </span>
-                                        </span>
+                                        <x-checklist-description-help :text="$step->description" />
                                     @endif
                                     @if ($step->is_pending)
                                         <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700">Pending Confirmation</span>
@@ -134,16 +139,14 @@
                                     @if (! empty($step->group_label))
                                         <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{{ $step->group_label }}</span>
                                     @endif
+                                    @include('checklists.partials.nth-day-schedule', ['step' => $step])
                                 </div>
-                                @if ($step->description)
-                                    <p x-show="! expanded" class="mt-1 line-clamp-1 text-sm leading-6 text-slate-600">{{ $step->description }}</p>
-                                @endif
                             </div>
 
                             <button
                                 type="button"
                                 x-on:click="expanded = ! expanded"
-                                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                class="efg-icon-btn cursor-pointer"
                                 :aria-expanded="expanded.toString()"
                                 aria-label="Toggle item details"
                                 title="Toggle details"
@@ -154,19 +157,19 @@
                             </button>
                         </div>
 
-                        <div x-show="expanded" x-transition class="mt-3">
+                        <div x-show="expanded" x-transition class="mt-2">
                             @if ($step->description)
                                 <p class="max-w-4xl text-sm leading-6 text-slate-600">{{ $step->description }}</p>
                             @endif
 
                             @if ($step->progress?->review_comments)
-                                <div class="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                                <div class="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                                     <span class="font-semibold text-[#0B1F3A]">Review comments:</span>
                                     {{ $step->progress->review_comments }}
                                 </div>
                             @endif
 
-                            <div class="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                            <div class="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
                                 <span class="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Responsible: {{ $step->responsible_parties ?: 'Self' }}</span>
                                 @if ($step->notified_parties)
                                     <span class="rounded-full bg-purple-50 px-2.5 py-1 text-purple-700">Notify: {{ $step->notified_parties }}</span>
@@ -175,7 +178,7 @@
                         </div>
                     </div>
 
-                    <div class="lg:text-right">
+                    <div class="hidden shrink-0 self-center lg:block lg:text-right">
                         <div x-show="expanded" x-transition>
                             @if ($step->is_completed)
                                 <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Completed</span>
@@ -196,6 +199,7 @@
                                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Not Started</span>
                             @endif
                         </div>
+                    </div>
                     </div>
                 </div>
             @empty

@@ -19,7 +19,7 @@
             </div>
             <button
                 type="button"
-                class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] hover:text-[#0B1F3A]"
+                class="efg-icon-btn-close"
                 x-on:click="closeProfile()"
                 aria-label="Close profile"
             >
@@ -94,12 +94,12 @@
                         <div>
                             <div class="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 <span x-text="item.label"></span>
-                                <span class="text-[#0B1F3A]" x-text="(selectedProfile?.progress?.[item.key] ?? 0) + '%'"></span>
+                                <span class="text-[#0B1F3A]" x-text="progressLabel(selectedProfile?.progress?.[item.key])"></span>
                             </div>
                             <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
                                 <div
                                     class="h-full rounded-full bg-[#C8A24A]"
-                                    :style="'width:' + (selectedProfile?.progress?.[item.key] ?? 0) + '%'"
+                                    :style="'width:' + progressWidth(selectedProfile?.progress?.[item.key]) + '%'"
                                 ></div>
                             </div>
                         </div>

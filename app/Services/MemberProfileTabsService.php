@@ -24,8 +24,11 @@ class MemberProfileTabsService
 
         return [
             'onboarding' => $onboarding,
+            'onboarding_started' => $this->checklists->hasTypeStarted($user, 'onboarding'),
             'fap' => $fap,
+            'fap_started' => $this->checklists->hasTypeStarted($user, 'fap'),
             'cfm' => $cfm,
+            'cfm_started' => $this->checklists->hasTypeStarted($user, 'cfm-training'),
             'recruits' => $recruits,
             'recruitsTotal' => count($recruits),
             'recruitsDirectTotal' => collect($recruits)->where('level', 1)->count(),
@@ -57,6 +60,10 @@ class MemberProfileTabsService
 
     private function onboardingRows(User $user): array
     {
+        if (! $this->checklists->hasTypeStarted($user, 'onboarding')) {
+            return [];
+        }
+
         $steps = $this->checklists->activeSteps('onboarding', $user->profile?->country);
         $progress = $this->checklists->userProgressFor($user->id, $steps->pluck('id'));
 
@@ -73,6 +80,10 @@ class MemberProfileTabsService
 
     private function checklistRows(User $user, string $typeCode, ?string $groupLabel = null): array
     {
+        if (! $this->checklists->hasTypeStarted($user, $typeCode)) {
+            return [];
+        }
+
         $steps = $this->checklists->activeSteps($typeCode, null, $groupLabel);
         $progress = $this->checklists->userProgressFor($user->id, $steps->pluck('id'));
 
@@ -139,8 +150,8 @@ class MemberProfileTabsService
                     'country' => $country ?: '—',
                     'country_flag' => $this->countryFlag($country),
                     'joined_at' => $recruit->joined_at?->format('M j, Y') ?? '—',
-                    'onboarding' => ($progress['onboarding'] ?? 0).'%',
-                    'fap' => ($progress['apprenticeship'] ?? 0).'%',
+                    'onboarding' => \App\Support\ChecklistProgressDisplay::label($progress['onboarding'] ?? 0),
+                    'fap' => \App\Support\ChecklistProgressDisplay::label($progress['apprenticeship'] ?? 0),
                 ];
             })
             ->values()

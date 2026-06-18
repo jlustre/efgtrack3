@@ -1,3 +1,3 @@
 <x-app-layout>
-    <x-page-placeholder title="Training Admin" subtitle="Training content management scaffold." />
+    <livewire:admin.training.admin-training-hub />
 </x-app-layout>

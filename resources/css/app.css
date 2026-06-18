@@ -51,6 +51,74 @@
     .efg-button-gold {
         @apply inline-flex items-center justify-center rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm transition hover:bg-[#D5B765];
     }
+
+    .efg-icon-btn {
+        @apply relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 transition hover:bg-slate-100 hover:text-[#0B1F3A];
+    }
+
+    .efg-icon-btn-lg {
+        @apply relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-slate-500 transition hover:bg-slate-100 hover:text-[#0B1F3A];
+    }
+
+    .efg-icon-btn-xs {
+        @apply inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-500 transition hover:bg-slate-100 hover:text-[#0B1F3A];
+    }
+
+    .efg-icon-btn-danger {
+        @apply relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-red-600 transition hover:bg-red-50 hover:text-red-700;
+    }
+
+    .efg-icon-btn-warning {
+        @apply relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-amber-600 transition hover:bg-amber-50;
+    }
+
+    .efg-icon-btn-success {
+        @apply relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-emerald-600 transition hover:bg-emerald-50;
+    }
+
+    .efg-icon-btn-accent {
+        @apply relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-[#8A6A1F] transition hover:bg-[#FFF9EA] hover:text-[#0B1F3A];
+    }
+
+    .efg-icon-btn-primary {
+        @apply relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-[#0B1F3A] transition hover:bg-slate-100;
+    }
+
+    .efg-icon-btn-favorite {
+        @apply relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 transition hover:bg-[#C8A24A]/10 hover:text-[#8A6A1F];
+    }
+
+    .efg-icon-btn-favorite-active {
+        @apply relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-[#8A6A1F] transition hover:bg-[#C8A24A]/15;
+    }
+
+    .efg-icon-btn-close {
+        @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-slate-500 transition hover:bg-slate-100 hover:text-[#0B1F3A];
+    }
+
+    .efg-icon-btn-overlay {
+        @apply pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-white/90 transition hover:bg-white/20;
+    }
+
+    .efg-icon-btn-dark {
+        @apply inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-[#C8A24A] transition hover:bg-[#C8A24A] hover:text-[#0B1F3A];
+    }
+
+    .efg-icon-btn-dark-accent {
+        @apply inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-[#C8A24A] transition hover:bg-[#C8A24A] hover:text-[#0B1F3A];
+    }
+
+    .efg-checklist-item {
+        @apply border-b border-slate-200/70 px-6 py-2.5 transition;
+    }
+
+    .efg-checklist-item--odd {
+        @apply bg-slate-50 hover:bg-[#F0E6CC];
+    }
+
+    .efg-checklist-item--even {
+        @apply bg-[#EDE8DC] hover:bg-[#E0D5C0];
+    }
 }
 
 main :where(.rounded-lg.border.shadow-sm:not(.text-white)) {

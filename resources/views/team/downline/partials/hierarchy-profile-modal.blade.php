@@ -19,7 +19,7 @@
             </div>
             <button
                 type="button"
-                class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] hover:text-[#0B1F3A]"
+                class="efg-icon-btn-close"
                 x-on:click="closeProfile()"
                 aria-label="Close summary"
             >
@@ -99,17 +99,17 @@
             <div class="space-y-2">
                 <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <span>Onboarding</span>
-                    <span class="text-[#0B1F3A]" x-text="(selectedProfile?.progress?.onboarding ?? 0) + '%'"></span>
+                    <span class="text-[#0B1F3A]" x-text="progressLabel(selectedProfile?.progress?.onboarding)"></span>
                 </div>
                 <div class="h-2 overflow-hidden rounded-full bg-slate-200">
-                    <div class="h-full rounded-full bg-[#C8A24A]" :style="'width:' + (selectedProfile?.progress?.onboarding ?? 0) + '%'"></div>
+                    <div class="h-full rounded-full bg-[#C8A24A]" :style="'width:' + progressWidth(selectedProfile?.progress?.onboarding) + '%'"></div>
                 </div>
                 <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <span>Licensing</span>
-                    <span class="text-[#0B1F3A]" x-text="(selectedProfile?.progress?.licensing ?? 0) + '%'"></span>
+                    <span class="text-[#0B1F3A]" x-text="progressLabel(selectedProfile?.progress?.licensing)"></span>
                 </div>
                 <div class="h-2 overflow-hidden rounded-full bg-slate-200">
-                    <div class="h-full rounded-full bg-[#C8A24A]" :style="'width:' + (selectedProfile?.progress?.licensing ?? 0) + '%'"></div>
+                    <div class="h-full rounded-full bg-[#C8A24A]" :style="'width:' + progressWidth(selectedProfile?.progress?.licensing) + '%'"></div>
                 </div>
             </div>
 

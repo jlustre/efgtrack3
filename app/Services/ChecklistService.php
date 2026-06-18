@@ -7,7 +7,9 @@ use App\Models\ChecklistProgress;
 use App\Models\ChecklistType;
 use App\Models\MentorAssignment;
 use App\Models\User;
+use App\Models\UserChecklistTypeStart;
 use App\Support\ProfileLocationQuery;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +28,290 @@ class ChecklistService
         }
 
         return $this->typeIdCache[$code];
+    }
+
+    public function defaultStartDateForUser(User $user): CarbonInterface
+    {
+        return ($user->joined_at ?? now())->copy()->startOfDay();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function memberFacingTypeCodes(): array
+    {
+        return ['onboarding', 'licensing', 'fap', 'cfm-training'];
+    }
+
+    public function typeStartRecord(User $user, string $typeCode): ?UserChecklistTypeStart
+    {
+        $typeId = $this->typeId($typeCode);
+
+        if (! $typeId) {
+            return null;
+        }
+
+        return UserChecklistTypeStart::query()
+            ->where('user_id', $user->id)
+            ->where('checklist_type_id', $typeId)
+            ->first();
+    }
+
+    public function hasTypeStarted(User $user, string $typeCode): bool
+    {
+        return $this->typeStartRecord($user, $typeCode) !== null;
+    }
+
+    public function typeStartDate(User $user, string $typeCode): ?CarbonInterface
+    {
+        return $this->typeStartRecord($user, $typeCode)?->started_at?->copy()->startOfDay();
+    }
+
+    public function canStartChecklistTypesFor(User $actor, User $member): bool
+    {
+        if ($actor->hasAnyRole(['super-admin', 'admin', 'agency-owner'])) {
+            return true;
+        }
+
+        return $actor->hasRole('certified-field-mentor')
+            && (int) $member->mentor_id === (int) $actor->id;
+    }
+
+    public function canStartChecklistTypeNow(User $actor, User $member, string $typeCode): bool
+    {
+        if (! $this->canStartChecklistTypesFor($actor, $member)) {
+            return false;
+        }
+
+        if ($this->hasTypeStarted($member, $typeCode)) {
+            return false;
+        }
+
+        if ($this->prerequisiteMet($member, $typeCode)) {
+            return true;
+        }
+
+        return $actor->hasAnyRole(['super-admin', 'admin']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function notStartedViewData(
+        User $actor,
+        User $member,
+        string $typeCode,
+        string $checklistTypeName,
+    ): array {
+        $unmetPrerequisites = $this->prerequisitesForType($typeCode)
+            ->filter(fn (ChecklistType $type) => ! $this->isTypeFullyCompleted($member, $type->code));
+
+        return [
+            'checklistTypeName' => $checklistTypeName,
+            'typeCode' => $typeCode,
+            'member' => $member,
+            'canStartNow' => $this->canStartChecklistTypeNow($actor, $member, $typeCode),
+            'unmetPrerequisites' => $unmetPrerequisites->pluck('name')->all(),
+        ];
+    }
+
+    /**
+     * @return Collection<int, ChecklistType>
+     */
+    public function startableTypesForMember(User $member): Collection
+    {
+        $startedTypeIds = UserChecklistTypeStart::query()
+            ->where('user_id', $member->id)
+            ->pluck('checklist_type_id');
+
+        return ChecklistType::query()
+            ->where('is_active', true)
+            ->whereIn('code', $this->memberFacingTypeCodes())
+            ->when($startedTypeIds->isNotEmpty(), fn (Builder $query) => $query->whereNotIn('id', $startedTypeIds))
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(fn (ChecklistType $type) => $this->prerequisiteMet($member, $type->code))
+            ->values();
+    }
+
+    public function startChecklistType(
+        User $member,
+        string $typeCode,
+        User $startedBy,
+        ?string $startedAt = null,
+    ): UserChecklistTypeStart {
+        if (! $this->canStartChecklistTypesFor($startedBy, $member)) {
+            throw ValidationException::withMessages([
+                'type' => 'You are not allowed to start this checklist for this member.',
+            ]);
+        }
+
+        if ($this->hasTypeStarted($member, $typeCode)) {
+            throw ValidationException::withMessages([
+                'type' => 'This checklist has already been started.',
+            ]);
+        }
+
+        if (! $this->prerequisiteMet($member, $typeCode) && ! $startedBy->hasAnyRole(['super-admin', 'admin'])) {
+            throw ValidationException::withMessages([
+                'type' => 'Prerequisite checklist types must be completed first.',
+            ]);
+        }
+
+        $typeId = $this->typeId($typeCode);
+        abort_unless($typeId, 404);
+
+        return UserChecklistTypeStart::query()->create([
+            'user_id' => $member->id,
+            'checklist_type_id' => $typeId,
+            'started_at' => $startedAt ?? now()->toDateString(),
+            'started_by' => $startedBy->id,
+        ]);
+    }
+
+    /**
+     * @return list<array{
+     *     code: string,
+     *     name: string,
+     *     started: bool,
+     *     started_at: string|null,
+     *     started_by: string|null,
+     *     can_start: bool,
+     *     prerequisites_met: bool
+     * }>
+     */
+    public function checklistTypeManagementPanel(User $member, ?User $actor = null): array
+    {
+        $actor ??= auth()->user();
+        abort_unless($actor instanceof User, 403);
+
+        $started = UserChecklistTypeStart::query()
+            ->where('user_id', $member->id)
+            ->with(['checklistType', 'starter'])
+            ->get()
+            ->keyBy(fn (UserChecklistTypeStart $record) => $record->checklistType?->code);
+
+        return collect($this->memberFacingTypeCodes())
+            ->map(function (string $code) use ($member, $started): array {
+                $type = ChecklistType::query()->where('code', $code)->first();
+                $record = $started->get($code);
+
+                return [
+                    'code' => $code,
+                    'name' => $type?->name ?? str($code)->replace('-', ' ')->title()->toString(),
+                    'started' => $record !== null,
+                    'started_at' => $record?->started_at?->format('M j, Y'),
+                    'started_by' => $record?->starter?->name,
+                    'can_start' => $record === null
+                        && (bool) ($type?->is_active)
+                        && $this->canStartChecklistTypeNow($actor, $member, $code),
+                    'prerequisites_met' => $this->prerequisiteMet($member, $code),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public function expectedDueDate(?int $nthDay, CarbonInterface $startDate): ?CarbonInterface
+    {
+        if ($nthDay === null || $nthDay < 1) {
+            return null;
+        }
+
+        return $startDate->copy()->addDays($nthDay - 1);
+    }
+
+    public function maxCompleteDaysForType(string $typeCode): ?int
+    {
+        $typeId = $this->typeId($typeCode);
+
+        if (! $typeId) {
+            return null;
+        }
+
+        $maxDays = ChecklistType::query()->whereKey($typeId)->value('max_complete_days');
+
+        return $maxDays !== null ? (int) $maxDays : null;
+    }
+
+    public function typeCompletionDueDate(CarbonInterface $startDate, string $typeCode): ?CarbonInterface
+    {
+        return $this->expectedDueDate($this->maxCompleteDaysForType($typeCode), $startDate);
+    }
+
+    public function prerequisiteForType(string $typeCode): ?ChecklistType
+    {
+        return $this->prerequisitesForType($typeCode)->first();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, ChecklistType>
+     */
+    public function prerequisitesForType(string $typeCode): \Illuminate\Support\Collection
+    {
+        $type = ChecklistType::query()
+            ->where('code', $typeCode)
+            ->with('prerequisites')
+            ->first();
+
+        return $type?->prerequisites ?? collect();
+    }
+
+    public function prerequisiteMet(User $user, string $typeCode): bool
+    {
+        $prerequisites = $this->prerequisitesForType($typeCode);
+
+        if ($prerequisites->isEmpty()) {
+            return true;
+        }
+
+        return $prerequisites->every(
+            fn (ChecklistType $prerequisite) => $this->isTypeFullyCompleted($user, $prerequisite->code),
+        );
+    }
+
+    public function isTypeFullyCompleted(User $user, string $typeCode): bool
+    {
+        $country = $user->profile?->country;
+        $groupLabel = $typeCode === 'fap' ? 'Field Apprenticeship Program' : null;
+        $steps = $this->activeSteps(
+            $typeCode,
+            $typeCode === 'onboarding' ? $country : null,
+            $groupLabel,
+        );
+
+        if ($steps->isEmpty()) {
+            return true;
+        }
+
+        $targetSteps = $steps->where('is_required', true);
+
+        if ($targetSteps->isEmpty()) {
+            $targetSteps = $steps;
+        }
+
+        $progress = $this->userProgressFor($user->id, $targetSteps->pluck('id'));
+
+        return $targetSteps->every(
+            fn (Checklist $step) => ($progress->get($step->id)?->status ?? 'not_started') === 'completed',
+        );
+    }
+
+    /**
+     * @param  Collection<int, Checklist>  $steps
+     * @return Collection<int, Checklist>
+     */
+    public function enrichStepsWithSchedule(Collection $steps, ?CarbonInterface $startDate): Collection
+    {
+        if (! $startDate) {
+            return $steps;
+        }
+
+        return $steps->map(function (Checklist $step) use ($startDate): Checklist {
+            $step->expected_due_date = $this->expectedDueDate($step->nth_day, $startDate);
+
+            return $step;
+        });
     }
 
     /**
@@ -265,6 +551,7 @@ class ChecklistService
         $items = $this->activeSteps('cfm-mentoring');
 
         $progressByItem = $this->assignmentProgressFor($assignment->id, $items->pluck('id'));
+        $startDate = ($assignment->started_at ?? $assignment->created_at ?? now())->copy()->startOfDay();
 
         $phases = $items
             ->groupBy('phase_number')
@@ -285,17 +572,20 @@ class ChecklistService
                         : 0,
                     'sections' => $phaseItems
                         ->groupBy('section_title')
-                        ->map(function (Collection $sectionItems) use ($progressByItem) {
+                        ->map(function (Collection $sectionItems) use ($progressByItem, $startDate) {
                             return [
                                 'title' => $sectionItems->first()->section_title,
-                                'items' => $sectionItems->map(function (Checklist $item) use ($progressByItem) {
+                                'items' => $sectionItems->map(function (Checklist $item) use ($progressByItem, $startDate) {
                                     $progress = $progressByItem->get($item->id);
                                     $link = config('fna.checklist_item_links.'.$item->slug);
 
                                     return [
                                         'id' => $item->id,
                                         'title' => $item->title,
+                                        'description' => $item->description,
                                         'slug' => $item->slug,
+                                        'nth_day' => $item->nth_day,
+                                        'expected_due_date' => $this->expectedDueDate($item->nth_day, $startDate),
                                         'is_required' => $item->is_required,
                                         'is_completed' => ($progress?->status ?? 'not_started') === 'completed',
                                         'completed_at' => $progress?->completed_at,

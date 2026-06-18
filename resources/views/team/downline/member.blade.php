@@ -35,6 +35,8 @@
             @endforeach
         </div>
 
+        @include('team.downline.partials.checklist-type-starts')
+
         <div class="grid gap-6 lg:grid-cols-3">
             <div class="rounded-lg border border-slate-400 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-6 shadow-sm lg:col-span-2">
                 <h2 class="text-lg font-semibold text-[#0B1F3A]">Progress Summary</h2>
