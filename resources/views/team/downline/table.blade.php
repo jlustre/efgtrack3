@@ -97,19 +97,19 @@
                                 <td class="px-4 py-3 text-slate-600">{{ $member->sponsor?->name ?? 'None' }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $member->mentor?->name ?? 'Unassigned' }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $member->profile?->country ?? 'Global' }}</td>
-                                <td class="px-4 py-3 text-slate-600">{{ $progress['licensing'] }}%</td>
-                                <td class="px-4 py-3 text-slate-600">{{ $progress['onboarding'] }}%</td>
+                                <td class="px-4 py-3 text-slate-600">{{ \App\Support\ChecklistProgressDisplay::label($progress['licensing']) }}</td>
+                                <td class="px-4 py-3 text-slate-600">{{ \App\Support\ChecklistProgressDisplay::label($progress['onboarding']) }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $progress['training'] }}%</td>
-                                <td class="px-4 py-3 text-slate-600">{{ $progress['apprenticeship'] }}%</td>
+                                <td class="px-4 py-3 text-slate-600">{{ \App\Support\ChecklistProgressDisplay::label($progress['apprenticeship']) }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $member->direct_recruits_count }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $metrics['total_downline'] }}</td>
                                 <td class="px-4 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $member->is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">{{ $member->is_active ? 'Active' : 'Inactive' }}</span></td>
                                 <td class="px-4 py-3 text-slate-600">{{ $member->last_login_at?->diffForHumans() ?? 'No activity' }}</td>
                                 <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
-                                        <a href="{{ route('team.member.profile', $member) }}" title="View member profile" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 hover:border-[#C8A24A] hover:bg-[#FFF9EA]"><span class="sr-only">View member profile</span><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
-                                        <a href="{{ route('team.member.tree', $member) }}" title="View genealogy" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 hover:border-[#C8A24A] hover:bg-[#FFF9EA]"><span class="sr-only">View genealogy</span><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"></path><path d="M5 8h14"></path><path d="M5 16h14"></path></svg></a>
-                                        <a href="{{ route('team.member.org-chart', $member) }}" title="View org branch" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 hover:border-[#C8A24A] hover:bg-[#FFF9EA]"><span class="sr-only">View org branch</span><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6V3"></path><path d="M6 21v-3"></path><path d="M18 21v-3"></path><path d="M6 18h12"></path><path d="M12 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path></svg></a>
+                                        <a href="{{ route('team.member.profile', $member) }}" title="View member profile" class="efg-icon-btn"><span class="sr-only">View member profile</span><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+                                        <a href="{{ route('team.member.tree', $member) }}" title="View genealogy" class="efg-icon-btn"><span class="sr-only">View genealogy</span><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"></path><path d="M5 8h14"></path><path d="M5 16h14"></path></svg></a>
+                                        <a href="{{ route('team.member.org-chart', $member) }}" title="View org branch" class="efg-icon-btn"><span class="sr-only">View org branch</span><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6V3"></path><path d="M6 21v-3"></path><path d="M18 21v-3"></path><path d="M6 18h12"></path><path d="M12 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path></svg></a>
                                     </div>
                                 </td>
                             </tr>

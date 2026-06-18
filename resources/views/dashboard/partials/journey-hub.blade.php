@@ -17,6 +17,7 @@
     </div>
 
     <div class="grid gap-4 md:grid-cols-2">
+        @if ($onboarding['started'] ?? false)
         <x-journey-hub-section
             title="Onboarding & Orientation"
             eyebrow="Getting started"
@@ -38,7 +39,9 @@
                 @endforelse
             </ul>
         </x-journey-hub-section>
+        @endif
 
+        @if ($licensing['started'] ?? false)
         <x-journey-hub-section
             title="Licensing & Compliance"
             eyebrow="Credentials"
@@ -60,7 +63,9 @@
                 @endforelse
             </ul>
         </x-journey-hub-section>
+        @endif
 
+        @if ($fap['started'] ?? false)
         <x-journey-hub-section
             title="Field Apprenticeship Program"
             eyebrow="FAP milestones"
@@ -82,9 +87,10 @@
                 @endforelse
             </ul>
         </x-journey-hub-section>
+        @endif
 
         <x-journey-hub-section
-            title="Training & Assessments"
+            title="Learning & Training"
             eyebrow="Learning"
             :percent="$training['percent'] ?? 0"
             :summary="($training['completed'] ?? 0).' of '.($training['total'] ?? 0).' lessons complete'"

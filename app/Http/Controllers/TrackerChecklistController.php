@@ -60,15 +60,31 @@ class TrackerChecklistController extends Controller
     private function show(Request $request, array $config): View
     {
         $user = $request->user()->loadMissing(['profile', 'sponsor', 'mentor']);
+
+        if (! $this->checklists->hasTypeStarted($user, $config['typeCode'])) {
+            return view('checklists.not-started', $this->checklists->notStartedViewData(
+                $user,
+                $user,
+                $config['typeCode'],
+                $config['checklistTitle'] ?? $config['eyebrow'],
+            ));
+        }
+
         $steps = $this->checklists->activeSteps(
             $config['typeCode'],
             null,
             $config['groupLabel'] ?? null,
         );
+        $typeStartDate = $this->checklists->typeStartDate($user, $config['typeCode']);
+        $typeCompletionDueDate = $typeStartDate
+            ? $this->checklists->typeCompletionDueDate($typeStartDate, $config['typeCode'])
+            : null;
+        $typeMaxCompleteDays = $this->checklists->maxCompleteDaysForType($config['typeCode']);
 
         $progress = $this->checklists->userProgressFor($user->id, $steps->pluck('id'));
 
-        $steps = $steps->map(function ($step) use ($progress, $config) {
+        $steps = $this->checklists->enrichStepsWithSchedule(
+            $steps->map(function ($step) use ($progress, $config) {
             $stepProgress = $progress->get($step->id);
             $step->progress = $stepProgress;
             $step->status = $stepProgress?->status ?? 'not_started';
@@ -79,7 +95,9 @@ class TrackerChecklistController extends Controller
             $step->update_route = $config['updateRoute'];
 
             return $step;
-        });
+            }),
+            $typeStartDate,
+        );
 
         $total = $steps->count();
         $completed = $steps->where('is_completed', true)->count();
@@ -101,6 +119,9 @@ class TrackerChecklistController extends Controller
         return view($config['view'], [
             'user' => $user,
             'steps' => $steps,
+            'typeStartDate' => $typeStartDate,
+            'typeCompletionDueDate' => $typeCompletionDueDate,
+            'typeMaxCompleteDays' => $typeMaxCompleteDays,
             'confirmationItems' => $confirmationItems,
             'stats' => compact(
                 'total',
@@ -122,6 +143,7 @@ class TrackerChecklistController extends Controller
 
     private function update(Request $request, array $config, int $step): RedirectResponse
     {
+        abort_unless($this->checklists->hasTypeStarted($request->user(), $config['typeCode']), 404);
         abort_unless($this->checklists->activeChecklistExists($step), 404);
 
         $completed = $request->boolean('completed');

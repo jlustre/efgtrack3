@@ -18,7 +18,7 @@
             </div>
             <button
                 type="button"
-                class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] hover:text-[#0B1F3A]"
+                class="efg-icon-btn-close"
                 x-on:click="closeModal()"
                 aria-label="Close details"
             >

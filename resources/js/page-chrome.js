@@ -118,12 +118,16 @@ export function initPageChrome() {
 
     showLoading();
 
-    if (document.readyState === 'complete') {
-        hideLoading();
+    const hideWhenReady = () => hideLoading();
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', hideWhenReady, { once: true });
     } else {
-        window.addEventListener('load', hideLoading, { once: true });
-        window.setTimeout(hideLoading, 12000);
+        hideWhenReady();
     }
+
+    window.addEventListener('load', hideWhenReady, { once: true });
+    window.setTimeout(hideWhenReady, 12000);
 
     window.addEventListener('pageshow', (event) => {
         if (event.persisted) {

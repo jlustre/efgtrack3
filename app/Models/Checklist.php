@@ -17,6 +17,7 @@ class Checklist extends Model
         'title',
         'description',
         'sort_order',
+        'nth_day',
         'is_required',
         'responsible_parties',
         'notified_parties',
@@ -36,6 +37,7 @@ class Checklist extends Model
     {
         return [
             'sort_order' => 'integer',
+            'nth_day' => 'integer',
             'is_required' => 'boolean',
             'is_active' => 'boolean',
             'phase_number' => 'integer',

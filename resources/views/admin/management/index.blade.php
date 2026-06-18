@@ -129,7 +129,7 @@
                     <button
                         type="button"
                         x-on:click="closeManage()"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-[#0B1F3A]"
+                        class="efg-icon-btn-close"
                         aria-label="Close manage modal"
                     >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

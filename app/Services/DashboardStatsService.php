@@ -290,7 +290,11 @@ class DashboardStatsService
 
         }
 
+        if (! $this->checklists->hasTypeStarted($user, 'onboarding')) {
 
+            return false;
+
+        }
 
         return $this->onboardingPercent($user) < 100;
 
@@ -312,7 +316,11 @@ class DashboardStatsService
 
         }
 
+        if (! $this->checklists->hasTypeStarted($user, 'licensing')) {
 
+            return false;
+
+        }
 
         return $this->licensingPercent($user) < 100;
 
@@ -330,7 +338,11 @@ class DashboardStatsService
 
         }
 
+        if (! $this->checklists->hasTypeStarted($user, 'fap')) {
 
+            return false;
+
+        }
 
         return $this->apprenticeshipPercent($user) < 100;
 
@@ -348,7 +360,11 @@ class DashboardStatsService
 
         }
 
+        if (! $this->checklists->hasTypeStarted($user, 'cfm-training')) {
 
+            return false;
+
+        }
 
         return $this->trainingPercent($user) < 100;
 
@@ -412,6 +428,12 @@ class DashboardStatsService
 
     {
 
+        if (! $this->checklists->hasTypeStarted($user, 'onboarding')) {
+
+            return 0;
+
+        }
+
         $steps = Checklist::query()
             ->forTypeCode('onboarding')
             ->applicableToCountry($user->profile?->country)
@@ -431,6 +453,12 @@ class DashboardStatsService
 
     {
 
+        if (! $this->checklists->hasTypeStarted($user, 'licensing')) {
+
+            return 0;
+
+        }
+
         $stepIds = Checklist::query()
             ->forTypeCode('licensing')
             ->where('is_active', true)
@@ -446,6 +474,12 @@ class DashboardStatsService
     public function apprenticeshipPercent(User $user): int
 
     {
+
+        if (! $this->checklists->hasTypeStarted($user, 'fap')) {
+
+            return 0;
+
+        }
 
         $stepIds = Checklist::query()
             ->forTypeCode('fap')

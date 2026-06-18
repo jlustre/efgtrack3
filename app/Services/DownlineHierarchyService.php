@@ -166,11 +166,24 @@ class DownlineHierarchyService
     public function progressSummary(User $member): array
     {
         return [
-            'licensing' => $this->checklistTypePercent('licensing', $member->id),
-            'onboarding' => $this->checklistTypePercent('onboarding', $member->id),
+            'licensing' => $this->checklistTypeProgressEntry($member, 'licensing'),
+            'onboarding' => $this->checklistTypeProgressEntry($member, 'onboarding'),
             'training' => $this->percentComplete('training_progress', $member->id),
-            'apprenticeship' => $this->checklistTypePercent('fap', $member->id),
+            'apprenticeship' => $this->checklistTypeProgressEntry($member, 'fap'),
             'rank' => $this->percentComplete('user_rank_progress', $member->id),
+        ];
+    }
+
+    /**
+     * @return array{started: bool, percent: int}
+     */
+    private function checklistTypeProgressEntry(User $member, string $typeCode): array
+    {
+        $started = $this->checklists->hasTypeStarted($member, $typeCode);
+
+        return [
+            'started' => $started,
+            'percent' => $started ? $this->checklistTypePercent($typeCode, $member->id) : 0,
         ];
     }
 

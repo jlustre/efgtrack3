@@ -39,12 +39,17 @@
         @endif
 
         @php
-            $contentSource = old('content_source');
-            if ($contentSource === null) {
-                $hasUploadedPdf = filled($record->file_path)
-                    && ! str_starts_with((string) $record->file_path, 'http')
-                    && blank(strip_tags((string) ($record->content ?? '')));
-                $contentSource = $hasUploadedPdf ? 'upload' : 'compose';
+            $contentSource = 'compose';
+
+            if ($resource === 'resources') {
+                $contentSource = old('content_source');
+
+                if ($contentSource === null) {
+                    $hasUploadedPdf = filled(data_get($record, 'file_path'))
+                        && ! str_starts_with((string) data_get($record, 'file_path'), 'http')
+                        && blank(strip_tags((string) (data_get($record, 'content') ?? '')));
+                    $contentSource = $hasUploadedPdf ? 'upload' : 'compose';
+                }
             }
         @endphp
 

@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
         GoalBadgeSeeder::class,
         NotificationConfigSeeder::class,
         ResourceDocumentSeeder::class,
+        TrainingAcademySeeder::class,
     ];
 
     /**

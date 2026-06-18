@@ -68,7 +68,7 @@
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $pipelineSummary->sum('prospect_count') }}</span>
                         <a href="{{ route('team.prospects.pipeline') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Open Board</a>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Pipeline Summary</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -111,7 +111,7 @@
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $followUpsTable->count() }}</span>
                         <a href="{{ route('team.prospects.follow-ups') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">View All</a>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Follow-Up Center</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -375,7 +375,7 @@
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $hotProspects->count() }}</span>
                         <a href="{{ route('team.prospects.pipeline') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Pipeline</a>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Hot Prospects</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -432,7 +432,7 @@
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $appointmentsTable->count() }}</span>
                         <a href="{{ route('team.prospects.appointments') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Calendar</a>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Appointment Calendar</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -484,7 +484,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Reports Snapshot</h2>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $stats['converted'] }}</span>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Reports Snapshot</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -545,7 +545,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Communication Timeline</h2>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $recentCommunications->count() }}</span>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Communication Timeline</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -603,7 +603,7 @@
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Recently Contacted</h2>
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $recentlyContactedProspects->count() }}</span>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Recently Contacted</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -659,7 +659,7 @@
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $sharedWithMe->count() }}</span>
                         <a href="{{ route('team.prospects.shared-with-me') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Open</a>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Shared With Me</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -709,7 +709,7 @@
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $sharedByMe->count() }}</span>
                         <a href="{{ route('team.prospects.shared-by-me') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Manage</a>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Shared By Me</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
@@ -759,7 +759,7 @@
                     <div class="flex items-center gap-3">
                         <span class="absolute right-[10px] top-[10px] rounded-full border border-[#C8A24A] bg-[#FFF4CF] px-2.5 py-1 text-xs font-bold text-[#0B1F3A]">{{ $importsTable->count() }}</span>
                         <a href="{{ route('team.prospects.import') }}" class="text-sm font-semibold text-[#8A6A1F] hover:text-[#0B1F3A]">Import</a>
-                        <button type="button" x-on:click="expanded = ! expanded" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-[#0B1F3A] shadow-sm transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">
+                        <button type="button" x-on:click="expanded = ! expanded" class="efg-icon-btn">
                             <span class="sr-only">Toggle Import And Duplicates</span>
                             <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />

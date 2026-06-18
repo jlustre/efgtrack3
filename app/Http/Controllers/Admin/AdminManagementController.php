@@ -99,8 +99,9 @@ class AdminManagementController extends Controller
         $trashed = $request->string('trashed')->toString();
         $category = $request->string('category')->toString();
         $checklistType = $request->string('checklist_type')->toString();
+        $active = $request->string('active')->toString();
 
-        $checklistTypes = $resource === 'checklists'
+        $checklistTypes = in_array($resource, ['checklists', 'checklist-types'], true)
             ? ChecklistType::query()
                 ->whereNull('deleted_at')
                 ->orderBy('sort_order')
@@ -129,9 +130,21 @@ class AdminManagementController extends Controller
                     }
                 });
             })
+            ->when(
+                $active === '1' && $this->hasColumn($config['table'], 'is_active'),
+                fn ($query) => $query->where('is_active', true),
+            )
+            ->when(
+                $active === '0' && $this->hasColumn($config['table'], 'is_active'),
+                fn ($query) => $query->where('is_active', false),
+            )
             ->orderBy($config['order_by'] ?? 'id')
-            ->paginate(12)
+            ->paginate($resource === 'checklists' ? 25 : 12)
             ->withQueryString();
+
+        if ($resource === 'checklist-types') {
+            $this->enrichChecklistTypeRecords($records);
+        }
 
         $favoriteResourceIds = [];
         $favoriteRecords = collect();
@@ -160,7 +173,9 @@ class AdminManagementController extends Controller
                 'trashed' => $trashed,
                 'category' => $category,
                 'checklist_type' => $checklistType,
+                'active' => $active,
             ],
+            'indexQueryParams' => $this->resourceIndexQueryParams($request, $resource),
             'checklistTypes' => $checklistTypes,
             'embedded' => $request->boolean('embedded'),
             'canManage' => $this->canManageResource($resource),
@@ -192,6 +207,10 @@ class AdminManagementController extends Controller
 
         $validated = $this->validatedData($request, $config);
 
+        if ($resource === 'checklist-types') {
+            $validated = $this->normalizeChecklistTypeData($validated);
+        }
+
         if (array_key_exists('slug', $validated) && blank($validated['slug']) && isset($validated['name'])) {
             $validated['slug'] = Str::slug($validated['name']);
         }
@@ -204,6 +223,13 @@ class AdminManagementController extends Controller
         $validated['updated_at'] = now();
 
         $id = DB::table($config['table'])->insertGetId($validated);
+
+        if ($resource === 'checklist-types') {
+            $this->syncChecklistTypePrerequisites(
+                $id,
+                $this->validatedChecklistTypePrerequisites($request),
+            );
+        }
 
         $pdfStatus = $this->syncResourceDocumentFile($request, $resource, $id, (bool) $request->boolean('generate_pdf'));
         $this->syncDocumentLinks($resource, $id);
@@ -235,6 +261,10 @@ class AdminManagementController extends Controller
 
         $row = DB::table($config['table'])->where('id', $record)->firstOrFail();
 
+        if ($resource === 'checklist-types') {
+            $row->prerequisite_checklist_type_ids = $this->checklistTypePrerequisiteIds($record);
+        }
+
         return view('admin.management.edit', [
             'resource' => $resource,
             'config' => $config,
@@ -258,6 +288,10 @@ class AdminManagementController extends Controller
 
         $validated = $this->validatedData($request, $config, $record);
 
+        if ($resource === 'checklist-types') {
+            $validated = $this->normalizeChecklistTypeData($validated);
+        }
+
         if (array_key_exists('slug', $validated) && blank($validated['slug']) && isset($validated['name'])) {
             $validated['slug'] = Str::slug($validated['name']);
         }
@@ -265,6 +299,13 @@ class AdminManagementController extends Controller
         $validated['updated_at'] = now();
 
         DB::table($config['table'])->where('id', $record)->update($validated);
+
+        if ($resource === 'checklist-types') {
+            $this->syncChecklistTypePrerequisites(
+                $record,
+                $this->validatedChecklistTypePrerequisites($request, $record),
+            );
+        }
 
         $pdfStatus = $this->syncResourceDocumentFile(
             $request,
@@ -341,7 +382,7 @@ class AdminManagementController extends Controller
             ->with('status', $status);
     }
 
-    public function toggleStatus(string $resource, int $record): RedirectResponse
+    public function toggleStatus(Request $request, string $resource, int $record): RedirectResponse
     {
         $config = $this->resourceConfig($resource);
         abort_unless($this->canManageResource($resource), 403);
@@ -355,7 +396,7 @@ class AdminManagementController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.management.resource.index', [$resource, 'trashed' => request('trashed')])
+            ->route('admin.management.resource.index', array_merge([$resource], $this->resourceIndexQueryParams($request, $resource)))
             ->with('status', (bool) $row->is_active ? 'record-deactivated' : 'record-activated');
     }
 
@@ -367,15 +408,11 @@ class AdminManagementController extends Controller
         match ($resource) {
             'email-templates' => File::put($this->seederPath($resource), $this->buildEmailTemplateSeeder()),
             'checklists' => $this->writeChecklistSeeders($request),
+            'checklist-types' => File::put($this->seederPath($resource), $this->buildChecklistTypeSeeder()),
         };
 
         return redirect()
-            ->route('admin.management.resource.index', array_filter([
-                $resource,
-                'search' => $request->string('search')->toString() ?: null,
-                'trashed' => $request->string('trashed')->toString() ?: null,
-                'checklist_type' => $request->string('checklist_type')->toString() ?: null,
-            ]))
+            ->route('admin.management.resource.index', array_merge([$resource], $this->resourceIndexQueryParams($request, $resource)))
             ->with('status', 'seeder-updated');
     }
 
@@ -416,6 +453,10 @@ class AdminManagementController extends Controller
         $rules = [];
 
         foreach ($config['fields'] as $field) {
+            if ($field['virtual'] ?? false) {
+                continue;
+            }
+
             $fieldRules = $field['rules'];
 
             if (($field['unique'] ?? false) === true) {
@@ -426,6 +467,111 @@ class AdminManagementController extends Controller
         }
 
         return $request->validate($rules);
+    }
+
+    private function normalizeChecklistTypeData(array $validated): array
+    {
+        if (array_key_exists('max_complete_days', $validated)) {
+            $validated['max_complete_days'] = filled($validated['max_complete_days'])
+                ? (int) $validated['max_complete_days']
+                : null;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function validatedChecklistTypePrerequisites(Request $request, ?int $recordId = null): array
+    {
+        $validated = $request->validate([
+            'prerequisite_checklist_type_ids' => ['nullable', 'array'],
+            'prerequisite_checklist_type_ids.*' => ['integer', 'distinct', 'exists:checklist_types,id'],
+        ]);
+
+        $ids = collect($validated['prerequisite_checklist_type_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($recordId && $ids->contains($recordId)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'prerequisite_checklist_type_ids' => 'A checklist type cannot be its own prerequisite.',
+            ]);
+        }
+
+        return $ids->all();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function checklistTypePrerequisiteIds(int $checklistTypeId): array
+    {
+        return DB::table('checklist_type_prerequisites')
+            ->where('checklist_type_id', $checklistTypeId)
+            ->orderBy('prerequisite_checklist_type_id')
+            ->pluck('prerequisite_checklist_type_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $prerequisiteIds
+     */
+    private function syncChecklistTypePrerequisites(int $checklistTypeId, array $prerequisiteIds): void
+    {
+        DB::table('checklist_type_prerequisites')
+            ->where('checklist_type_id', $checklistTypeId)
+            ->delete();
+
+        foreach (array_unique($prerequisiteIds) as $prerequisiteId) {
+            if ($prerequisiteId === $checklistTypeId) {
+                continue;
+            }
+
+            DB::table('checklist_type_prerequisites')->insert([
+                'checklist_type_id' => $checklistTypeId,
+                'prerequisite_checklist_type_id' => $prerequisiteId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function enrichChecklistTypeRecords(LengthAwarePaginator $records): void
+    {
+        $typeIds = $records->getCollection()->pluck('id');
+
+        if ($typeIds->isEmpty()) {
+            return;
+        }
+
+        $prerequisitesByType = DB::table('checklist_type_prerequisites')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklist_type_prerequisites.prerequisite_checklist_type_id')
+            ->whereIn('checklist_type_prerequisites.checklist_type_id', $typeIds)
+            ->whereNull('checklist_types.deleted_at')
+            ->orderBy('checklist_types.sort_order')
+            ->orderBy('checklist_types.name')
+            ->get([
+                'checklist_type_prerequisites.checklist_type_id',
+                'checklist_types.name',
+            ])
+            ->groupBy('checklist_type_id');
+
+        $records->setCollection(
+            $records->getCollection()->map(function ($record) use ($prerequisitesByType) {
+                $names = $prerequisitesByType
+                    ->get($record->id, collect())
+                    ->pluck('name')
+                    ->values();
+
+                $record->prerequisites_label = $names->isNotEmpty() ? $names->join(', ') : null;
+
+                return $record;
+            }),
+        );
     }
 
     private function syncResourceDocumentFile(Request $request, string $resource, int $recordId, bool $forceGenerate): ?string
@@ -492,9 +638,6 @@ class AdminManagementController extends Controller
         return $resources[$resource];
     }
 
-    /**
-     * @return array{record_count: int, archived_count: int}
-     */
     private function resourceCounts(array $config, string $key): array
     {
         $table = $config['table'];
@@ -523,6 +666,36 @@ class AdminManagementController extends Controller
             'record_count' => $recordCount,
             'archived_count' => $archivedCount,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resourceIndexQueryParams(Request $request, string $resource): array
+    {
+        $params = array_filter([
+            'search' => $request->string('search')->toString() ?: null,
+            'trashed' => $request->string('trashed')->toString() ?: null,
+            'active' => $request->string('active')->toString() !== '' ? $request->string('active')->toString() : null,
+            'embedded' => $request->boolean('embedded') ? '1' : null,
+            'page' => $request->input('page'),
+        ], fn ($value) => $value !== null && $value !== '');
+
+        if ($resource === 'resources') {
+            $category = $request->string('category')->toString();
+            if ($category !== '') {
+                $params['category'] = $category;
+            }
+        }
+
+        if ($resource === 'checklists') {
+            $checklistType = $request->string('checklist_type')->toString();
+            if ($checklistType !== '') {
+                $params['checklist_type'] = $checklistType;
+            }
+        }
+
+        return $params;
     }
 
     private function resourceCategoryFor(string $key): string
@@ -636,7 +809,7 @@ class AdminManagementController extends Controller
 
     private function isSeederUpdatableResource(string $resource): bool
     {
-        return in_array($resource, ['email-templates', 'checklists'], true);
+        return in_array($resource, ['email-templates', 'checklists', 'checklist-types'], true);
     }
 
     private function canUpdateSeeder(string $resource): bool
@@ -645,7 +818,7 @@ class AdminManagementController extends Controller
             return false;
         }
 
-        if ($resource === 'checklists') {
+        if (in_array($resource, ['checklists', 'checklist-types'], true)) {
             return auth()->user()->hasAnyRole(['super-admin', 'admin']);
         }
 
@@ -666,6 +839,7 @@ class AdminManagementController extends Controller
         return match ($resource) {
             'email-templates' => database_path('seeders/EmailTemplateSeeder.php'),
             'checklists' => database_path('seeders/ChecklistSeeder.php'),
+            'checklist-types' => database_path('seeders/ChecklistTypeSeeder.php'),
         };
     }
 
@@ -693,6 +867,7 @@ class AdminManagementController extends Controller
                 'checklists.title',
                 'checklists.description',
                 'checklists.sort_order',
+                'checklists.nth_day',
                 'checklists.is_required',
                 'checklists.responsible_parties',
                 'checklists.notified_parties',
@@ -853,6 +1028,7 @@ PHP;
                 'title' => $item->title,
                 'description' => $item->description,
                 'sort_order' => (int) $item->sort_order,
+                'nth_day' => $item->nth_day !== null ? (int) $item->nth_day : null,
                 'is_required' => (bool) $item->is_required,
             ];
 
@@ -887,6 +1063,7 @@ PHP;
             'onboarding' => <<<'ATTR'
                 'description' => $step['description'],
                 'sort_order' => $step['sort_order'],
+                'nth_day' => $step['nth_day'],
                 'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
                 'notified_parties' => $notifiedParties[$step['title']] ?? null,
                 'is_required' => $step['is_required'],
@@ -895,6 +1072,7 @@ ATTR,
             'fap' => <<<'ATTR'
                 'description' => $step['description'],
                 'sort_order' => $step['sort_order'],
+                'nth_day' => $step['nth_day'],
                 'group_label' => $groupLabel,
                 'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
                 'notified_parties' => $notifiedParties[$step['title']] ?? null,
@@ -903,6 +1081,7 @@ ATTR,
             default => <<<'ATTR'
                 'description' => $step['description'],
                 'sort_order' => $step['sort_order'],
+                'nth_day' => $step['nth_day'],
                 'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
                 'notified_parties' => $notifiedParties[$step['title']] ?? null,
                 'is_required' => $step['is_required'],
@@ -975,6 +1154,83 @@ class EmailTemplateSeeder extends Seeder
 PHP;
     }
 
+    private function buildChecklistTypeSeeder(): string
+    {
+        $types = DB::table('checklist_types')
+            ->whereNull('deleted_at')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['id', 'code', 'name', 'description', 'icon', 'sort_order', 'max_complete_days', 'is_active']);
+
+        $prerequisiteCodesByType = DB::table('checklist_type_prerequisites')
+            ->join('checklist_types as checklist_types', 'checklist_types.id', '=', 'checklist_type_prerequisites.checklist_type_id')
+            ->join('checklist_types as prerequisites', 'prerequisites.id', '=', 'checklist_type_prerequisites.prerequisite_checklist_type_id')
+            ->whereNull('checklist_types.deleted_at')
+            ->orderBy('prerequisites.sort_order')
+            ->orderBy('prerequisites.name')
+            ->get([
+                'checklist_types.code as type_code',
+                'prerequisites.code as prerequisite_code',
+            ])
+            ->groupBy('type_code')
+            ->map(fn (\Illuminate\Support\Collection $rows) => $rows->pluck('prerequisite_code')->values()->all());
+
+        $exportedTypes = $this->exportPhpArray(
+            $types->map(fn ($type) => [
+                'code' => $type->code,
+                'name' => $type->name,
+                'description' => $type->description,
+                'icon' => $type->icon,
+                'sort_order' => (int) $type->sort_order,
+                'max_complete_days' => $type->max_complete_days !== null ? (int) $type->max_complete_days : null,
+                'prerequisite_codes' => $prerequisiteCodesByType->get($type->code, []),
+                'is_active' => (bool) $type->is_active,
+            ])->all(),
+            2,
+        );
+
+        return <<<PHP
+<?php
+
+namespace Database\\Seeders;
+
+use App\\Models\\ChecklistType;
+use Illuminate\\Database\\Seeder;
+
+class ChecklistTypeSeeder extends Seeder
+{
+    public function run(): void
+    {
+        \$types = {$exportedTypes};
+
+        foreach (\$types as \$type) {
+            \$checklistType = ChecklistType::query()->updateOrCreate(
+                ['code' => \$type['code']],
+                [
+                    'name' => \$type['name'],
+                    'description' => \$type['description'],
+                    'icon' => \$type['icon'],
+                    'sort_order' => \$type['sort_order'],
+                    'max_complete_days' => \$type['max_complete_days'],
+                    'is_active' => \$type['is_active'],
+                ],
+            );
+
+            \$prerequisiteIds = collect(\$type['prerequisite_codes'] ?? [])
+                ->map(fn (string \$code) => ChecklistType::query()->where('code', \$code)->value('id'))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            \$checklistType->prerequisites()->sync(\$prerequisiteIds);
+        }
+    }
+}
+
+PHP;
+    }
+
     private function exportPhpArray(array $value, int $indent = 0): string
     {
         $export = var_export($value, true);
@@ -1025,7 +1281,7 @@ PHP;
             $options['ranks'] = DB::table('ranks')->whereNull('deleted_at')->orderBy('sort_order')->get(['id', 'code', 'name']);
         }
 
-        if ($needs('checklist_type')) {
+        if ($needs('checklist_type', 'checklist_types')) {
             $options['checklist_types'] = ChecklistType::query()
                 ->whereNull('deleted_at')
                 ->orderBy('sort_order')
@@ -1092,12 +1348,13 @@ PHP;
                 'use_inline_modals' => false,
                 'order_by' => 'sort_order',
                 'search' => ['title', 'description', 'slug', 'group_label', 'country', 'section_title', 'phase_title'],
-                'columns' => ['checklist_type_id', 'title', 'group_label', 'sort_order', 'is_required', 'is_active'],
+                'columns' => ['checklist_type_id', 'title', 'sort_order', 'nth_day', 'is_required'],
                 'fields' => [
                     ['name' => 'checklist_type_id', 'label' => 'Checklist Type', 'type' => 'checklist_type', 'rules' => ['required', 'integer', 'exists:checklist_types,id']],
                     ['name' => 'title', 'label' => 'Title', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
                     ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
                     ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'nth_day', 'label' => 'Nth Day', 'type' => 'number', 'help' => 'Expected completion day from the member start date for this checklist type (Day 1 = start date).', 'rules' => ['nullable', 'integer', 'min:1', 'max:3650']],
                     ['name' => 'is_required', 'label' => 'Required', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
                     ['name' => 'responsible_parties', 'label' => 'Responsible Parties', 'type' => 'responsible_parties', 'rules' => ['nullable', 'string', 'max:255']],
                     ['name' => 'notified_parties', 'label' => 'Notified Parties', 'type' => 'notified_parties', 'rules' => ['nullable', 'string', 'max:255']],
@@ -1117,15 +1374,18 @@ PHP;
                 'table' => 'checklist_types',
                 'label' => 'Checklist Types',
                 'description' => 'Manage checklist categories such as onboarding, licensing, FAP, CFM training, and mentoring.',
+                'use_inline_modals' => false,
                 'order_by' => 'sort_order',
                 'search' => ['code', 'name', 'description'],
-                'columns' => ['code', 'name', 'sort_order', 'is_active'],
+                'columns' => ['code', 'name', 'sort_order', 'max_complete_days', 'prerequisites_label'],
                 'fields' => [
                     ['name' => 'code', 'label' => 'Code', 'type' => 'text', 'help' => 'Stable identifier used in code (lowercase, hyphens).', 'rules' => ['required', 'string', 'max:50'], 'unique' => true],
                     ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
                     ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
                     ['name' => 'icon', 'label' => 'Icon', 'type' => 'text', 'help' => 'Optional icon key for UI display.', 'rules' => ['nullable', 'string', 'max:100']],
                     ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'max_complete_days', 'label' => 'Max Complete Days', 'type' => 'number', 'help' => 'Maximum days from the member start date to complete this checklist type (Day 1 = start date).', 'rules' => ['nullable', 'integer', 'min:1', 'max:3650']],
+                    ['name' => 'prerequisite_checklist_type_ids', 'label' => 'Prerequisites', 'type' => 'checklist_types', 'virtual' => true, 'help' => 'Checklist types that must be completed before this one can be started. Hold Ctrl or Cmd to select multiple.', 'rules' => []],
                     ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
                 ],
             ],

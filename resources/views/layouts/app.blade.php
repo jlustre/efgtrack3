@@ -101,7 +101,7 @@
                             @auth
                                 <a
                                     href="{{ route('tasks.index') }}"
-                                    class="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#C8A24A] hover:text-[#0B1F3A]"
+                                    class="efg-icon-btn-lg relative"
                                     title="{{ $openTaskCount > 0 ? $openTaskCount.' open tasks' : 'My Tasks' }}"
                                 >
                                     <span class="sr-only">Open my tasks</span>
@@ -118,7 +118,7 @@
 
                                 <x-dropdown align="right" width="80" contentClasses="bg-white p-0">
                                     <x-slot name="trigger">
-                                        <button type="button" title="{{ $topbarUnreadNotificationCount > 0 ? $topbarUnreadNotificationCount.' unread notifications' : 'Notifications' }}" class="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#C8A24A] hover:text-[#0B1F3A]">
+                                        <button type="button" title="{{ $topbarUnreadNotificationCount > 0 ? $topbarUnreadNotificationCount.' unread notifications' : 'Notifications' }}" class="efg-icon-btn-lg relative">
                                             <span class="sr-only">Open notifications</span>
                                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
@@ -153,7 +153,7 @@
                                                         @unless ($notification->read())
                                                             <form method="POST" action="{{ route('notifications.mark-read', $notification->id) }}">
                                                                 @csrf
-                                                                <button type="submit" title="Mark as read" class="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA] hover:text-[#0B1F3A]">
+                                                                <button type="submit" title="Mark as read" class="efg-icon-btn mt-0.5">
                                                                     <span class="sr-only">Mark as read</span>
                                                                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                                         <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.25 7.32a1 1 0 0 1-1.42.002L3.29 9.776a1 1 0 1 1 1.334-1.49l4.04 3.617 6.62-6.688a1 1 0 0 1 1.414-.006Z" clip-rule="evenodd" />

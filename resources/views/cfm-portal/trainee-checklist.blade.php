@@ -76,6 +76,7 @@
         </div>
 
         <div class="space-y-4">
+            @php($checklistRow = 0)
             @foreach ($phases as $phase)
                 <div
                     x-data="{ open: {{ $phase['percent'] < 100 ? 'true' : 'false' }} }"
@@ -115,9 +116,14 @@
                                 <div class="bg-slate-50 px-6 py-3">
                                     <h3 class="text-sm font-semibold text-[#8A6A1F]">{{ $section['title'] }}</h3>
                                 </div>
-                                <div class="divide-y divide-slate-200">
+                                <div>
                                     @foreach ($section['items'] as $item)
-                                        <div class="grid gap-4 px-6 py-4 lg:grid-cols-[auto_1fr_auto] lg:items-start">
+                                        @php($checklistRow++)
+                                        <div @class([
+                                            'efg-checklist-item grid gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-start',
+                                            'efg-checklist-item--odd' => $checklistRow % 2 === 1,
+                                            'efg-checklist-item--even' => $checklistRow % 2 === 0,
+                                        ])>
                                             <form
                                                 method="POST"
                                                 action="{{ route('cfm.portal.trainees.checklist.update', [$assignment, $item['id']]) }}"
@@ -142,8 +148,17 @@
                                                     <p class="font-medium {{ $item['is_completed'] ? 'text-slate-400 line-through' : 'text-[#0B1F3A]' }}">
                                                         {{ $item['title'] }}
                                                     </p>
+                                                    @if (! empty($item['description']))
+                                                        <x-checklist-description-help :text="$item['description']" />
+                                                    @endif
                                                     @if ($item['is_required'])
                                                         <span class="rounded-full bg-[#FFF9EA] px-2 py-0.5 text-xs font-bold text-[#8A6A1F]">Required</span>
+                                                    @endif
+                                                    @if (! empty($item['nth_day']))
+                                                        <span class="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">Day {{ $item['nth_day'] }}</span>
+                                                    @endif
+                                                    @if (! empty($item['expected_due_date']))
+                                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Due {{ $item['expected_due_date']->format('M j, Y') }}</span>
                                                     @endif
                                                 </div>
                                                 @if ($item['notes'])

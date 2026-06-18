@@ -161,6 +161,76 @@ class AdminManagementTest extends TestCase
         $this->assertNull(DB::table('checklists')->where('id', $stepId)->value('deleted_at'));
     }
 
+    public function test_deactivated_checklist_remains_visible_and_can_be_reactivated_from_index(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(ChecklistTypeSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $typeId = DB::table('checklist_types')->where('code', 'onboarding')->value('id');
+
+        DB::table('checklists')->insert([
+            'checklist_type_id' => $typeId,
+            'title' => 'Reactivation Test Step',
+            'description' => 'Should stay visible after deactivation.',
+            'sort_order' => 9999,
+            'is_required' => true,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $stepId = DB::table('checklists')->where('title', 'Reactivation Test Step')->value('id');
+
+        $this->actingAs($admin)
+            ->patch(route('admin.management.status', [
+                'checklists',
+                $stepId,
+                'search' => 'Reactivation Test',
+            ]))
+            ->assertRedirect(route('admin.management.resource.index', [
+                'checklists',
+                'search' => 'Reactivation Test',
+            ]));
+
+        $this->assertFalse((bool) DB::table('checklists')->where('id', $stepId)->value('is_active'));
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.resource.index', [
+                'checklists',
+                'search' => 'Reactivation Test',
+            ]))
+            ->assertOk()
+            ->assertSee('Reactivation Test Step')
+            ->assertSee('Inactive')
+            ->assertSee('Activate');
+
+        $this->actingAs($admin)
+            ->patch(route('admin.management.status', [
+                'checklists',
+                $stepId,
+                'search' => 'Reactivation Test',
+            ]))
+            ->assertRedirect(route('admin.management.resource.index', [
+                'checklists',
+                'search' => 'Reactivation Test',
+            ]));
+
+        $this->assertTrue((bool) DB::table('checklists')->where('id', $stepId)->value('is_active'));
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.resource.index', [
+                'checklists',
+                'search' => 'Reactivation Test',
+                'active' => '1',
+            ]))
+            ->assertOk()
+            ->assertSee('Reactivation Test Step')
+            ->assertSee('Active');
+    }
+
     public function test_agency_owner_can_manage_checklists_but_not_other_setup_tables(): void
     {
         $this->seed(RolePermissionSeeder::class);

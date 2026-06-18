@@ -42,6 +42,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Member Profile',
             'description' => 'Add contact details, location, phone number, time zone, EFG Associate ID, and basic profile information.',
             'sort_order' => 10,
+            'nth_day' => 1,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -50,6 +51,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Confirm Sponsor And Team Placement',
             'description' => 'Verify the sponsoring member, inherited team, starting FA rank, and first point of contact.',
             'sort_order' => 20,
+            'nth_day' => 2,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -58,6 +60,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Watch EFGTrack Welcome Orientation',
             'description' => 'Review the portal purpose, dashboard, trackers, resources, communications, and team visibility areas.',
             'sort_order' => 30,
+            'nth_day' => 3,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -66,6 +69,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Join Primary Team Communication Channels',
             'description' => 'Join the team chat, announcement channel, email list, calendar, and recurring Zoom meeting links.',
             'sort_order' => 40,
+            'nth_day' => 4,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -74,6 +78,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Schedule Sponsor Welcome Call',
             'description' => 'Book the first welcome call with the sponsor to review expectations, goals, availability, and next steps.',
             'sort_order' => 50,
+            'nth_day' => 5,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -82,6 +87,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Receive Certified Field Mentor Assignment',
             'description' => 'Confirm the assigned Certified Field Mentor who will guide the Field Apprenticeship Program.',
             'sort_order' => 60,
+            'nth_day' => 6,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -90,6 +96,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Business Standards Review',
             'description' => 'Review conduct expectations, client-first standards, compliance awareness, and professional communication guidelines.',
             'sort_order' => 70,
+            'nth_day' => 7,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -98,6 +105,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Review Licensing Roadmap',
             'description' => 'Understand licensing requirements, province or state expectations, study timeline, exam steps, and submission workflow.',
             'sort_order' => 80,
+            'nth_day' => 8,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -106,6 +114,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Start Licensing Tracker',
             'description' => 'Open the licensing tracker, review required steps, and update the initial licensing status.',
             'sort_order' => 90,
+            'nth_day' => 9,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -114,6 +123,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Starter Training Module',
             'description' => 'Finish the first training module covering Experior basics, field expectations, products, and client conversations.',
             'sort_order' => 100,
+            'nth_day' => 10,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -122,6 +132,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Review Resource Library',
             'description' => 'Open Documents, Videos, Recorded Webinars, and Zoom Links to understand where key support materials live.',
             'sort_order' => 110,
+            'nth_day' => 11,
             'is_required' => false,
             'country' => NULL,
           ],
@@ -130,6 +141,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Begin Field Apprenticeship Program',
             'description' => 'Meet with the assigned CFM and review apprenticeship steps, mentor sessions, expectations, and approval workflow.',
             'sort_order' => 120,
+            'nth_day' => 12,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -138,6 +150,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Set First 30-Day Activity Goals',
             'description' => 'Define initial prospecting, training, licensing, mentorship, and team meeting goals with the sponsor or leader.',
             'sort_order' => 130,
+            'nth_day' => 13,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -146,6 +159,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Review Rank Advancement Path',
             'description' => 'Review FA through EP rank path, rank requirements, recognition milestones, and leadership development expectations.',
             'sort_order' => 140,
+            'nth_day' => 14,
             'is_required' => false,
             'country' => NULL,
           ],
@@ -154,6 +168,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Attend First Team Event Or Training',
             'description' => 'Attend a live team event, webinar, huddle, or training session and record any follow-up tasks.',
             'sort_order' => 150,
+            'nth_day' => 15,
             'is_required' => true,
             'country' => NULL,
           ],
@@ -162,6 +177,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Canada: Review Provincial Licensing Path',
             'description' => 'Confirm the applicable provincial licensing path, LLQP study expectations, provincial regulator, and exam scheduling requirements.',
             'sort_order' => 160,
+            'nth_day' => 16,
             'is_required' => true,
             'country' => 'Canada',
           ],
@@ -170,6 +186,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'United States: Review State Licensing Path',
             'description' => 'Confirm the applicable state licensing path, pre-licensing education requirements, state exam process, and carrier appointment expectations.',
             'sort_order' => 170,
+            'nth_day' => 17,
             'is_required' => true,
             'country' => 'United States',
           ],
@@ -178,6 +195,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Philippines: Confirm Local Business Readiness',
             'description' => 'Review local market expectations, team communication rhythm, client conversation standards, and country-specific resource links.',
             'sort_order' => 180,
+            'nth_day' => 18,
             'is_required' => true,
             'country' => 'Philippines',
           ],
@@ -186,6 +204,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Mexico: Confirm Local Business Readiness',
             'description' => 'Review local market expectations, team communication rhythm, client conversation standards, and country-specific resource links.',
             'sort_order' => 190,
+            'nth_day' => 19,
             'is_required' => true,
             'country' => 'Mexico',
           ],
@@ -239,6 +258,7 @@ class ChecklistSeeder extends Seeder
             $this->upsertItem('onboarding', $step['title'], [
                 'description' => $step['description'],
                 'sort_order' => $step['sort_order'],
+                'nth_day' => $step['nth_day'],
                 'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
                 'notified_parties' => $notifiedParties[$step['title']] ?? null,
                 'is_required' => $step['is_required'],
@@ -255,6 +275,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Confirm Licensing Jurisdiction',
             'description' => 'Confirm the country, province, state, or territory where the associate will begin licensing.',
             'sort_order' => 10,
+            'nth_day' => 1,
             'is_required' => true,
           ],
           1 => 
@@ -262,6 +283,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Review Licensing Requirements',
             'description' => 'Review regulator requirements, pre-licensing education, exam expectations, timelines, fees, and required documents.',
             'sort_order' => 20,
+            'nth_day' => 2,
             'is_required' => true,
           ],
           2 => 
@@ -269,6 +291,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Create Licensing Study Plan',
             'description' => 'Set study schedule, exam target date, weekly accountability rhythm, and support contact.',
             'sort_order' => 30,
+            'nth_day' => 3,
             'is_required' => true,
           ],
           3 => 
@@ -276,6 +299,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Enroll In Required Licensing Course',
             'description' => 'Enroll in the required licensing course or approved education provider for the selected jurisdiction.',
             'sort_order' => 40,
+            'nth_day' => 4,
             'is_required' => true,
           ],
           4 => 
@@ -283,6 +307,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Pre-Licensing Education',
             'description' => 'Complete required coursework, practice modules, quizzes, and provider completion requirements.',
             'sort_order' => 50,
+            'nth_day' => 5,
             'is_required' => true,
           ],
           5 => 
@@ -290,6 +315,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Submit Exam Registration',
             'description' => 'Register for the licensing exam and confirm the exam date, time, location, or online exam details.',
             'sort_order' => 60,
+            'nth_day' => 6,
             'is_required' => true,
           ],
           6 => 
@@ -297,6 +323,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Exam Prep Review',
             'description' => 'Complete final practice exams, weak-area review, and mentor check-in before the licensing exam.',
             'sort_order' => 70,
+            'nth_day' => 7,
             'is_required' => true,
           ],
           7 => 
@@ -304,6 +331,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Pass Licensing Exam',
             'description' => 'Record successful exam completion and upload or note proof of passing when available.',
             'sort_order' => 80,
+            'nth_day' => 8,
             'is_required' => true,
           ],
           8 => 
@@ -311,6 +339,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Submit License Application',
             'description' => 'Submit the license application, required forms, fees, disclosures, and supporting documents.',
             'sort_order' => 90,
+            'nth_day' => 9,
             'is_required' => true,
           ],
           9 => 
@@ -318,6 +347,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Background Or Compliance Requirements',
             'description' => 'Complete any background check, compliance questionnaire, E&O, or jurisdiction-specific suitability requirement.',
             'sort_order' => 100,
+            'nth_day' => 10,
             'is_required' => true,
           ],
           10 => 
@@ -325,6 +355,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Receive License Approval',
             'description' => 'Confirm license approval and record license number or approval confirmation in the member profile.',
             'sort_order' => 110,
+            'nth_day' => 11,
             'is_required' => true,
           ],
           11 => 
@@ -332,6 +363,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Carrier Or Product Appointment Steps',
             'description' => 'Complete required appointment, contracting, product training, or access setup steps before field activity.',
             'sort_order' => 120,
+            'nth_day' => 12,
             'is_required' => false,
           ],
           12 => 
@@ -339,6 +371,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Notify Sponsor And CFM Of Licensing Status',
             'description' => 'Notify the sponsor and assigned CFM that licensing status has changed and update the next field activity plan.',
             'sort_order' => 130,
+            'nth_day' => 13,
             'is_required' => true,
           ],
         ];
@@ -379,6 +412,7 @@ class ChecklistSeeder extends Seeder
             $this->upsertItem('licensing', $step['title'], [
                 'description' => $step['description'],
                 'sort_order' => $step['sort_order'],
+                'nth_day' => $step['nth_day'],
                 'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
                 'notified_parties' => $notifiedParties[$step['title']] ?? null,
                 'is_required' => $step['is_required'],
@@ -396,6 +430,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'FAP Orientation With Sponsor And CFM',
             'description' => 'Review the purpose of FAP, expected timeline, meeting cadence, apprentice responsibilities, and approval requirements.',
             'sort_order' => 10,
+            'nth_day' => 1,
             'is_required' => true,
           ],
           1 => 
@@ -403,6 +438,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Field Readiness Review',
             'description' => 'Confirm professional profile, communication standards, calendar availability, technology setup, and readiness for supervised field activity.',
             'sort_order' => 20,
+            'nth_day' => 2,
             'is_required' => true,
           ],
           2 => 
@@ -410,6 +446,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Observe First Client Conversation',
             'description' => 'Attend or observe a qualified client conversation led by the sponsor or CFM and record learning notes.',
             'sort_order' => 30,
+            'nth_day' => 3,
             'is_required' => true,
           ],
           3 => 
@@ -417,6 +454,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Practice Needs Analysis Conversation',
             'description' => 'Role-play the discovery and needs analysis conversation with the CFM or sponsor.',
             'sort_order' => 40,
+            'nth_day' => 4,
             'is_required' => true,
           ],
           4 => 
@@ -424,6 +462,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Review Product And Solution Positioning',
             'description' => 'Review core solution categories, suitability mindset, client-first language, and when to escalate questions.',
             'sort_order' => 50,
+            'nth_day' => 5,
             'is_required' => true,
           ],
           5 => 
@@ -431,6 +470,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Compliance And Documentation Walkthrough',
             'description' => 'Review documentation expectations, disclosure standards, privacy awareness, and compliant follow-up practices.',
             'sort_order' => 60,
+            'nth_day' => 6,
             'is_required' => true,
           ],
           6 => 
@@ -438,6 +478,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Attend Team Training Or Field Huddle',
             'description' => 'Attend a live team training, huddle, or webinar and capture action items.',
             'sort_order' => 70,
+            'nth_day' => 7,
             'is_required' => true,
           ],
           7 => 
@@ -445,6 +486,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Prepare First Prospect List',
             'description' => 'Build an initial prospect list, segment warm market contacts, and review outreach language with mentor support.',
             'sort_order' => 80,
+            'nth_day' => 8,
             'is_required' => true,
           ],
           8 => 
@@ -452,6 +494,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Supervised Outreach Session',
             'description' => 'Complete an outreach or appointment-setting session with sponsor or CFM coaching.',
             'sort_order' => 90,
+            'nth_day' => 9,
             'is_required' => true,
           ],
           9 => 
@@ -459,6 +502,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Co-Host A Client Appointment',
             'description' => 'Participate in a client appointment with the CFM or sponsor and complete a post-meeting debrief.',
             'sort_order' => 100,
+            'nth_day' => 10,
             'is_required' => true,
           ],
           10 => 
@@ -466,6 +510,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Complete Follow-Up And Service Review',
             'description' => 'Practice post-meeting follow-up, client service expectations, next-step communication, and CRM or tracking updates.',
             'sort_order' => 110,
+            'nth_day' => 11,
             'is_required' => true,
           ],
           11 => 
@@ -473,6 +518,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Review Licensing And Field Activity Alignment',
             'description' => 'Confirm what field activities are appropriate based on the apprentice licensing status and local requirements.',
             'sort_order' => 120,
+            'nth_day' => 12,
             'is_required' => true,
           ],
           12 => 
@@ -480,6 +526,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Submit FAP Completion Review',
             'description' => 'Submit completion notes for CFM and agency owner review, including readiness, strengths, and development needs.',
             'sort_order' => 130,
+            'nth_day' => 13,
             'is_required' => true,
           ],
           13 => 
@@ -487,6 +534,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Receive FAP Approval',
             'description' => 'Agency owner or authorized reviewer approves completion and confirms next growth path.',
             'sort_order' => 140,
+            'nth_day' => 14,
             'is_required' => true,
           ],
         ];
@@ -529,6 +577,7 @@ class ChecklistSeeder extends Seeder
             $this->upsertItem('fap', $step['title'], [
                 'description' => $step['description'],
                 'sort_order' => $step['sort_order'],
+                'nth_day' => $step['nth_day'],
                 'group_label' => $groupLabel,
                 'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
                 'notified_parties' => $notifiedParties[$step['title']] ?? null,
@@ -545,6 +594,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'CFM Role And Responsibility Orientation',
             'description' => 'Understand the Certified Field Mentor role, apprentice expectations, boundaries, reporting cadence, and leadership responsibilities.',
             'sort_order' => 10,
+            'nth_day' => 1,
             'is_required' => true,
           ],
           1 => 
@@ -552,6 +602,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Mentorship Standards And Ethics',
             'description' => 'Review professional standards, confidentiality, compliant communication, client-first conduct, and escalation expectations.',
             'sort_order' => 20,
+            'nth_day' => 2,
             'is_required' => true,
           ],
           2 => 
@@ -559,6 +610,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'FAP Coaching Framework',
             'description' => 'Learn how to guide apprentices through Field Apprenticeship Program milestones with structured coaching and documentation.',
             'sort_order' => 30,
+            'nth_day' => 3,
             'is_required' => true,
           ],
           3 => 
@@ -566,6 +618,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Apprentice Readiness Assessment',
             'description' => 'Learn how to evaluate apprentice readiness, identify development gaps, and recommend next actions.',
             'sort_order' => 40,
+            'nth_day' => 4,
             'is_required' => true,
           ],
           4 => 
@@ -573,6 +626,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Mentor Session Planning',
             'description' => 'Build effective mentor session agendas, follow-up rhythm, accountability actions, and milestone reviews.',
             'sort_order' => 50,
+            'nth_day' => 5,
             'is_required' => true,
           ],
           5 => 
@@ -580,6 +634,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Field Observation And Debriefing',
             'description' => 'Practice observing field activity, giving feedback, debriefing client appointments, and reinforcing best practices.',
             'sort_order' => 60,
+            'nth_day' => 6,
             'is_required' => true,
           ],
           6 => 
@@ -587,6 +642,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Licensing And Activity Boundaries',
             'description' => 'Understand how licensing status affects apprentice activities and when to involve sponsor, agency owner, or compliance support.',
             'sort_order' => 70,
+            'nth_day' => 7,
             'is_required' => true,
           ],
           7 => 
@@ -594,6 +650,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Mentor Notes And Progress Documentation',
             'description' => 'Learn standards for mentor notes, progress updates, approval recommendations, and privacy-conscious documentation.',
             'sort_order' => 80,
+            'nth_day' => 8,
             'is_required' => true,
           ],
           8 => 
@@ -601,6 +658,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Conflict Resolution And Escalation',
             'description' => 'Handle missed commitments, performance concerns, conduct issues, and escalation paths with professionalism.',
             'sort_order' => 90,
+            'nth_day' => 9,
             'is_required' => true,
           ],
           9 => 
@@ -608,6 +666,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'CFM Certification Review',
             'description' => 'Complete final review and confirm readiness to request Certified Field Mentor approval.',
             'sort_order' => 100,
+            'nth_day' => 10,
             'is_required' => true,
           ],
           10 => 
@@ -615,6 +674,7 @@ class ChecklistSeeder extends Seeder
             'title' => 'Leadership Development Bonus Module',
             'description' => 'Optional leadership material for mentors preparing to support larger teams and future trainers.',
             'sort_order' => 110,
+            'nth_day' => 11,
             'is_required' => false,
           ],
         ];
@@ -651,6 +711,7 @@ class ChecklistSeeder extends Seeder
             $this->upsertItem('cfm-training', $step['title'], [
                 'description' => $step['description'],
                 'sort_order' => $step['sort_order'],
+                'nth_day' => $step['nth_day'],
                 'responsible_parties' => $responsibleParties[$step['title']] ?? 'Self',
                 'notified_parties' => $notifiedParties[$step['title']] ?? null,
                 'is_required' => $step['is_required'],

@@ -21,7 +21,7 @@
             @if ($canManage)
                 <div class="flex shrink-0 flex-nowrap items-center gap-2">
                     <a href="{{ route('admin.management.create', $resource) }}" class="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#D8B75F]">
-                        {{ $canUpdateSeeder ? 'Add Item' : 'Add Record' }}
+                        {{ ($canUpdateSeeder && $resource === 'checklists') ? 'Add Item' : 'Add Record' }}
                     </a>
                     @if ($canUpdateSeeder)
                         <form method="POST" class="inline-flex" action="{{ route('admin.management.update-seeder', array_filter([
@@ -29,6 +29,7 @@
                             'search' => $filters['search'] ?? null,
                             'trashed' => $filters['trashed'] ?? null,
                             'checklist_type' => $filters['checklist_type'] ?? null,
+                            'active' => $filters['active'] ?? null,
                         ])) }}">
                             @csrf
                             <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md border border-[#C8A24A] bg-white px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-[#C8A24A]/10">
@@ -63,10 +64,8 @@
         @endif
 
         <form method="GET" @class([
-            'grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm',
+            'flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm lg:flex-nowrap',
             'shrink-0' => ($embedded ?? false),
-            'md:grid-cols-[1fr_auto_auto_auto]' => in_array($resource, ['resources', 'checklists'], true),
-            'md:grid-cols-[1fr_auto_auto]' => ! in_array($resource, ['resources', 'checklists'], true),
         ])>
             @if ($embedded ?? false)
                 <input type="hidden" name="embedded" value="1">
@@ -75,10 +74,10 @@
                 name="search"
                 value="{{ $filters['search'] }}"
                 placeholder="Search {{ strtolower($config['label']) }}"
-                class="rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+                class="min-w-[10rem] flex-1 basis-48 rounded-md border-slate-300 py-1.5 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
             >
             @if ($resource === 'resources')
-                <select name="category" class="rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                <select name="category" class="shrink-0 rounded-md border-slate-300 py-1.5 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                     <option value="" @selected(($filters['category'] ?? '') === '')>All categories</option>
                     @foreach (\App\Support\ResourceDocumentCategories::optionsForSelect() as $categoryKey => $categoryLabel)
                         <option value="{{ $categoryKey }}" @selected(($filters['category'] ?? '') === $categoryKey)>{{ $categoryLabel }}</option>
@@ -86,19 +85,26 @@
                 </select>
             @endif
             @if ($resource === 'checklists')
-                <select name="checklist_type" class="rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
-                    <option value="" @selected(($filters['checklist_type'] ?? '') === '')>All checklist types</option>
+                <select name="checklist_type" class="shrink-0 rounded-md border-slate-300 py-1.5 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                    <option value="" @selected(($filters['checklist_type'] ?? '') === '')>All types</option>
                     @foreach ($checklistTypes as $type)
                         <option value="{{ $type->id }}" @selected((string) ($filters['checklist_type'] ?? '') === (string) $type->id)>{{ $type->name }}</option>
                     @endforeach
                 </select>
             @endif
-            <select name="trashed" class="rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
-                <option value="" @selected($filters['trashed'] === '')>Active records</option>
-                <option value="with" @selected($filters['trashed'] === 'with')>Active and archived</option>
+            @if (collect($config['fields'])->contains(fn ($field) => $field['name'] === 'is_active'))
+                <select name="active" class="shrink-0 rounded-md border-slate-300 py-1.5 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                    <option value="" @selected(($filters['active'] ?? '') === '')>All statuses</option>
+                    <option value="1" @selected(($filters['active'] ?? '') === '1')>Active</option>
+                    <option value="0" @selected(($filters['active'] ?? '') === '0')>Inactive</option>
+                </select>
+            @endif
+            <select name="trashed" class="shrink-0 rounded-md border-slate-300 py-1.5 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                <option value="" @selected($filters['trashed'] === '')>Not archived</option>
+                <option value="with" @selected($filters['trashed'] === 'with')>With archived</option>
                 <option value="only" @selected($filters['trashed'] === 'only')>Archived only</option>
             </select>
-            <button class="rounded-md bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#13345f]">Filter</button>
+            <button class="shrink-0 rounded-md bg-[#0B1F3A] px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-[#13345f]">Filter</button>
         </form>
 
         @if ($resource === 'resources')
@@ -151,7 +157,7 @@
                                                     href="{{ route('admin.management.edit', ['resources', $favorite->id]) }}"
                                                     title="Edit"
                                                     aria-label="Edit record"
-                                                    class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                                    class="group efg-icon-btn"
                                                 >
                                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                         <path d="M12 20h9" />
@@ -191,15 +197,16 @@
                     <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                         <tr>
                             @foreach ($config['columns'] as $column)
-                                <th class="px-4 py-3">{{ str($column)->replace('_', ' ')->title() }}</th>
+                                <th class="px-4 py-3">{{ $column === 'prerequisites_label' ? 'Prerequisites' : str($column)->replace('_', ' ')->title() }}</th>
                             @endforeach
                             <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3 text-right">Actions</th>
+                            <th class="px-2 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($records as $record)
                             @php($isUploadedPdf = ($resource === 'resources') ? \App\Models\PortalResource::isUploadedPdfAttributes($record->file_path ?? null, $record->file_format ?? null, $record->content ?? null) : false)
+                            @php($isRecordActive = (int) ($record->is_active ?? 0) === 1)
                             <tr @if ($useInlineModals) x-data="{ viewOpen: false, editOpen: false }" @endif>
                                 @foreach ($config['columns'] as $column)
                                     @php($value = data_get($record, $column))
@@ -216,17 +223,12 @@
                                             <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                                                 {{ $checklistTypes->firstWhere('id', $value)?->name ?? 'N/A' }}
                                             </span>
+                                        @elseif ($column === 'prerequisites_label')
+                                            <span class="line-clamp-2">{{ $value ?: '—' }}</span>
                                         @elseif ($column === 'title' && filled(data_get($record, 'description')))
                                             <span class="flex min-w-0 items-center gap-1.5">
                                                 <span class="line-clamp-2">{{ $value ?: 'N/A' }}</span>
-                                                <span class="group relative inline-flex shrink-0">
-                                                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#C8A24A]/40 bg-[#C8A24A]/10 text-xs font-bold text-[#8A6A1F]">
-                                                        ?
-                                                    </span>
-                                                    <span class="pointer-events-none absolute left-1/2 top-7 z-20 w-72 -translate-x-1/2 rounded-md bg-[#0B1F3A] px-3 py-2 text-xs font-medium leading-5 text-white opacity-0 shadow-lg transition group-hover:opacity-100">
-                                                        {{ data_get($record, 'description') }}
-                                                    </span>
-                                                </span>
+                                                <x-checklist-description-help :text="data_get($record, 'description')" />
                                             </span>
                                         @else
                                             <span class="line-clamp-2">{{ $value ?: 'N/A' }}</span>
@@ -237,13 +239,13 @@
                                     <span class="rounded-full {{
                                         $record->deleted_at
                                             ? 'bg-amber-50 text-amber-700'
-                                            : (($hasActiveColumn && ! (bool) $record->is_active) ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700')
+                                            : (($hasActiveColumn && ! $isRecordActive) ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700')
                                     }} px-2 py-1 text-xs font-semibold">
-                                        {{ $record->deleted_at ? 'Archived' : (($hasActiveColumn && ! (bool) $record->is_active) ? 'Inactive' : 'Active') }}
+                                        {{ $record->deleted_at ? 'Archived' : (($hasActiveColumn && ! $isRecordActive) ? 'Inactive' : 'Active') }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex justify-end gap-1.5">
+                                <td class="px-2 py-3">
+                                    <div class="flex justify-end gap-0.5">
                                         @if ($resource === 'resources' && ($record->type ?? 'document') === 'document')
                                             @include('admin.management.partials.resource-favorite-button', [
                                                 'recordId' => $record->id,
@@ -257,7 +259,7 @@
                                                 @if ($useInlineModals) x-on:click.prevent="viewOpen = true" @endif
                                                 title="View"
                                                 aria-label="View record"
-                                                class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                                class="group efg-icon-btn"
                                             >
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
@@ -274,7 +276,7 @@
                                                 rel="noopener noreferrer"
                                                 title="View PDF"
                                                 aria-label="View PDF"
-                                                class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition hover:border-red-300 hover:bg-red-100 hover:text-red-800"
+                                                class="group efg-icon-btn-danger"
                                             >
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
@@ -293,7 +295,7 @@
                                                 rel="noopener noreferrer"
                                                 title="View PDF"
                                                 aria-label="View PDF"
-                                                class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition hover:border-red-300 hover:bg-red-100 hover:text-red-800"
+                                                class="group efg-icon-btn-danger"
                                             >
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
@@ -314,7 +316,7 @@
                                                     @if ($useInlineModals) x-on:click.prevent="editOpen = true" @endif
                                                     title="Edit"
                                                     aria-label="Edit record"
-                                                    class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[#C8A24A] hover:bg-[#C8A24A]/10 hover:text-[#0B1F3A]"
+                                                    class="group efg-icon-btn"
                                                 >
                                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                         <path d="M12 20h9" />
@@ -328,7 +330,7 @@
                                                     type="button"
                                                     title="Read only"
                                                     aria-label="Cannot edit record you do not own"
-                                                    class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 transition hover:bg-amber-100"
+                                                    class="group efg-icon-btn-warning"
                                                     x-on:click="alert('You can only update documents that you created. Contact an administrator if this record needs changes.')"
                                                 >
                                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -341,16 +343,16 @@
                                                 </button>
                                             @endif
                                             @if ($hasActiveColumn && ! $record->deleted_at)
-                                                <form method="POST" action="{{ route('admin.management.status', [$resource, $record->id, 'trashed' => $filters['trashed']]) }}">
+                                                <form method="POST" action="{{ route('admin.management.status', array_merge([$resource, $record->id], $indexQueryParams ?? [])) }}">
                                                     @csrf
                                                     @method('PATCH')
-                                                    @php($statusLabel = (bool) $record->is_active ? 'Deactivate' : 'Activate')
+                                                    @php($statusLabel = $isRecordActive ? 'Deactivate' : 'Activate')
                                                     <button
                                                         title="{{ $statusLabel }}"
                                                         aria-label="{{ $statusLabel }} record"
-                                                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border {{ (bool) $record->is_active ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' }} transition"
+                                                        class="group {{ $isRecordActive ? 'efg-icon-btn-warning' : 'efg-icon-btn-success' }}"
                                                     >
-                                                        @if ((bool) $record->is_active)
+                                                        @if ($isRecordActive)
                                                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                                 <circle cx="12" cy="12" r="10" />
                                                                 <path d="m4.9 4.9 14.2 14.2" />
@@ -373,7 +375,7 @@
                                                     <button
                                                         title="Restore"
                                                         aria-label="Restore record"
-                                                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
+                                                        class="group efg-icon-btn-success"
                                                     >
                                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <path d="M3 12a9 9 0 1 0 3-6.7" />
@@ -392,7 +394,7 @@
                                                     <button
                                                         title="Archive"
                                                         aria-label="Archive record"
-                                                        class="group relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-[#0B1F3A]"
+                                                        class="group efg-icon-btn"
                                                     >
                                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <rect x="3" y="4" width="18" height="4" rx="1" />
@@ -426,7 +428,7 @@
                                                     <p class="text-xs font-semibold uppercase tracking-wide text-[#C8A24A]">View Record</p>
                                                     <h2 id="view-record-title-{{ $record->id }}" class="mt-1 text-xl font-semibold text-[#0B1F3A]">{{ data_get($record, 'title') ?? data_get($record, 'name') ?? data_get($record, 'code') ?? 'Record Details' }}</h2>
                                                 </div>
-                                                <button type="button" x-on:click="viewOpen = false" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-[#0B1F3A]" aria-label="Close view modal">
+                                                <button type="button" x-on:click="viewOpen = false" class="efg-icon-btn-close" aria-label="Close view modal">
                                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                         <path d="M18 6 6 18" />
                                                         <path d="m6 6 12 12" />
@@ -482,7 +484,7 @@
                                                         <p class="text-xs font-semibold uppercase tracking-wide text-[#C8A24A]">Edit Record</p>
                                                         <h2 id="edit-record-title-{{ $record->id }}" class="mt-1 text-xl font-semibold text-[#0B1F3A]">{{ data_get($record, 'title') ?? data_get($record, 'name') ?? data_get($record, 'code') ?? 'Record Details' }}</h2>
                                                     </div>
-                                                    <button type="button" x-on:click="editOpen = false" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-[#0B1F3A]" aria-label="Close edit modal">
+                                                    <button type="button" x-on:click="editOpen = false" class="efg-icon-btn-close" aria-label="Close edit modal">
                                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                             <path d="M18 6 6 18" />
                                                             <path d="m6 6 12 12" />

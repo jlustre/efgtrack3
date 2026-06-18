@@ -1,3 +1,19 @@
+function progressLabel(entry) {
+    if (entry && typeof entry === 'object') {
+        return entry.started ? `${entry.percent ?? 0}%` : 'Not started';
+    }
+
+    return `${entry ?? 0}%`;
+}
+
+function progressWidth(entry) {
+    if (entry && typeof entry === 'object') {
+        return entry.started ? (entry.percent ?? 0) : 0;
+    }
+
+    return entry ?? 0;
+}
+
 export default function orgChartBoard(leaders = [], leaderExpandedDefaults = {}, rootProfile = null) {
     const filterFields = [
         { key: 'rank', label: 'Rank', allLabel: 'All ranks', dynamic: true },
@@ -40,6 +56,9 @@ export default function orgChartBoard(leaders = [], leaderExpandedDefaults = {},
         rootProfile,
         profileModalOpen: false,
         selectedProfile: null,
+
+        progressLabel,
+        progressWidth,
 
         get dynamicFilterOptions() {
             const options = {};

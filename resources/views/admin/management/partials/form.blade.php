@@ -187,6 +187,27 @@
             </select>
         @endif
 
+        @if ($type === 'checklist_types')
+            @php
+                $selectedIds = collect(old($field['name'], data_get($record, $field['name']) ?? []))
+                    ->map(fn ($id) => (string) $id);
+            @endphp
+            <select
+                id="{{ $fieldId }}"
+                name="{{ $field['name'] }}[]"
+                multiple
+                size="7"
+                class="mt-2 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+            >
+                @foreach ($options['checklist_types'] as $option)
+                    @if (($resource ?? null) === 'checklist-types' && (string) ($record->id ?? '') === (string) $option->id)
+                        @continue
+                    @endif
+                    <option value="{{ $option->id }}" @selected($selectedIds->contains((string) $option->id))>{{ $option->name }}</option>
+                @endforeach
+            </select>
+        @endif
+
         @if (in_array($type, $relationshipSelectTypes, true))
             @php
                 $optionKey = match ($type) {
@@ -210,8 +231,8 @@
                 name="{{ $field['name'] }}"
                 class="mt-2 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
             >
-                @if ($type === 'training_module_optional')
-                    <option value="">No module selected</option>
+                @if ($type === 'training_module_optional' || (($field['optional'] ?? false) && $type === 'checklist_type'))
+                    <option value="">None</option>
                 @endif
                 @foreach ($options[$optionKey] as $option)
                     @php($label = $option->name ?? $option->title ?? $option->question ?? trim(($option->code ?? '').' '.($option->name ?? '')))
@@ -230,7 +251,7 @@
             >
         @endif
 
-        @if (! in_array($type, array_merge(['textarea', 'rich_text', 'json', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url'], $relationshipSelectTypes), true))
+        @if (! in_array($type, array_merge(['textarea', 'rich_text', 'json', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url', 'checklist_types'], $relationshipSelectTypes), true))
             <input
                 id="{{ $fieldId }}"
                 name="{{ $field['name'] }}"
@@ -241,6 +262,9 @@
         @endif
 
         @error($field['name'])
+            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+        @error($field['name'].'.*')
             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
         @enderror
     </div>

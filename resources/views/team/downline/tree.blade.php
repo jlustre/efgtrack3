@@ -81,7 +81,7 @@
                     type="button"
                     x-on:click="zoomIn()"
                     title="Zoom in"
-                    class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#8A6A1F] bg-[#C8A24A] text-lg font-bold leading-none text-[#0B1F3A] shadow-md transition hover:border-[#C8A24A] hover:bg-[#FFF4CF]"
+                    class="efg-icon-btn-accent text-lg font-bold leading-none"
                 >
                     <span class="sr-only">Zoom in</span>
                     <span aria-hidden="true">+</span>
@@ -90,7 +90,7 @@
                     type="button"
                     x-on:click="zoomOut()"
                     title="Zoom out"
-                    class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#8A6A1F] bg-[#C8A24A] text-lg font-bold leading-none text-[#0B1F3A] shadow-md transition hover:border-[#C8A24A] hover:bg-[#FFF4CF]"
+                    class="efg-icon-btn-accent text-lg font-bold leading-none"
                 >
                     <span class="sr-only">Zoom out</span>
                     <span aria-hidden="true">−</span>
