@@ -48,7 +48,7 @@ class NewMemberRegistrationWorkflowTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('profile.edit', ['open_invitations' => 1]));
 
         $invitation = RegistrationInvitation::query()
             ->where('sponsor_id', $member->id)
@@ -115,8 +115,7 @@ class NewMemberRegistrationWorkflowTest extends TestCase
             && str_contains($mail->customSubject, 'joined')
             && str_contains($mail->emailBody, $sponsor->name));
         Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo($agencyOwner->email)
-            && str_contains($mail->customSubject, 'New recruit')
-            && str_contains($mail->emailBody, $agencyOwner->name));
+            && str_contains($mail->customSubject, 'New Associate'));
     }
 
     public function test_registration_creates_cfm_assignment_notifications_for_sponsor_and_agency_owner(): void
@@ -214,6 +213,38 @@ class NewMemberRegistrationWorkflowTest extends TestCase
 
         Notification::assertSentToTimes($agencyOwner, AssignCfmReminderNotification::class, 1);
         Notification::assertNotSentTo($agencyOwner, RecommendCfmReminderNotification::class);
+    }
+
+    public function test_sponsor_who_is_agency_owner_receives_agency_owner_welcome_email(): void
+    {
+        Mail::fake();
+
+        $agencyOwner = User::factory()->create([
+            'name' => 'Agency Owner Sponsor',
+            'email' => 'ao-sponsor@example.com',
+        ]);
+        $agencyOwner->assignRole('agency-owner');
+
+        $team = Team::create([
+            'owner_id' => $agencyOwner->id,
+            'leader_id' => $agencyOwner->id,
+            'name' => 'Owner Team',
+            'is_active' => true,
+        ]);
+        $agencyOwner->forceFill(['team_id' => $team->id])->save();
+
+        $invitation = RegistrationInvitation::factory()->for($agencyOwner, 'sponsor')->create([
+            'code' => 'OWNERINVITE2',
+        ]);
+
+        $this->post('/register', $this->registrationPayload($invitation, email: 'owner.recruit2@example.com', associateId: 'EFG-OWNER-2'));
+
+        Mail::assertSent(TemplatedMail::class, 3);
+        Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('owner.recruit2@example.com'));
+        Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('ao-sponsor@example.com')
+            && str_contains($mail->customSubject, 'joined'));
+        Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('ao-sponsor@example.com')
+            && str_contains($mail->customSubject, 'New Associate'));
     }
 
     /**

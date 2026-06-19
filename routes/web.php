@@ -21,6 +21,7 @@ use App\Http\Controllers\ProspectActivityController;
 use App\Http\Controllers\ProspectManagementController;
 use App\Http\Controllers\ResourceDocumentsController;
 use App\Http\Controllers\ResourceLinksController;
+use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TrackerChecklistController;
 use App\Http\Controllers\TrainingController;
@@ -133,6 +134,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::view('/rank-advancement', 'rank-advancement.index')->name('rank-advancement.index');
     Route::get('/team', [DownlineController::class, 'index'])->middleware('permission:view own team')->name('team.index');
     Route::get('/team/tree', [DownlineController::class, 'tree'])->middleware('permission:view team tree')->name('team.tree');
+    Route::get('/team/tree/search', [DownlineController::class, 'treeSearch'])->middleware('permission:view team tree')->name('team.tree.search');
     Route::get('/team/org-chart', [DownlineController::class, 'orgChart'])->middleware('permission:view org chart')->name('team.org-chart');
     Route::get('/team/table', [DownlineController::class, 'table'])->middleware('permission:view team table')->name('team.table');
     Route::get('/team/hierarchy', [DownlineController::class, 'hierarchyTable'])->middleware('permission:view team tree')->name('team.hierarchy');
@@ -246,8 +248,35 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
 
+    Route::prefix('support')->name('support.')->group(function (): void {
+        Route::get('/', [SupportController::class, 'index'])
+            ->middleware('permission:submit support ticket')
+            ->name('index');
+        Route::get('/documentation/{guide}', [SupportController::class, 'documentation'])
+            ->middleware('permission:submit support ticket')
+            ->name('documentation');
+        Route::get('/tickets/{ticket}', function (\App\Models\SupportTicket $ticket) {
+            abort_unless(auth()->user()?->can('view', $ticket), 403);
+
+            return view('support.show', ['ticket' => $ticket]);
+        })
+            ->middleware('permission:view own support tickets')
+            ->name('show');
+    });
+
+    Route::prefix('admin/support')
+        ->name('admin.support.')
+        ->middleware('permission:view all support tickets')
+        ->group(function (): void {
+            Route::view('/', 'admin.support.index')->name('index');
+            Route::view('/wishlist', 'admin.support.wishlist')
+                ->middleware('permission:manage enhancement wishlist')
+                ->name('wishlist');
+        });
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/licenses', [ProfileController::class, 'updateInsuranceLicenses'])->name('profile.licenses.update');
     Route::patch('/profile/invite-link', [ProfileController::class, 'updateInviteLink'])->name('profile.invite-link.update');
     Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
     Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
@@ -269,7 +298,6 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
                 Route::patch('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
                 Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
                 Route::patch('/users/{user}/restore', [UserManagementController::class, 'restore'])->name('users.restore');
-                Route::post('/users/{user}/hire', [UserManagementController::class, 'hire'])->name('users.hire');
             });
             Route::middleware('role:super-admin|admin|agency-owner|team-leader|certified-field-mentor|trainer')->prefix('management')->name('management.')->group(function () {
                 Route::get('/', [AdminManagementController::class, 'index'])->name('index');

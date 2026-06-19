@@ -90,6 +90,19 @@ class RolePermissionSeeder extends Seeder
             'manage goals',
             'view team goals',
             'coach goals',
+            'submit support ticket',
+            'view own support tickets',
+            'comment on own ticket',
+            'reopen own ticket',
+            'vote on wishlist items',
+            'view all support tickets',
+            'manage support tickets',
+            'assign support tickets',
+            'update support ticket status',
+            'add internal support notes',
+            'manage enhancement wishlist',
+            'manage support settings',
+            'view support reports',
         ];
 
         foreach ($permissions as $permission) {
@@ -126,6 +139,24 @@ class RolePermissionSeeder extends Seeder
                 $legacyRole->delete();
             }
         }
+
+        $supportUserPermissions = [
+            'submit support ticket',
+            'view own support tickets',
+            'comment on own ticket',
+            'reopen own ticket',
+            'vote on wishlist items',
+        ];
+
+        $supportAgentPermissions = array_merge($supportUserPermissions, [
+            'view all support tickets',
+            'manage support tickets',
+            'assign support tickets',
+            'update support ticket status',
+            'add internal support notes',
+            'manage enhancement wishlist',
+            'view support reports',
+        ]);
 
         $roles = [
             'super-admin' => $permissions,
@@ -330,6 +361,7 @@ class RolePermissionSeeder extends Seeder
                 'export fna records',
                 'manage goals',
             ],
+            'support-agent' => $supportAgentPermissions,
             'new-recruit' => [
                 'view dashboard',
                 'view own team',
@@ -357,6 +389,10 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($roles as $roleName => $rolePermissions) {
+            if (in_array($roleName, ['associate', 'member', 'new-recruit'], true)) {
+                $rolePermissions = array_values(array_unique(array_merge($rolePermissions, $supportUserPermissions)));
+            }
+
             Role::findOrCreate($roleName)->syncPermissions($rolePermissions);
         }
     }

@@ -50,6 +50,27 @@
         }, true);
 
         window.addEventListener('beforeunload', showPageLoader);
+
+        function hidePageLoader() {
+            var el = document.getElementById('efg-page-loading');
+
+            if (! el) {
+                return;
+            }
+
+            el.classList.add('hidden');
+            el.style.display = 'none';
+            el.setAttribute('aria-hidden', 'true');
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', hidePageLoader, { once: true });
+        } else {
+            hidePageLoader();
+        }
+
+        window.addEventListener('load', hidePageLoader, { once: true });
+        window.setTimeout(hidePageLoader, 12000);
     })();
 </script>
 

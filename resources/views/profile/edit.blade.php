@@ -3,11 +3,22 @@
         $isOwnProfile = $isOwnProfile ?? true;
         $profile = $user->profile;
         $latestInvitationUrl = session('invitation_url');
-        $newInvitation = $isOwnProfile ? $recentInvitations->firstWhere('id', session('invitation_id')) : null;
+        $newInvitation = $isOwnProfile ? $invitationHistory->firstWhere('id', session('invitation_id')) : null;
         $newInvitationEmail = $newInvitation ? $invitationEmails->get($newInvitation->id) : null;
         $efgDetailsFeedback = session('efg_details_feedback');
     @endphp
 
+    <div
+        @if ($isOwnProfile)
+            x-data="{
+                historyOpen: @js(
+                    request()->boolean('open_invitations')
+                    || in_array(session('status'), ['invitation-created', 'invitation-deleted', 'invitation-email-sent'], true)
+                )
+            }"
+            x-effect="document.documentElement.classList.toggle('overflow-hidden', historyOpen)"
+        @endif
+    >
     <div class="space-y-6">
         @if (! $isOwnProfile)
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -30,65 +41,11 @@
             </div>
         @endif
 
-        <section class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div class="bg-[#0B1F3A] px-6 py-8 text-white">
-                <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div class="flex items-center gap-5">
-                        <x-user-avatar :user="$user" size="xl" class="border-white/20 bg-white/10" />
-
-                        <div>
-                            <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">{{ $isOwnProfile ? 'Member Profile' : 'Team Member Profile' }}</p>
-                            <h1 class="mt-1 text-3xl font-semibold">{{ $user->name }}</h1>
-                            <p class="mt-2 text-sm text-slate-300">{{ $user->email }}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid gap-3 sm:grid-cols-3 lg:min-w-[32rem]">
-                        <div class="rounded-md border border-white/10 bg-white/10 p-4">
-                            <div class="text-xs uppercase text-slate-300">Current Rank</div>
-                            <div class="mt-1 text-lg font-semibold">{{ $user->rank?->code ?? 'Not Set' }}</div>
-                        </div>
-                        <div class="rounded-md border border-white/10 bg-white/10 p-4">
-                            <div class="text-xs uppercase text-slate-300">Team</div>
-                            <div class="mt-1 text-lg font-semibold">{{ $user->team?->name ?? 'Unassigned' }}</div>
-                        </div>
-                        <div class="rounded-md border border-white/10 bg-white/10 p-4">
-                            <div class="text-xs uppercase text-slate-300">Sponsor</div>
-                            <div class="mt-1 text-lg font-semibold">{{ $user->sponsor?->name ?? 'None' }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid gap-4 border-t border-slate-200 bg-slate-50 px-6 py-5 md:grid-cols-4">
-                <div>
-                    <div class="text-xs font-semibold uppercase text-slate-500">Role</div>
-                    <div class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->getRoleNames()->first() ?? 'member' }}</div>
-                </div>
-                <div>
-                    <div class="text-xs font-semibold uppercase text-slate-500">Phone</div>
-                    <div class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $profile?->phone ?? 'Not added' }}</div>
-                </div>
-                <div>
-                    <div class="text-xs font-semibold uppercase text-slate-500">Location</div>
-                    <div class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ collect([$profile?->city, $profile?->province])->filter()->join(', ') ?: 'Not added' }}</div>
-                </div>
-                <div>
-                    <div class="text-xs font-semibold uppercase text-slate-500">License</div>
-                    <div class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $profile?->license_number ?? 'Not added' }}</div>
-                </div>
-                @if ($isOwnProfile)
-                    <div>
-                        <div class="text-xs font-semibold uppercase text-slate-500">EFG Associate ID</div>
-                        <div class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $profile?->efg_associate_id ?? 'Not added' }}</div>
-                    </div>
-                    <div class="md:col-span-3">
-                        <div class="text-xs font-semibold uppercase text-slate-500">Experior Invite URL</div>
-                        <div class="mt-1 break-all text-sm font-semibold text-[#0B1F3A]">{{ $profile?->efg_invite_link ?? 'Not added' }}</div>
-                    </div>
-                @endif
-            </div>
-        </section>
+        @include('profile.partials.member-header', [
+            'user' => $user,
+            'badge' => $isOwnProfile ? 'Member Profile' : 'Team Member Profile',
+            'showEfgDetails' => $isOwnProfile,
+        ])
 
         <div class="grid gap-6 {{ $isOwnProfile ? 'xl:grid-cols-3' : '' }}">
             <div class="{{ $isOwnProfile ? 'xl:col-span-2' : '' }}">
@@ -109,6 +66,19 @@
                     <p class="mt-3 text-sm leading-6 text-slate-600">
                         Create a single-use invitation link. The new member will be registered under you as their sponsor.
                     </p>
+
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            class="rounded-md border border-[#C8A24A] bg-[#FFF9EA] px-3 py-2 text-sm font-semibold text-[#0B1F3A] hover:bg-[#F7E8B8]"
+                            x-on:click="historyOpen = true"
+                        >
+                            View Invitation Log
+                            @if ($invitationHistory->isNotEmpty())
+                                <span class="ml-1 rounded-full bg-[#0B1F3A] px-2 py-0.5 text-xs text-[#C8A24A]">{{ $invitationHistory->count() }}</span>
+                            @endif
+                        </button>
+                    </div>
 
                     <form method="POST" action="{{ route('profile.invitations.store') }}" class="mt-5 space-y-4">
                         @csrf
@@ -153,7 +123,7 @@
 
                     @if (session('status') === 'invitation-email-sent')
                         <div class="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
-                            Invitation email sent.
+                            Invitation email sent. Open the invitation log for details.
                         </div>
                     @endif
 
@@ -162,57 +132,7 @@
                             Invitation link deleted. You can create a new link for that email if they have not registered yet.
                         </div>
                     @endif
-                </section>
 
-                <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-lg font-semibold text-[#0B1F3A]">Recent Invitations</h2>
-
-                    <div class="mt-4 space-y-3">
-                        @forelse ($recentInvitations as $invitation)
-                            @php($emailPreview = $invitationEmails->get($invitation->id))
-
-                            <div x-data="{ mailOpen: false }" class="rounded-md border border-slate-100 bg-slate-50 p-3">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="text-sm font-semibold text-[#0B1F3A]">{{ $invitation->code }}</div>
-                                    <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $invitation->isAvailable() ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600' }}">
-                                        {{ $invitation->isAvailable() ? 'Active' : 'Used/Closed' }}
-                                    </span>
-                                </div>
-                                <div class="mt-1 text-xs text-slate-500">
-                                    {{ $invitation->email ?? 'Open email' }} &middot; {{ $invitation->uses_count }}/{{ $invitation->max_uses }} used
-                                    @if ($invitation->last_emailed_at)
-                                        &middot; mailed {{ $invitation->last_emailed_at->diffForHumans() }}
-                                    @endif
-                                </div>
-                                <div class="mt-2 break-all text-xs text-slate-500">{{ $invitation->invitationUrl() }}</div>
-
-                                @if ($invitation->isAvailable() && $emailPreview)
-                                    <div class="mt-3 flex flex-wrap gap-2">
-                                        <button type="button" class="rounded-md bg-[#0B1F3A] px-3 py-2 text-xs font-semibold text-white hover:bg-[#132F55]" x-on:click="mailOpen = true">
-                                            Mail Link
-                                        </button>
-
-                                        <form method="POST" action="{{ route('profile.invitations.destroy', $invitation) }}" onsubmit="return confirm('Delete this invitation link? This will deactivate it and allow a new invite for this email if they have not registered yet.');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    </div>
-
-                                    @include('profile.partials.invitation-email-modal', [
-                                        'invitation' => $invitation,
-                                        'emailPreview' => $emailPreview,
-                                        'modalState' => 'mailOpen',
-                                        'inputPrefix' => 'invitation_'.$invitation->id,
-                                    ])
-                                @endif
-                            </div>
-                        @empty
-                            <p class="text-sm text-slate-600">No invitations created yet.</p>
-                        @endforelse
-                    </div>
                 </section>
 
                 @include('profile.partials.efg-details-panel', [
@@ -228,6 +148,14 @@
             </aside>
             @endif
         </div>
+    </div>
+
+        @if ($isOwnProfile)
+            @include('profile.partials.invitation-history-modal', [
+                'invitationHistory' => $invitationHistory,
+                'invitationEmails' => $invitationEmails,
+            ])
+        @endif
     </div>
 
     @if ($isOwnProfile)

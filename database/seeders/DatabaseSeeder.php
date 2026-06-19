@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
         GoalCategorySeeder::class,
         GoalTemplateSeeder::class,
         GoalBadgeSeeder::class,
+        SupportModuleSeeder::class,
         NotificationConfigSeeder::class,
         ResourceDocumentSeeder::class,
         TrainingAcademySeeder::class,
@@ -39,15 +40,15 @@ class DatabaseSeeder extends Seeder
      * @var list<class-string<Seeder>>
      */
     protected array $transactionalSeeders = [
-        // TaskScenarioSeeder::class,
-        // TaskManagementSeeder::class,
-        // DownlineManagementSeeder::class,
-        // CfmManagementSeeder::class,
-        // ProspectDemoSeeder::class,
-        // CalendarModuleSeeder::class,
-        // UserCalendarPreferenceSeeder::class,
-        // BookingSchedulingSeeder::class,
-        // NotificationDemoSeeder::class,
+        TaskScenarioSeeder::class,
+        TaskManagementSeeder::class,
+        DownlineManagementSeeder::class,
+        CfmManagementSeeder::class,
+        ProspectDemoSeeder::class,
+        CalendarModuleSeeder::class,
+        UserCalendarPreferenceSeeder::class,
+        BookingSchedulingSeeder::class,
+        NotificationDemoSeeder::class,
     ];
 
     public function run(): void

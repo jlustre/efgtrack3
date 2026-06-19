@@ -50,7 +50,6 @@ class ProfileUpdateRequest extends FormRequest
             'state_province_id' => ['nullable', 'integer', 'exists:state_provinces,id'],
             'timezone_id' => ['nullable', 'integer', 'exists:timezones,id'],
             'best_contact_time' => ['nullable', 'string', Rule::in(array_keys(LocationOptions::contactTimes()))],
-            'license_number' => ['nullable', 'string', 'max:100'],
             'efg_associate_id' => [
                 'nullable',
                 'string',

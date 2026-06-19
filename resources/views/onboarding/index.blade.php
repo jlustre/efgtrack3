@@ -27,92 +27,12 @@
                 </div>
             </div>
 
-            <div class="grid gap-4 p-6 xl:grid-cols-5">
-                <div class="grid gap-4 md:grid-cols-2 xl:col-span-3 xl:grid-cols-3">
-                    <div class="rounded-lg border border-[#C8A24A]/25 bg-[#FFF9EA] p-5 shadow-sm">
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-semibold text-slate-600">Overall Progress</p>
-                            <span class="rounded-full bg-[#C8A24A]/15 px-2.5 py-1 text-xs font-bold text-[#8A6A1F]">{{ $stats['percent'] }}%</span>
-                        </div>
-                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['completed'] }}/{{ $stats['total'] }}</div>
-                        <p class="mt-1 text-sm text-slate-500">Items completed</p>
-                    </div>
-
-                    <div class="rounded-lg border border-slate-200 bg-white/90 p-5 shadow-sm">
-                        <p class="text-sm font-semibold text-slate-600">Required Items</p>
-                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['requiredCompleted'] }}/{{ $stats['requiredTotal'] }}</div>
-                        <p class="mt-1 text-sm text-slate-500">{{ $stats['requiredPercent'] }}% of required items complete</p>
-                    </div>
-
-                    <div class="rounded-lg border border-slate-200 bg-[#F8FAFC] p-5 shadow-sm">
-                        <p class="text-sm font-semibold text-slate-600">Optional Items</p>
-                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['optionalCompleted'] }}/{{ $stats['optionalTotal'] }}</div>
-                        <p class="mt-1 text-sm text-slate-500">Growth and enrichment items</p>
-                    </div>
-
-                    <div class="rounded-lg border border-amber-100 bg-amber-50/70 p-5 shadow-sm">
-                        <p class="text-sm font-semibold text-slate-600">Pending</p>
-                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['pending'] }}</div>
-                        <p class="mt-1 text-sm text-slate-500">Awaiting confirmation</p>
-                    </div>
-
-                    <div class="rounded-lg border border-purple-100 bg-purple-50/60 p-5 shadow-sm">
-                        <p class="text-sm font-semibold text-slate-600">Need Confirmation</p>
-                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['needsConfirmation'] }}</div>
-                        <p class="mt-1 text-sm text-slate-500">Items waiting on you</p>
-                    </div>
-
-                    <div class="rounded-lg border border-slate-200 bg-slate-50/90 p-5 shadow-sm">
-                        <p class="text-sm font-semibold text-slate-600">Remaining</p>
-                        <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $stats['remaining'] }}</div>
-                        <p class="mt-1 text-sm text-slate-500">Next steps to finish onboarding</p>
-                    </div>
-                </div>
-
-                <div class="xl:col-span-2">
-                    <div class="h-full rounded-lg border border-slate-200 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-6 shadow-sm">
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div>
-                                <h2 class="text-lg font-semibold text-[#0B1F3A]">Progress Graph</h2>
-                                <p class="mt-1 text-sm text-slate-600">A quick view of completed, remaining, and required progress.</p>
-                            </div>
-                            <div class="text-sm font-semibold text-slate-600">{{ $stats['completed'] }} completed, {{ $stats['pending'] }} pending, {{ $stats['remaining'] }} remaining</div>
-                        </div>
-
-                        <div class="mt-5 space-y-4">
-                            <div>
-                                <div class="mb-2 flex items-center justify-between text-sm">
-                                    <span class="font-semibold text-slate-700">Overall onboarding</span>
-                                    <span class="font-semibold text-[#0B1F3A]">{{ $stats['percent'] }}%</span>
-                                </div>
-                                <div class="h-4 overflow-hidden rounded-full bg-slate-100">
-                                    <div class="h-full rounded-full bg-[#C8A24A] transition-all" style="width: {{ $stats['percent'] }}%"></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div class="mb-2 flex items-center justify-between text-sm">
-                                    <span class="font-semibold text-slate-700">Required completion</span>
-                                    <span class="font-semibold text-[#0B1F3A]">{{ $stats['requiredPercent'] }}%</span>
-                                </div>
-                                <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                                    <div class="h-full rounded-full bg-[#0B1F3A] transition-all" style="width: {{ $stats['requiredPercent'] }}%"></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div class="mb-2 flex items-center justify-between text-sm">
-                                    <span class="font-semibold text-slate-700">Pending confirmation</span>
-                                    <span class="font-semibold text-[#0B1F3A]">{{ $stats['pending'] }}</span>
-                                </div>
-                                <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                                    <div class="h-full rounded-full bg-amber-400 transition-all" style="width: {{ $stats['total'] > 0 ? (int) round(($stats['pending'] / $stats['total']) * 100) : 0 }}%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @include('trackers.partials.stats-dashboard', [
+                'stats' => $stats,
+                'completedLabel' => 'Items completed',
+                'graphLabel' => 'Overall onboarding',
+                'requiredLabel' => 'Required completion',
+            ])
         </div>
 
         @if (session('status'))
@@ -130,7 +50,17 @@
                         <p class="mt-1 text-xs font-medium text-slate-500">Schedule starts {{ $typeStartDate->format('M j, Y') }} (Day 1).</p>
                     @endif
                     @if (! empty($typeMaxCompleteDays) && ! empty($typeCompletionDueDate))
-                        <p class="mt-1 text-xs font-medium text-slate-500">Target completion by Day {{ $typeMaxCompleteDays }} ({{ $typeCompletionDueDate->format('M j, Y') }}).</p>
+                        @php
+                            $targetDueOverdue = $stats['completed'] < $stats['total']
+                                && \App\Support\ChecklistDueDisplay::isOverdue($typeCompletionDueDate);
+                        @endphp
+                        <p class="mt-1 text-xs font-medium text-slate-500">
+                            Target completion by Day {{ $typeMaxCompleteDays }}
+                            (<span @class([
+                                'tabular-nums',
+                                \App\Support\ChecklistDueDisplay::textClass($targetDueOverdue),
+                            ])>{{ $typeCompletionDueDate->format('m/d/Y') }}</span>).
+                        </p>
                     @endif
                 </div>
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $steps->count() }} applicable items</span>

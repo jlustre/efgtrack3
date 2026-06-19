@@ -1,628 +1,494 @@
 # EFGTrack — Goals & Performance Module
 **User Guide**
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Last updated:** June 2026  
 **Audience:** Associates, CFMs, team leaders, and agency owners using EFGTrack  
 **Hub URL:** `/goals` (sidebar: **Goals & Performance**)
 
 ---
 
-## Table of contents
+## How to use this guide
 
-1. [What this module does](#1-what-this-module-does)
-2. [Who can access what](#2-who-can-access-what)
-3. [Module map — pages and URLs](#3-module-map--pages-and-urls)
-4. [Recommended workflows](#4-recommended-workflows)
-5. [Goals hub (`/goals`)](#5-goals-hub-goals)
-6. [Performance Planner (`/goals/plan`)](#6-performance-planner-goalsplan)
-7. [Success Blueprint (`/goals/blueprint/{id}`)](#7-success-blueprint-goalsblueprintid)
-8. [Quick Goal wizard (`/goals/create`)](#8-quick-goal-wizard-goalscreate)
-9. [My Goals — views and filters](#9-my-goals--views-and-filters)
-10. [Activity Scorecard (`/goals/scorecard`)](#10-activity-scorecard-goalsscorecard)
-11. [What-If Calculator (`/goals/what-if`)](#11-what-if-calculator-goalswhat-if)
-12. [Goal Reports (`/goals/reports`)](#12-goal-reports-goalsreports)
-13. [Team Goals (`/goals/team`)](#13-team-goals-goalsteam)
-14. [CFM Coaching (`/goals/coaching`)](#14-cfm-coaching-goalscoaching)
-15. [Key concepts](#15-key-concepts)
-16. [Automated progress and KPI sync](#16-automated-progress-and-kpi-sync)
-17. [Alerts, forecasts, and coaching insights](#17-alerts-forecasts-and-coaching-insights)
-18. [Achievements and badges](#18-achievements-and-badges)
-19. [Notifications and reminders](#19-notifications-and-reminders)
-20. [Tips and best practices](#20-tips-and-best-practices)
-21. [Troubleshooting](#21-troubleshooting)
-22. [Appendix](#22-appendix)
+| If you want to… | Start here |
+|---|---|
+| Understand the module | [Section 1](#1-what-this-module-does) |
+| Plan your year in 10 minutes | [Quick start](#quick-start) |
+| Build a full activity funnel | [Performance Planner](#6-performance-planner-goalsplan) |
+| Track daily/weekly activity | [Activity Scorecard](#10-activity-scorecard-goalsscorecard) |
+| Coach trainees (CFM) | [CFM Coaching](#14-cfm-coaching-goalscoaching) |
+| Review downline (leader) | [Team Goals](#13-team-goals-goalsteam) |
+| Fix a problem | [Troubleshooting](#21-troubleshooting) |
 
 ---
 
+## Table of contents
+
+**Part 1 — Overview**
+
+1. [What this module does](#1-what-this-module-does)
+2. [Who can access what](#2-who-can-access-what)
+3. [Module map — pages and URLs](#3-module-map-pages-and-urls)
+4. [The performance planning journey](#4-the-performance-planning-journey)
+
+**Part 2 — Personal planning and tracking**
+
+5. [Quick start](#quick-start)
+6. [Goals hub](#5-goals-hub-goals)
+7. [Performance Planner](#6-performance-planner-goalsplan)
+8. [Success Blueprint](#7-success-blueprint-goalsblueprintid)
+9. [Quick Goal wizard](#8-quick-goal-wizard-goalscreate)
+10. [My Goals — views and filters](#9-my-goals-views-and-filters)
+11. [Activity Scorecard](#10-activity-scorecard-goalsscorecard)
+12. [What-If Calculator](#11-what-if-calculator-goalswhat-if)
+13. [Goal Reports](#12-goal-reports-goalsreports)
+
+**Part 3 — Leaders and CFMs**
+
+14. [Team Goals](#13-team-goals-goalsteam)
+15. [CFM Coaching](#14-cfm-coaching-goalscoaching)
+
+**Part 4 — Reference**
+
+16. [Key concepts](#15-key-concepts)
+17. [Automated progress and KPI sync](#16-automated-progress-and-kpi-sync)
+18. [Alerts, forecasts, and coaching insights](#17-alerts-forecasts-and-coaching-insights)
+19. [Achievements and badges](#18-achievements-and-badges)
+20. [Notifications and reminders](#19-notifications-and-reminders)
+21. [Tips and best practices](#20-tips-and-best-practices)
+22. [Troubleshooting](#21-troubleshooting)
+23. [Appendix](#22-appendix)
+
+---
+
+# Part 1 — Overview
+
 ## 1. What this module does
 
-The **Goals & Performance** module helps you plan, track, and coach business performance in EFGTrack. It connects your daily activities (prospecting, FNAs, presentations, recruiting) to larger outcomes (production, income, rank advancement).
+**Goals & Performance** connects your daily activities (prospecting, FNAs, presentations, recruiting) to bigger outcomes (production, income, rank advancement).
 
-At a high level, the module provides:
+### What you can do
 
 | Capability | What it means for you |
 |---|---|
-| **Goal tracking** | Set targets by category (recruiting, production, FAP, licensing, etc.) and monitor progress |
-| **Activity-based planning** | Start with an income or production target and work backward to daily contacts and appointments |
-| **Success Blueprints** | A linked set of outcome + activity goals created from the Performance Planner |
-| **KPI automation** | Progress updates from Prospects, FNA, production, training, and downline data |
-| **Scorecard** | Weekly/daily view of whether you are hitting activity targets |
-| **What-If simulations** | Test targets without creating goals |
-| **Team visibility** | Leaders see downline goal progress and off-track items |
-| **CFM coaching** | Mentors review trainee goals, leave notes, and see deficiency alerts |
-| **Reports** | Download or email PDF performance summaries |
+| **Goal tracking** | Targets by category — recruiting, production, FAP, licensing, etc. |
+| **Activity-based planning** | Start with income or production; work backward to daily contacts |
+| **Success Blueprints** | Linked outcome + activity goals from the Performance Planner |
+| **KPI automation** | Progress from Prospects, FNA, production, training, downline |
+| **Scorecard** | Daily/weekly view of activity vs targets |
+| **What-If** | Test targets without creating goals |
+| **Team visibility** | Leaders see downline progress and off-track items |
+| **CFM coaching** | Mentor notes, voice notes, deficiency alerts |
+| **Reports** | PDF performance summaries |
 
 ---
 
 ## 2. Who can access what
 
-Access is controlled by permissions assigned to your role.
+| You need to… | Who typically can |
+|---|---|
+| Use the full personal hub (planner, scorecard, reports) | Anyone with **Goals & Performance** access |
+| View **Team Goals** for downline | CFMs, team leaders, agency owners |
+| Use **CFM Coaching** workspace | CFMs and mentors with coaching access |
 
-| Permission | Typical roles | What you can do |
-|---|---|---|
-| `manage goals` | Member, CFM, leaders | Full personal goals hub, planner, scorecard, what-if, reports, quick goal wizard |
-| `view team goals` | CFM, team leaders, agency owner | View **Team Goals** for your downline |
-| `coach goals` | CFM, mentors with coaching access | **CFM Coaching** — trainee goals, coach notes, voice notes |
+If a page returns **403 Forbidden**, contact your agency administrator.
 
-If a menu item or page returns **403 Forbidden**, your role does not include the required permission. Contact your agency administrator.
+Technical permission names are in [Appendix F](#f-permission-reference).
 
 ---
 
 ## 3. Module map — pages and URLs
 
-| Page | URL | Purpose |
+| Page | URL | When to use it |
 |---|---|---|
-| **Goals hub** | `/goals` | Dashboard, insights, and all your goals |
-| **Performance Planner** | `/goals/plan` | Build a Success Blueprint from a top-level target |
-| **Quick Goal** | `/goals/create` | 9-step wizard for a single goal |
-| **Success Blueprint** | `/goals/blueprint/{id}` | View funnel progress for a created plan |
-| **Activity Scorecard** | `/goals/scorecard` | Daily/weekly/monthly activity vs targets |
-| **What-If Calculator** | `/goals/what-if` | Simulate funnels without saving goals |
-| **Goal Reports** | `/goals/reports` | PDF download and email summaries |
-| **Team Goals** | `/goals/team` | Downline goal visibility (leaders) |
-| **CFM Coaching** | `/goals/coaching` | Trainee coaching workspace (CFMs) |
+| **Goals hub** | `/goals` | Dashboard, insights, all your goals |
+| **Performance Planner** | `/goals/plan` | Build a Success Blueprint from a top target |
+| **Quick Goal** | `/goals/create` | One goal without a full funnel |
+| **Success Blueprint** | `/goals/blueprint/{id}` | Funnel progress for a created plan |
+| **Activity Scorecard** | `/goals/scorecard` | Activity vs targets by period |
+| **What-If Calculator** | `/goals/what-if` | Simulate without saving |
+| **Goal Reports** | `/goals/reports` | PDF download or email |
+| **Team Goals** | `/goals/team` | Downline visibility (leaders) |
+| **CFM Coaching** | `/goals/coaching` | Trainee coaching (CFMs) |
 
-Quick links on the hub header: **Performance Planner**, **Quick Goal**, **Scorecard**, **What-If**, **Reports**, **Team Goals**, **CFM Coaching** (last two depend on permissions).
+**Hub header shortcuts:** Performance Planner · Quick Goal · Scorecard · What-If · Reports · Team Goals · CFM Coaching
 
 ---
 
-## 4. Recommended workflows
+## 4. The performance planning journey
 
-### New associate — first 30 days
+```mermaid
+flowchart LR
+    A[Set annual target] --> B[Performance Planner]
+    B --> C[Success Blueprint]
+    C --> D[Weekly Scorecard]
+    D --> E[Sync KPIs]
+    E --> F[Reports & coaching]
+```
 
-1. Open **Performance Planner** and choose **Recruiting Goal** or **Production Goal** based on your focus.
-2. Enter a realistic annual target and review the calculated funnel (contacts → invitations → appointments → presentations → …).
-3. Click **Create Success Blueprint** — this creates linked goals automatically.
-4. Each week, open **Activity Scorecard** (weekly view) and **Sync KPIs** on the hub.
-5. Use **What-If** to adjust targets before changing your plan.
+| Tool | Creates goals? | Best for |
+|---|---|---|
+| **What-If** | No | Exploring targets before committing |
+| **Performance Planner** | Yes — blueprint + linked goals | Official annual plan |
+| **Quick Goal** | Yes — single goal | One-off or personal targets |
 
-### Established producer — income planning
+---
 
-1. Use **Performance Planner** → **Annual Income Goal**.
-2. Enter your desired annual income (e.g. `$100,000`).
-3. Review reverse-engineered production, applications, FNAs, and daily contacts.
-4. Create the blueprint and track progress on the **Success Blueprint** page.
-5. Run **Goal Reports** monthly for a PDF summary.
+# Part 2 — Personal planning and tracking
 
-### CFM — weekly coaching rhythm
+## Quick start
 
-1. Open **Team Goals** → filter **Needs attention** for off-track goals.
-2. Go to **CFM Coaching** → filter by trainee.
-3. Review alerts (no prospecting, pace behind, deadline approaching).
-4. Leave a **coach note** or **voice note** on specific goals.
-5. Follow up in your next mentor session using milestone status on each goal card.
+**Goal:** Create your first annual plan and know what to do this week.
 
-### Team leader — pipeline review
-
-1. Open **Team Goals** with scope **Full downline** or **Direct recruits**.
-2. Switch view to **By member** for per-person rollup.
-3. Use search and category filters to focus (e.g. production goals only).
-4. Click **Review now** when the off-track banner appears.
+1. Open **Goals & Performance** → **Performance Planner**
+2. Choose **Recruiting**, **Production**, or **Annual Income** based on your focus
+3. Enter a realistic target → **Calculate activity funnel**
+4. Review daily contacts, appointments, FNAs, applications → **Create Success Blueprint**
+5. Each week: **Activity Scorecard** (weekly view) + **Sync KPIs** on the hub
+6. Use **What-If** before changing targets mid-year
 
 ---
 
 ## 5. Goals hub (`/goals`)
 
-The hub is your home base. It has four main sections, top to bottom.
+Your home base — four sections top to bottom.
 
-### 5.1 Header and quick actions
+### Header and quick actions
 
-The navy/gold header explains the module and links to all sub-pages. Use **Performance Planner** for full funnel planning; use **Quick Goal** for one-off targets.
+Navy/gold header links to all sub-pages. **Performance Planner** for full funnels; **Quick Goal** for one-off targets.
 
-### 5.2 Performance insights panel
+### Performance insights panel
 
-Shows three types of intelligence:
+| Panel | Shows |
+|---|---|
+| **Active blueprint** | Link to your latest Success Blueprint |
+| **Performance forecast** | Projected completion % at current pace |
+| **Coaching alerts** | No prospecting, behind pace, deadline approaching |
 
-- **Active blueprint** — If you created a plan via the Performance Planner, a card links to your latest **Success Blueprint**.
-- **Performance forecast** — Projected completion % for active goals (based on current pace). Requires goals with measurable progress.
-- **Coaching alerts** — Warnings such as “no prospecting in 7 days,” “goal behind pace,” or “deadline approaching.”
+> Forecasts need goals with deadlines and measurable progress. Create a Performance Plan if empty.
 
-> **Tip:** If forecasts are empty, create a Performance Plan or add goals with deadlines and metric keys.
-
-### 5.3 Dashboard summary
-
-Six stat cards:
+### Dashboard summary — six stat cards
 
 | Card | Meaning |
 |---|---|
 | Total Goals | All goals in your account |
-| Active | Currently in progress |
-| Completed | Reached 100% or marked complete |
+| Active | In progress |
+| Completed | 100% or marked complete |
 | Off Track | Behind expected pace |
-| Completion % | Share of goals completed |
-| Current Streak | Consecutive days with goal-related activity |
+| Completion % | Share completed |
+| Current Streak | Consecutive days with goal activity |
 
-Below the cards:
+Below: **Monthly Progress** chart · **AI Coaching** suggestions · **Progress by Category** · **Recent Achievements**
 
-- **Monthly Progress** — Bar chart of goals created vs completed per month.
-- **AI Coaching** — Rule-based suggestions (e.g. focus areas when behind). Shown when the system detects underperformance.
-- **Progress by Category** — Average progress per goal category.
-- **Recent Achievements** — Badges earned (see [§18](#18-achievements-and-badges)).
+### My Goals panel
 
-### 5.4 My Goals
-
-Your full goal list with filters and multiple view modes (see [§9](#9-my-goals--views-and-filters)).
+Full list with filters and six view modes — see [Section 9](#9-my-goals-views-and-filters).
 
 ---
 
 ## 6. Performance Planner (`/goals/plan`)
 
-The Performance Planner reverse-engineers a top-level target into a full funnel of linked goals.
+Reverse-engineers a top-level target into a funnel of linked goals.
 
-### Step 1 — Choose planning type and target
+### Step 1 — Choose type and target
 
-| Planning type | Use when you want to… | Example target |
+| Planning type | Use when | Example |
 |---|---|---|
-| **Annual Income Goal** | Plan from desired take-home income | `$100,000` annual income |
-| **Production Goal** | Plan from premium/production target | `$250,000` annual production |
-| **Recruiting Goal** | Plan from recruit count | `12` recruits per year |
-| **Rank Advancement Goal** | Roadmap to SM, ED, or SED | Select rank + completion target |
+| **Annual Income** | Plan from take-home income | `$100,000` |
+| **Production** | Plan from premium target | `$250,000` production |
+| **Recruiting** | Plan from recruit count | `12` recruits/year |
+| **Rank Advancement** | Roadmap to SM, ED, SED | Select rank + date |
 
-**Actions on Step 1:**
+1. Click a planning type card
+2. Enter **Target value** (and **Target rank** for rank goals)
+3. Optionally edit **Plan name** and **Deadline** (defaults to year-end)
+4. **Calculate activity funnel**
 
-1. Click a planning type card to select it.
-2. Enter **Target value**.
-3. For rank goals, choose **Target rank** (SM, ED, SED).
-4. Optionally edit **Plan name** and **Deadline** (defaults to end of current year).
-5. Click **Calculate activity funnel**.
+Uses your personal conversion rates when available; otherwise industry defaults.
 
-The system uses your personal conversion rates (when available) and default industry rates from configuration to compute required activities at each stage.
+### Step 2 — Review and create
 
-### Step 2 — Review funnel and create blueprint
+Vertical funnel showing each stage with **Annual**, **Monthly**, **Weekly**, and **Daily** targets:
 
-You will see a vertical funnel listing each stage:
+- **Outcome goals** (top) — income, production, recruits
+- **Activity goals** (bottom) — contacts, invitations, appointments, FNAs, applications
 
-- **Outcome goals** (top) — Income, production, recruits, rank requirements
-- **Activity goals** (bottom) — Daily contacts, invitations, appointments, presentations, FNAs, applications
-
-Each stage shows **Annual**, **Monthly**, **Weekly**, and **Daily** targets.
-
-**Actions on Step 2:**
-
-- **Back** — Return to Step 1 to change inputs.
-- **Create Success Blueprint** — Saves the plan, creates linked goals, and redirects you to the blueprint page.
-
-After creation, a green confirmation appears on the hub: *Performance plan "…" created with N linked goals.*
+**Create Success Blueprint** saves the plan, creates linked goals, and opens the blueprint page.
 
 ---
 
 ## 7. Success Blueprint (`/goals/blueprint/{id}`)
 
-A Success Blueprint is the living view of a Performance Plan.
+Living view of a Performance Plan.
 
 ### What you see
 
-- **Header** — Plan name, planning type, root target, and overall **projected completion %**.
-- **Recommended actions** — Shown when pace is behind (e.g. increase weekly contacts).
-- **Goal dependency funnel** — Each stage as a card with:
-  - Progress % (actual vs target)
-  - Projected % (forecast at current pace)
-  - Pace status (on track / behind)
-  - Target, actual, monthly, and daily figures
+- Plan name, type, root target, **projected completion %**
+- **Recommended actions** when pace is behind
+- **Dependency funnel** — each stage with progress %, pace status, targets
 
 ### How to use it
 
-1. Open from the hub **Active blueprint** card or after creating a plan.
-2. Identify the **lowest funnel stage** with red/amber pace — that is usually your bottleneck activity.
-3. Focus weekly coaching and scorecard reviews on that activity.
-4. Return after **Sync KPIs** on the hub to see updated progress.
+1. Open from hub **Active blueprint** or after creating a plan
+2. Find the **lowest stage** with red/amber pace — that's usually your bottleneck
+3. Focus scorecard reviews on that activity
+4. **Sync KPIs** on the hub, then return to see updates
 
-> Only you can view your own blueprint (`user_id` must match your account).
+> Only you can view your own blueprint.
 
 ---
 
 ## 8. Quick Goal wizard (`/goals/create`)
 
-Use the Quick Goal wizard when you need **one goal** without a full funnel plan — for example, a personal development target or a simple monthly recruiting number.
+For **one goal** without a full funnel — personal development, simple monthly targets, etc.
 
-### The 9 steps
+### Nine steps
 
 | Step | What you enter |
 |---|---|
-| 1. Category | Choose from 12 categories (recruiting, production, prospecting, FAP, licensing, etc.). Optional: apply a **quick template**. |
-| 2. Goal name | Name, description, hierarchy level (vision → daily), optional parent goal |
+| 1. Category | 12 categories; optional quick template |
+| 2. Goal name | Name, description, hierarchy level, optional parent |
 | 3. Target value | Numeric target |
-| 4. Measurement type | Number, currency, percentage, or completion |
-| 5. Deadline | Start date and deadline |
-| 6. Milestones | Optional sub-targets with due dates |
-| 7. Accountability partner | Sponsor or mentor (if assigned in your profile) |
+| 4. Measurement type | Number, currency, percentage, completion |
+| 5. Deadline | Start and end dates |
+| 6. Milestones | Optional sub-targets |
+| 7. Accountability partner | Sponsor or mentor |
 | 8. Notifications | Email, in-app, weekly reminders |
 | 9. Review & create | Confirm and save |
 
-### SMART score
+**SMART %** badge updates as you type — aim for **80%+** before saving.
 
-A **SMART %** badge updates as you type. It evaluates whether your goal is Specific, Measurable, Achievable, Relevant, and Time-bound. Aim for 80%+ before saving.
-
-### Templates
-
-When you select a category, **quick templates** may appear (e.g. pre-filled recruiting goals). Click a template to auto-fill fields, then adjust as needed.
-
-### Automated vs manual goals
-
-If you select a **metric key** tied to EFGTrack data (e.g. `applications`, `fna_completed`, `recruits`), progress can sync automatically when you click **Sync KPIs** on the hub. Manual goals (e.g. income without integration) require you to update progress yourself or use production entries.
+**Automated goals:** Select a **metric key** (`applications`, `fna_completed`, `recruits`, etc.) and use **Sync KPIs** for auto-updates.
 
 ---
 
 ## 9. My Goals — views and filters
 
-The **My Goals** panel on the hub supports rich filtering and six view modes.
-
 ### Filters
 
-- **Search** — Matches goal name or description.
-- **Status** — Draft, active, completed, off track, paused, cancelled, or all.
-- **Category** — Any active goal category.
+Search · Status (draft, active, completed, off track…) · Category
 
 ### View modes
 
 | Mode | Best for |
 |---|---|
-| **List** | Spreadsheet-style table with progress, deadline, SMART score |
-| **Cards** | Visual cards with progress bars (default) |
-| **Timeline** | Goals on a horizontal timeline by start/deadline |
-| **Progress** | Progress-focused layout with emphasis on % complete |
-| **Calendar** | Goals, deadlines, and milestones on a month grid |
-| **Kanban** | Columns: Active, Off Track, Completed |
+| **List** | Spreadsheet with progress, deadline, SMART score |
+| **Cards** | Visual cards (default) |
+| **Timeline** | Goals on horizontal timeline |
+| **Progress** | Emphasis on % complete |
+| **Calendar** | Deadlines and milestones on month grid |
+| **Kanban** | Active · Off Track · Completed |
 
 ### Sync KPIs
 
-Click **Sync KPIs** to pull latest actuals from connected modules (Prospects, FNA, production, training, downline) into goals that have a `metric_key`. A confirmation flash message appears when complete.
+Pulls latest actuals from Prospects, FNA, production, training, downline into goals with a `metric_key`.
 
-> Run **Sync KPIs** after logging prospect activity, completing FNAs, or entering production — otherwise automated goals may look stale.
+> Run **Sync KPIs** after logging prospect activity, FNAs, or production.
 
 ---
 
 ## 10. Activity Scorecard (`/goals/scorecard`)
 
-The scorecard answers: *“Am I doing enough activity this period?”*
+Answers: *"Am I doing enough activity this period?"*
 
 ### Period selector
 
-Switch between **Daily**, **Weekly**, **Monthly**, **Quarterly**, and **Annual**. The label updates (e.g. “Week of Jun 16”).
-
-### Overall activity score
-
-A single percentage — the average of all tracked activities for the period.
+Daily · Weekly · Monthly · Quarterly · Annual
 
 ### Activity cards
 
-Each card shows:
+Each shows **actual / target** and a progress bar:
 
-| Activity | Typical source |
-|---|---|
-| New Prospects | Prospect module |
-| Calls / Contacts | Prospect module |
-| Follow-Ups | Prospect module |
-| Appointments | Prospect / calendar |
-| Presentations | Prospect module |
-| FNAs | FNA module |
-| Applications | Prospect module |
-| Invitations | Prospect module |
-| Recruits | Downline / recruiting |
+New Prospects · Calls/Contacts · Follow-Ups · Appointments · Presentations · FNAs · Applications · Invitations · Recruits
 
-Each card displays **actual / target** and a progress bar.
+### How targets are set
 
-### How targets are determined
+1. **Primary:** Sum from your active Performance Plan activity goals
+2. **Fallback:** Generic weekly defaults (e.g. 25 contacts/week) if no plan
 
-1. **Primary:** Sum of `goal_activity_targets` from your active Performance Plan goals.
-2. **Fallback:** Sensible weekly defaults (e.g. 25 contacts/week) if no plan exists.
-
-> For the most accurate scorecard, create a **Performance Plan** first so daily/weekly targets align with your income or production goal.
+> Create a **Performance Plan** first for the most accurate scorecard.
 
 ---
 
 ## 11. What-If Calculator (`/goals/what-if`)
 
-The What-If Calculator lets you **simulate** a target without creating goals or a blueprint.
+Simulate a target **without** creating goals.
 
-### How to use
+1. Select goal type (income, production, recruiting, rank)
+2. Enter target value
+3. **Run simulation**
 
-1. Select **Goal type** (income, production, recruiting, rank).
-2. Enter **Target value**.
-3. For rank, select **Target rank**.
-4. Click **Run simulation**.
-
-### Results
-
-- **Summary cards** — Key annual/monthly/daily figures (e.g. required applications, daily contacts).
-- **Stage table** — Full funnel with annual, monthly, and daily columns.
-
-Simulations are saved to your history (`goal_simulations` table) for reference but do not create goals.
-
-**When to use What-If vs Performance Planner:**
-
-| Tool | Creates goals? | Best use |
-|---|---|---|
-| What-If | No | Exploring “what if I target $150K?” before committing |
-| Performance Planner | Yes (blueprint + linked goals) | Official plan for the year |
+Results: summary cards + full funnel stage table. Saved to history only — does not create goals.
 
 ---
 
 ## 12. Goal Reports (`/goals/reports`)
 
-Generate PDF summaries of goal performance for a reporting period.
+PDF summaries for a reporting period.
 
-### Report period
-
-| Option | Date range |
+| Period | Range |
 |---|---|
 | Last week | Previous calendar week |
 | Last month | Previous calendar month |
 | Last quarter | Previous calendar quarter |
 | Last year | Previous calendar year |
 
-The preview updates when you change the period (average progress, goal count, completed, off track, and a goals table).
+**Download PDF** or **Email report** to your account email.
 
-### Download PDF
-
-Click **Download PDF**. Your browser downloads a letter-size PDF including:
-
-- Summary stats
-- Goals table (name, category, progress, status, deadline)
-- Category scorecard (if available)
-- Achievements earned in the period
-
-### Email report
-
-Click **Email report**. The PDF summary is sent to your account email. You are redirected back with a success message.
-
-> Reports include goals whose start date, deadline, or duration overlaps the selected period.
+Includes summary stats, goals table, category scorecard, and achievements in the period.
 
 ---
 
+# Part 3 — Leaders and CFMs
+
 ## 13. Team Goals (`/goals/team`)
 
-**Requires:** `view team goals` permission.
+**For:** CFMs, team leaders, agency owners
 
 ### Summary cards
 
-Members with goals, total goals, active, completed, off track, and average progress across your selected scope.
-
-### Off-track banner
-
-When goals need attention, a yellow banner shows the count and a **Review now** button that switches to the **Needs attention** view.
+Members with goals, total/active/completed/off track, average progress.
 
 ### Scope filter
 
 | Scope | Shows |
 |---|---|
-| My goals only | Your personal goals within the team view |
-| Direct recruits | Goals owned by your direct downline |
-| Full downline | Goals for your entire downline tree |
+| My goals only | Your personal goals in team view |
+| Direct recruits | Direct downline goals |
+| Full downline | Entire downline tree |
 
 ### View modes
 
-| Mode | Description |
-|---|---|
-| **All goals** | Filterable list with expandable goal details |
-| **By member** | Rollup per team member (goal count, avg progress, off-track count) |
-| **Needs attention** | Goals that are off track or significantly behind pace |
+**All goals** · **By member** (rollup per person) · **Needs attention** (off track or behind pace)
 
-### Additional filters
+Filters: member · status · category · search
 
-- **Member** — Focus on one person.
-- **Status** — Active, completed, etc.
-- **Category** — Recruiting, production, etc.
-- **Search** — Goal name, description, or member name.
-
-### Expandable goal rows
-
-Click a goal to expand milestones, accountability partner, and progress details.
-
-### Trainee section
-
-If you have `coach goals`, a **Trainee goals** section highlights goals for apprentices assigned to you.
+**Off-track banner** — yellow alert with **Review now** when goals need attention.
 
 ---
 
 ## 14. CFM Coaching (`/goals/coaching`)
 
-**Requires:** `coach goals` permission.
+**For:** CFMs and mentors with coaching access
 
-### Trainee filter
+### Workflow
 
-Pills at the top: **All trainees** or individual trainee names.
+```mermaid
+flowchart TD
+    A[Filter by trainee] --> B[Review goal cards]
+    B --> C[Check alerts]
+    C --> D[Add coach or voice note]
+    D --> E[Follow up in mentor session]
+```
 
-### Goal cards
-
-Each card shows:
-
-- Trainee name
-- Goal name, category, progress %
-- First coaching alert for that trainee (if any)
-- Milestone checklist
-- **Add coach note** button
-
-### Coach note panel
-
-1. Select a goal from the dropdown (or click **Add coach note** on a card).
-2. Enter a text note **or** upload a **voice note** (audio file).
-3. Click **Save note**.
-
-Notes are stored on the goal and visible per your coaching visibility rules.
-
-### Coaching suggestions
-
-The sidebar lists system-generated suggestions for your trainees (from `GoalCoachingService`).
-
-### Conversion KPIs
-
-For each trainee, the system can surface funnel conversion KPIs (invitation → appointment → presentation rates) to guide coaching conversations.
+- **Trainee filter** pills at top
+- Each card: trainee, goal, progress %, milestones, first alert
+- **Add coach note** — text or voice upload
+- Sidebar: system coaching suggestions + conversion KPIs per trainee
 
 ---
+
+# Part 4 — Reference
 
 ## 15. Key concepts
 
 ### Outcome vs activity goals
 
-| Type | Definition | Example |
-|---|---|---|
-| **Outcome goal** | The result you want | $100,000 annual income, 12 recruits |
-| **Activity goal** | The behavior that produces outcomes | 5 daily contacts, 3 FNAs per week |
+| Type | Example |
+|---|---|
+| **Outcome** | $100,000 income, 12 recruits |
+| **Activity** | 5 daily contacts, 3 FNAs/week |
 
-Performance Plans create **both**, linked in a dependency funnel: outcome at top, activities at bottom.
+Performance Plans create both, linked in a dependency funnel.
 
-### Goal hierarchy levels
-
-Goals can be tagged by planning horizon:
+### Goal hierarchy
 
 `Vision` → `Annual` → `Quarterly` → `Monthly` → `Weekly` → `Daily`
-
-Performance Planner stages are assigned appropriate levels automatically.
 
 ### Goal statuses
 
 | Status | Meaning |
 |---|---|
-| Draft | Created but not started |
+| Draft | Not started |
 | Active | In progress |
 | Completed | Target reached |
-| Off Track | Behind expected pace |
+| Off Track | Behind pace |
 | Paused | Temporarily suspended |
 | Cancelled | No longer pursued |
 
-### Conversion funnel
-
-Activities flow through stages with conversion rates. Example (income funnel):
+### Example activity funnel
 
 ```
-Daily contacts → Prospect conversations → Invitations → Appointments
+Daily contacts → Conversations → Invitations → Appointments
   → Presentations → FNAs → Applications → Production → Income
 ```
-
-Rates can be personalized over time via `goal_conversion_rates` (your historical performance). Defaults are used for new users.
-
-### SMART validation
-
-The Quick Goal wizard scores goals against SMART criteria. Strong goals have clear names, measurable targets, realistic deadlines, relevant categories, and defined time bounds.
 
 ---
 
 ## 16. Automated progress and KPI sync
 
-Many goals can track progress automatically via **metric keys**.
-
-### Metric sources
-
-| Source module | Example metrics |
+| Source | Example metrics |
 |---|---|
-| **Prospects** | Contacts, invitations, presentations, appointments, applications, recruits |
+| **Prospects** | Contacts, invitations, presentations, applications |
 | **Production** | Annual/monthly premium |
-| **FNA** | FNAs completed, FNAs approved |
-| **FAP / Licensing / Training** | Completion percentages |
-| **Downline** | Direct recruits, team recruits, team production |
-| **Calendar** | Mentoring sessions |
-| **CFM** | Trainees assigned |
-| **Manual** | Monthly/annual income (until payroll integration) |
+| **FNA** | FNAs completed, approved |
+| **FAP / Licensing / Training** | Completion % |
+| **Downline** | Recruits, team production |
+| **Manual** | Income (until payroll integration) |
 
-### How to enable automation
-
-1. When creating a goal, choose a category and select an available **metric key** (Quick Goal wizard).
-2. Or use **Performance Planner**, which assigns metric keys to funnel stages automatically.
-3. Click **Sync KPIs** on the hub to refresh actuals.
-
-### What Sync KPIs does
-
-- Reads current values from connected services for each goal’s metric and date range.
-- Updates `actual_value` and recalculates status (including off track).
-- Writes a progress history entry with source `automated`.
+**Enable:** Choose metric key in Quick Goal, or use Performance Planner (auto-assigned). Click **Sync KPIs** on the hub.
 
 ---
 
 ## 17. Alerts, forecasts, and coaching insights
 
-### Alert types
-
-| Alert | Trigger (default) |
+| Alert | Default trigger |
 |---|---|
 | No prospecting | No contacts in 7 days |
-| No presentations | No presentations in 14 days |
-| No FNA activity | No FNAs in 14 days |
-| No follow-ups | No follow-ups in 7 days |
-| Goal behind pace | Projected completion &lt; 80% |
-| Goal off track | Status is off track |
-| Deadline approaching | Deadline within 7 days and not complete |
+| No presentations | None in 14 days |
+| No FNA activity | None in 14 days |
+| Goal behind pace | Projected completion < 80% |
+| Deadline approaching | Within 7 days, not complete |
 
-Alerts appear on the hub **Coaching alerts** panel and in CFM Coaching for trainees.
-
-### Forecasts
-
-For each active goal, the system projects **projected completion %** at the current pace. Shown on:
-
-- Hub insights panel
-- Success Blueprint header and stages
-- CFM trainee insights
-
-### Recommended actions
-
-When pace is behind, the system may suggest actions (e.g. increase weekly contacts). These appear on the Success Blueprint and are stored as recommendations.
+Forecasts show **projected completion %** on hub, blueprint, and CFM coaching.
 
 ---
 
 ## 18. Achievements and badges
 
-Badges are earned automatically when criteria are met.
-
 | Badge | Level | Criteria (summary) |
 |---|---|---|
 | First Recruit | Bronze | 1+ direct recruit |
 | First Policy | Bronze | 1+ production entry |
-| First Licensed Associate | Silver | Licensing completion 100% |
-| FAP Graduate | Gold | FAP completion 100% |
+| First Licensed Associate | Silver | Licensing 100% |
+| FAP Graduate | Gold | FAP 100% |
 | Top Producer | Platinum | $100,000+ annual premium |
 | Leadership Builder | Diamond | 5+ team recruits |
-
-Recent achievements appear on the hub dashboard. Reports can include achievements earned in the report period.
 
 ---
 
 ## 19. Notifications and reminders
 
-When creating a goal (Quick Goal wizard, Step 8), you can enable:
-
-- **Email notifications** — Goal-related emails
-- **In-app notifications** — Alerts in EFGTrack
-- **Weekly reminders** — Recurring weekly check-in reminders
-
-Reminders are processed by a scheduled job (`DispatchGoalReminders`). Weekly reminders repeat each week until the goal is complete.
-
-If you assign an **accountability partner** (sponsor/mentor), they may receive coach copies of reminders when configured on the goal’s coach relationships.
+Quick Goal Step 8: email, in-app, and weekly reminders. Accountability partners may receive coach copies when configured.
 
 ---
 
 ## 20. Tips and best practices
 
-1. **Start with a Performance Plan** for your primary annual target — it creates the full activity chain.
-2. **Check the Scorecard weekly** — activity goals matter as much as outcome goals.
-3. **Sync KPIs after field work** — log prospects and FNAs first, then sync.
-4. **Use What-If before changing targets** — avoid rebuilding plans unnecessarily.
-5. **Review the Success Blueprint monthly** — focus on the lowest stage with weak progress.
-6. **Set milestones on big goals** — quarterly checkpoints improve SMART scores and visibility.
-7. **CFMs: filter Needs attention weekly** — proactive coaching prevents year-end gaps.
-8. **Download monthly reports** — useful for mentor meetings and personal review.
-9. **Pick one primary planning type** — income, production, or recruiting; too many competing blueprints dilute focus.
-10. **Use Quick Goals for personal development** — books, speaking, habits outside the business funnel.
+**Planning**
+- Start with one **Performance Plan** for your primary annual target
+- Use **What-If** before rebuilding plans mid-year
+- One primary planning type — avoid competing blueprints
+
+**Weekly rhythm**
+- **Scorecard** every week; **Sync KPIs** after field work
+- Review **Success Blueprint** monthly — focus on weakest funnel stage
+- **Quick Goals** for personal development outside the business funnel
+
+**CFMs and leaders**
+- Filter **Needs attention** weekly
+- Download **monthly reports** for mentor meetings
+- Set milestones on big goals for better visibility
 
 ---
 
@@ -630,45 +496,42 @@ If you assign an **accountability partner** (sponsor/mentor), they may receive c
 
 ### Buttons or dropdowns do nothing
 
-- Hard-refresh the page (`Ctrl+F5` / `Cmd+Shift+R`).
-- Ensure frontend assets are built: `npm run build` (or `npm run dev` during development).
-- Livewire requires JavaScript; check browser console for errors.
+**Cause:** Stale page or JavaScript issue.  
+**Fix:** Hard-refresh (`Ctrl+F5`). Ensure JavaScript is enabled.
 
 ### PDF download does not start
 
-- Use the **Download PDF** link on `/goals/reports` (standard HTTP download, not Livewire).
-- Ensure pop-up/download blockers allow downloads from your EFGTrack domain.
+**Cause:** Pop-up blocker or wrong method.  
+**Fix:** Use **Download PDF** on `/goals/reports`; allow downloads from your EFGTrack domain.
 
 ### Sync KPIs shows no change
 
-- Confirm the goal has a **metric key** assigned (automated goals only).
-- Confirm activity was logged in the source module (Prospects, FNA, etc.) within the goal’s date range.
-- Manual metrics (e.g. income) are not auto-synced.
+**Cause:** No metric key, or activity outside goal date range.  
+**Fix:** Confirm automated metric on goal; log activity in source module first. Manual metrics (income) don't auto-sync.
 
 ### Scorecard shows 0% or low targets
 
-- Create a **Performance Plan** so activity targets are generated.
-- Without a plan, the system uses generic weekly defaults.
+**Cause:** No Performance Plan.  
+**Fix:** Create a plan — otherwise generic weekly defaults apply.
 
-### Forecasts are empty
+### Forecasts empty
 
-- Create goals with deadlines and measurable progress.
-- Performance Plans populate forecasts once goals are active and have data.
+**Cause:** No goals with deadlines and measurable progress.  
+**Fix:** Create active goals or a Performance Plan.
 
 ### Team Goals shows no members
 
-- Verify you have downline relationships in EFGTrack.
-- Check scope filter (direct vs full downline).
-- Members must have goals matching your filters.
+**Cause:** No downline or wrong scope filter.  
+**Fix:** Verify downline relationships; try Direct vs Full downline.
 
 ### CFM Coaching shows no trainees
 
-- Trainees must be linked via mentor assignments.
-- Trainees need active goals assigned to their user account.
+**Cause:** No mentor assignment or trainee goals.  
+**Fix:** Confirm mentor assignments; trainees need active goals.
 
 ### Permission denied (403)
 
-- Your role needs `manage goals`, `view team goals`, or `coach goals` as appropriate.
+**Fix:** See [Section 2](#2-who-can-access-what) or [Appendix F](#f-permission-reference).
 
 ---
 
@@ -676,31 +539,13 @@ If you assign an **accountability partner** (sponsor/mentor), they may receive c
 
 ### A. Goal categories
 
-| Slug | Name |
-|---|---|
-| recruiting | Recruiting Goals |
-| production | Production Goals |
-| prospecting | Prospecting Goals |
-| financial_review | Financial Review Goals |
-| fap | FAP Goals |
-| licensing | Licensing Goals |
-| cfm_development | CFM Development Goals |
-| leadership | Leadership Goals |
-| training | Training Goals |
-| rank_advancement | Rank Advancement Goals |
-| income | Income Goals |
-| personal_development | Personal Development Goals |
+recruiting · production · prospecting · financial_review · fap · licensing · cfm_development · leadership · training · rank_advancement · income · personal_development
 
 ### B. Measurement types
 
-| Key | Use for |
-|---|---|
-| number | Counts (recruits, calls) |
-| currency | Dollar targets (premium, income) |
-| percentage | Completion rates |
-| completion | Binary or checklist-style goals |
+number (counts) · currency (dollars) · percentage · completion (checklist-style)
 
-### C. Rank advancement requirements (defaults)
+### C. Rank advancement defaults
 
 | Rank | Production | Recruits | Licensing | FAP | Training |
 |---|---|---|---|---|---|
@@ -708,28 +553,32 @@ If you assign an **accountability partner** (sponsor/mentor), they may receive c
 | ED | $150,000 | 5 | 100% | 100% | 100% |
 | SED | $300,000 | 10 | 100% | 100% | 100% |
 
-Used by the Rank planning type in Performance Planner and What-If.
+### D. Income planning defaults
 
-### D. Income planning constants (defaults)
-
-| Constant | Default | Used for |
-|---|---|---|
-| Commission rate | 20% | Income → production conversion |
-| Avg premium per application | $2,500 | Production → applications |
-| Working days per month | 22 | Daily contact targets |
-| Working weeks per year | 48 | Annualization |
-
-### E. Related technical files (for administrators)
-
-| Area | Location |
+| Constant | Default |
 |---|---|
-| Routes | `routes/web.php` |
-| Goal config | `config/goals.php` |
-| Planning config | `config/goals-planning.php` |
-| Livewire components | `app/Livewire/Goals/` |
-| Services | `app/Services/Goals/` |
-| Feature tests | `tests/Feature/Goals/` |
+| Commission rate | 20% |
+| Avg premium per application | $2,500 |
+| Working days per month | 22 |
+| Working weeks per year | 48 |
+
+### E. Related guides
+
+| Guide | Topic |
+|---|---|
+| [Prospects & Sales Funnel](/support/documentation/prospect-sales-funnel) | CRM activity that feeds KPI sync |
+| [FNA Management](/support/documentation/fna-management) | FNA goals and metrics |
+| [Training Academy](/support/documentation/training-academy) | Training completion metrics |
+| [Help & Support](/support) | All module guides |
+
+### F. Permission reference
+
+| Permission | Allows |
+|---|---|
+| `manage goals` | Personal hub, planner, scorecard, what-if, reports, quick goal |
+| `view team goals` | Team Goals page |
+| `coach goals` | CFM Coaching workspace |
 
 ---
 
-*This guide reflects the Goals & Performance module as implemented in EFGTrack. Feature availability may vary by role and agency configuration.*
+*Questions? **Help & Support** → **Browse documentation** or `/support`.*

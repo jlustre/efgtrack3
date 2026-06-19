@@ -39,7 +39,6 @@ class ProfileCompletionField extends Model
             'country_id' => ['label' => 'Country', 'source' => 'profile'],
             'timezone_id' => ['label' => 'Timezone', 'source' => 'profile'],
             'best_contact_time' => ['label' => 'Best contact time', 'source' => 'profile'],
-            'license_number' => ['label' => 'License number', 'source' => 'profile'],
             'efg_associate_id' => ['label' => 'EFG associate ID', 'source' => 'profile'],
             'efg_invite_link' => ['label' => 'EFG invite link', 'source' => 'profile'],
             'bio' => ['label' => 'Member bio', 'source' => 'profile'],

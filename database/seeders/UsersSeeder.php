@@ -23,8 +23,8 @@ class UsersSeeder extends Seeder
                 'joined_at' => now(),
                 'sponsor_id' => null,
                 'mentor_id' => null,
-                'rank_id' => 3,
-                'team_id' => null,
+                'rank_id' => 4,
+                'team_id' => 1,
                 'is_online' => false,
                 'is_active' => true,
                 'last_login_at' => today(),
@@ -46,7 +46,7 @@ class UsersSeeder extends Seeder
         if ($teamId) {
             $superAdmin->forceFill([
                 'team_id' => $teamId,
-                'sponsor_id' => $superAdmin->id,
+                // 'sponsor_id' => $superAdmin->id,
                 'mentor_id' => $superAdmin->id,
             ])->save();
 

@@ -6,7 +6,6 @@ use App\Models\Profile;
 use App\Models\Rank;
 use App\Models\Team;
 use App\Models\User;
-use App\Support\LocationOptions;
 use App\Services\DownlineHierarchyService;
 use App\Support\LocationOptions;
 use Illuminate\Database\Seeder;

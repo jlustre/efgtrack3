@@ -60,6 +60,7 @@
 
     $topItems = array_merge($topItems, [
         ['label' => 'My Messages', 'route' => 'messages.index', 'active' => ['messages.*']],
+        ['label' => 'Help & Support', 'route' => 'support.index', 'permissions' => ['submit support ticket'], 'active' => ['support.*']],
         ['label' => 'CFM Management', 'route' => 'team.cfms', 'access' => 'canAccessCfmManagement'],
         ['label' => 'CFM Portal', 'route' => 'cfm.portal', 'access' => 'canAccessCfmPortal'],
     ]);
@@ -119,6 +120,7 @@
             'active' => ['admin.*'],
             'items' => [
                 ['label' => 'Admin Dashboard', 'route' => 'admin.index', 'active' => ['admin.index'], 'roles' => ['super-admin', 'admin', 'agency-owner', 'team-leader', 'certified-field-mentor', 'trainer']],
+                ['label' => 'Support Queue', 'route' => 'admin.support.index', 'permissions' => ['view all support tickets'], 'active' => ['admin.support.*']],
                 ['label' => 'User Management', 'route' => 'admin.users.index', 'active' => ['admin.users.*'], 'roles' => ['super-admin', 'admin', 'agency-owner']],
                 ['label' => 'Roles & Permissions', 'route' => 'admin.roles.index', 'permissions' => ['manage roles']],
                 ['label' => 'Ranks', 'route' => 'admin.management.resource.index', 'params' => ['ranks'], 'active_resource' => 'ranks', 'roles' => ['super-admin', 'admin']],

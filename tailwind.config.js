@@ -17,5 +17,10 @@ export default {
         },
     },
 
+    safelist: [
+        'z-[200]',
+        'z-[210]',
+    ],
+
     plugins: [forms],
 };

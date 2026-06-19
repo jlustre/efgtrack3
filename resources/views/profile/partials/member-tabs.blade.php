@@ -2,21 +2,15 @@
     $isOwnProfile = $isOwnProfile ?? true;
     $hasNonEfgValidationErrors = $errors->any() && collect($errors->keys())->contains(
         fn (string $key): bool => ! in_array($key, ['efg_associate_id', 'efg_invite_link'], true)
+            && ! str_starts_with($key, 'insurance_licenses')
     );
+    $hasLicenseValidationErrors = $errors->has('insurance_licenses') || $errors->has('insurance_licenses.*');
     $tabs = [
         'profile' => 'Profile Details',
-        'onboarding' => 'Onboarding',
-        'fap' => 'FAP',
-        'cfm' => 'CFM',
-        'other-training' => 'Other Training',
+        'licenses' => 'Licenses',
+        'checklists' => 'Checklists',
         'recruits' => 'Recruits',
         'annual-premium' => 'Annual Premium',
-    ];
-
-    $checklistTabs = [
-        'onboarding' => $memberTabs['onboarding_started'] ?? false,
-        'fap' => $memberTabs['fap_started'] ?? false,
-        'cfm' => $memberTabs['cfm_started'] ?? false,
     ];
 @endphp
 
@@ -24,24 +18,32 @@
     x-data="{
         activeTab: @js(request('tab', 'profile')),
         profileSaving: false,
-        editCountryId: @js(old('country_id', $user->profile?->country_id ?? '')),
-        editProvinceId: @js(old('state_province_id', $user->profile?->state_province_id ?? '')),
+        licensesSaving: false,
+        editCountryId: @js((string) old('country_id', $user->profile?->country_id ?? '')),
+        editProvinceId: @js((string) old('state_province_id', $user->profile?->state_province_id ?? '')),
         editProvinces: @js($profileContext['locationOptions']['provincesByCountryId']),
         get editProvinceOptions() {
             return this.editProvinces[String(this.editCountryId)] || {};
         },
-        onCountryChange() {
-            const options = this.editProvinceOptions;
-            if (this.editProvinceId && ! Object.prototype.hasOwnProperty.call(options, String(this.editProvinceId))) {
-                this.editProvinceId = '';
+        syncProvinceSelect(selectId = 'state_province_id') {
+            const next = window.rebuildProvinceSelectOptions(selectId, this.editProvinceOptions, this.editProvinceId);
+            if (next !== this.editProvinceId) {
+                this.editProvinceId = next;
             }
+        },
+        onCountryChange() {
+            this.syncProvinceSelect('state_province_id');
         },
         submitProfileForm() {
             this.profileSaving = true;
         },
     }"
     x-init="
-        @if (session('profile_feedback') || $hasNonEfgValidationErrors)
+        $nextTick(() => syncProvinceSelect('state_province_id'));
+        @if (session('licenses_feedback') || $hasLicenseValidationErrors)
+            activeTab = 'licenses';
+            $nextTick(() => document.getElementById('member-licenses-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+        @elseif (session('profile_feedback') || $hasNonEfgValidationErrors)
             activeTab = 'profile';
             $nextTick(() => document.getElementById('member-profile-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
         @endif
@@ -51,7 +53,6 @@
     <div class="border-b border-slate-200 bg-slate-50/80 px-4 pt-4">
         <nav class="-mb-px flex flex-wrap gap-2" aria-label="Member profile sections">
             @foreach ($tabs as $key => $label)
-                @continue(in_array($key, ['onboarding', 'fap', 'cfm'], true) && ! ($checklistTabs[$key] ?? false))
                 <button
                     type="button"
                     @click="activeTab = @js($key)"
@@ -63,6 +64,8 @@
                     {{ $label }}
                     @if ($key === 'annual-premium')
                         <span class="ml-1 rounded-full bg-[#C8A24A]/20 px-2 py-0.5 text-xs text-[#8A6A1F]">${{ number_format($memberTabs['annualPremiumTotal']) }}</span>
+                    @elseif ($key === 'licenses' && ($user->profile?->insurance_licenses ?? []) !== [])
+                        <span class="ml-1 rounded-full bg-[#C8A24A]/20 px-2 py-0.5 text-xs text-[#8A6A1F]">{{ count($user->profile->insurance_licenses) }}</span>
                     @endif
                 </button>
             @endforeach
@@ -82,90 +85,19 @@
             @endif
         </div>
 
-        <div x-show="activeTab === 'onboarding'" x-cloak>
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-lg font-semibold text-[#0B1F3A]">Onboarding Checklist</h2>
-                    <p class="mt-1 text-sm text-slate-600">Your onboarding steps and confirmation status.</p>
-                </div>
-                <a href="{{ route('onboarding.index') }}" class="text-sm font-semibold text-[#8A6A1F] hover:underline">Open Onboarding Tracker →</a>
-            </div>
-            @include('profile.partials.tab-table', [
-                'columns' => [
-                    ['key' => 'item', 'label' => 'Item'],
-                    ['key' => 'category', 'label' => 'Scope'],
-                    ['key' => 'required', 'label' => 'Required'],
-                    ['key' => 'status', 'label' => 'Status'],
-                    ['key' => 'submitted_at', 'label' => 'Submitted'],
-                    ['key' => 'completed_at', 'label' => 'Completed'],
-                ],
-                'rows' => $memberTabs['onboarding'],
-                'empty' => 'No onboarding steps are assigned yet.',
+        <div x-show="activeTab === 'licenses'" x-cloak>
+            @include('profile.partials.licenses-tab', [
+                'user' => $user,
+                'isOwnProfile' => $isOwnProfile,
+                'profileContext' => $profileContext,
             ])
         </div>
 
-        <div x-show="activeTab === 'fap'" x-cloak>
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-lg font-semibold text-[#0B1F3A]">Field Apprenticeship Program</h2>
-                    <p class="mt-1 text-sm text-slate-600">FAP milestones and mentor confirmation progress.</p>
-                </div>
-                <a href="{{ route('apprenticeship.index') }}" class="text-sm font-semibold text-[#8A6A1F] hover:underline">Open FAP Tracker →</a>
-            </div>
-            @include('profile.partials.tab-table', [
-                'columns' => [
-                    ['key' => 'item', 'label' => 'Milestone'],
-                    ['key' => 'category', 'label' => 'Program'],
-                    ['key' => 'required', 'label' => 'Required'],
-                    ['key' => 'status', 'label' => 'Status'],
-                    ['key' => 'submitted_at', 'label' => 'Submitted'],
-                    ['key' => 'completed_at', 'label' => 'Completed'],
-                ],
-                'rows' => $memberTabs['fap'],
-                'empty' => 'No FAP milestones are available yet.',
-            ])
-        </div>
-
-        <div x-show="activeTab === 'cfm'" x-cloak>
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-lg font-semibold text-[#0B1F3A]">CFM Training</h2>
-                    <p class="mt-1 text-sm text-slate-600">Certified Field Mentor training modules and completion status.</p>
-                </div>
-                <a href="{{ route('cfm-training.index') }}" class="text-sm font-semibold text-[#8A6A1F] hover:underline">Open CFM Training →</a>
-            </div>
-            @include('profile.partials.tab-table', [
-                'columns' => [
-                    ['key' => 'item', 'label' => 'Module'],
-                    ['key' => 'category', 'label' => 'Category'],
-                    ['key' => 'required', 'label' => 'Required'],
-                    ['key' => 'status', 'label' => 'Status'],
-                    ['key' => 'submitted_at', 'label' => 'Submitted'],
-                    ['key' => 'completed_at', 'label' => 'Completed'],
-                ],
-                'rows' => $memberTabs['cfm'],
-                'empty' => 'No CFM training modules are assigned yet.',
-            ])
-        </div>
-
-        <div x-show="activeTab === 'other-training'" x-cloak>
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-lg font-semibold text-[#0B1F3A]">Other Training</h2>
-                    <p class="mt-1 text-sm text-slate-600">Training Center modules and lessons outside onboarding, FAP, and CFM tracks.</p>
-                </div>
-                <a href="{{ route('training.index') }}" class="text-sm font-semibold text-[#8A6A1F] hover:underline">Open Training Center →</a>
-            </div>
-            @include('profile.partials.tab-table', [
-                'columns' => [
-                    ['key' => 'category', 'label' => 'Category'],
-                    ['key' => 'module', 'label' => 'Module'],
-                    ['key' => 'lesson', 'label' => 'Lesson'],
-                    ['key' => 'status', 'label' => 'Status'],
-                    ['key' => 'completed_at', 'label' => 'Completed'],
-                ],
-                'rows' => $memberTabs['otherTraining'],
-                'empty' => 'No other training modules are published yet.',
+        <div x-show="activeTab === 'checklists'" x-cloak>
+            @include('profile.partials.checklists-tab', [
+                'user' => $user,
+                'memberTabs' => $memberTabs,
+                'isOwnProfile' => $isOwnProfile,
             ])
         </div>
 

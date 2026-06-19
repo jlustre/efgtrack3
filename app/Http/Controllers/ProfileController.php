@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Http\Requests\UpdateProfileInsuranceLicensesRequest;
 use App\Http\Requests\UpdateProfileInviteLinkRequest;
 use App\Http\Requests\UpdateProfilePhotoRequest;
 use App\Mail\InvitationLinkMail;
@@ -15,6 +16,7 @@ use App\Services\MemberUplineService;
 use App\Services\ProfileCompletionService;
 use App\Services\ProfilePhotoService;
 use App\Support\LocationOptions;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -66,19 +68,25 @@ class ProfileController extends Controller
             'team',
             'sponsor',
             'mentor',
-            ...($isOwnProfile ? [
-                'registrationInvitations' => fn ($query) => $query->active()->latest()->limit(5),
-            ] : []),
         ]);
 
         $invitationTemplate = null;
         $invitationEmails = collect();
+        $invitationHistory = collect();
 
         if ($isOwnProfile) {
+            $invitationHistory = RegistrationInvitation::query()
+                ->where('sponsor_id', $user->id)
+                ->with('acceptedBy')
+                ->latest()
+                ->limit(100)
+                ->get();
+
             $invitationTemplate = EmailTemplate::where('key', 'member_invitation')
                 ->where('is_active', true)
                 ->first();
-            $invitationEmails = $user->registrationInvitations
+            $invitationEmails = $invitationHistory
+                ->filter(fn (RegistrationInvitation $invitation): bool => $invitation->isAvailable())
                 ->mapWithKeys(fn (RegistrationInvitation $invitation) => [
                     $invitation->id => $this->renderInvitationEmail($invitation, $invitationTemplate),
                 ]);
@@ -90,7 +98,7 @@ class ProfileController extends Controller
             'user' => $user,
             'isOwnProfile' => $isOwnProfile,
             'viewer' => $viewer,
-            'recentInvitations' => $isOwnProfile ? $user->registrationInvitations : collect(),
+            'invitationHistory' => $invitationHistory,
             'invitationTemplate' => $invitationTemplate,
             'invitationEmails' => $invitationEmails,
             'memberTabs' => $this->memberProfileTabs->forUser($user),
@@ -141,6 +149,19 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function updateInsuranceLicenses(UpdateProfileInsuranceLicensesRequest $request): RedirectResponse
+    {
+        $request->user()->profile()->updateOrCreate(
+            ['user_id' => $request->user()->id],
+            ['insurance_licenses' => $request->normalizedInsuranceLicenses()],
+        );
+
+        return Redirect::route('profile.edit', ['tab' => 'licenses'])->with('licenses_feedback', [
+            'type' => 'success',
+            'message' => 'Your insurance licenses were saved.',
+        ]);
+    }
+
     public function updateInviteLink(UpdateProfileInviteLinkRequest $request): RedirectResponse
     {
         $validated = $request->validated();
@@ -165,13 +186,21 @@ class ProfileController extends Controller
             ]);
     }
 
-    public function updatePhoto(UpdateProfilePhotoRequest $request): RedirectResponse
+    public function updatePhoto(UpdateProfilePhotoRequest $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $profile = $this->profilePhotos->update($user, $request->file('photo'));
 
         $user->unsetRelation('profile');
         $user->setRelation('profile', $profile);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Your profile photo was updated.',
+                'photo_url' => $user->profilePhotoUrl(),
+                'profile_completion' => $this->profileCompletion->snapshot($user),
+            ]);
+        }
 
         $redirectRoute = $request->input('redirect_to') === 'dashboard'
             ? route('dashboard')
@@ -189,13 +218,21 @@ class ProfileController extends Controller
         return $redirect;
     }
 
-    public function destroyPhoto(Request $request): RedirectResponse
+    public function destroyPhoto(Request $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $this->profilePhotos->delete($user);
 
         $user->unsetRelation('profile');
         $user->load('profile');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Your profile photo was removed.',
+                'photo_url' => null,
+                'profile_completion' => $this->profileCompletion->snapshot($user),
+            ]);
+        }
 
         $redirectRoute = $request->input('redirect_to') === 'dashboard'
             ? route('dashboard')
@@ -240,7 +277,7 @@ class ProfileController extends Controller
             'expires_at' => now()->addDays(14),
         ]);
 
-        return Redirect::route('profile.edit')
+        return Redirect::route('profile.edit', ['open_invitations' => 1])
             ->with('status', 'invitation-created')
             ->with('invitation_id', $invitation->id)
             ->with('invitation_url', $invitation->invitationUrl());
@@ -277,7 +314,8 @@ class ProfileController extends Controller
             'last_emailed_at' => now(),
         ])->save();
 
-        return Redirect::route('profile.edit')->with('status', 'invitation-email-sent');
+        return Redirect::route('profile.edit', ['open_invitations' => 1])
+            ->with('status', 'invitation-email-sent');
     }
 
     public function destroyInvitation(Request $request, RegistrationInvitation $invitation): RedirectResponse
@@ -288,7 +326,8 @@ class ProfileController extends Controller
             'revoked_at' => now(),
         ])->save();
 
-        return Redirect::route('profile.edit')->with('status', 'invitation-deleted');
+        return Redirect::route('profile.edit', ['open_invitations' => 1])
+            ->with('status', 'invitation-deleted');
     }
 
     private function ensureEmailCanReceiveInvitation(?string $email, ?RegistrationInvitation $currentInvitation = null): void
@@ -362,7 +401,6 @@ class ProfileController extends Controller
             'state_province_id',
             'timezone_id',
             'best_contact_time',
-            'license_number',
             'bio',
         ] as $field) {
             if ($request->has($field)) {

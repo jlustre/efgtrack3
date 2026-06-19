@@ -22,6 +22,7 @@
     $currentCountryId = (string) old('country_id', $countryId);
     $currentStateProvinceId = (string) old('state_province_id', $stateProvinceId);
     $currentTimezoneId = (string) old('timezone_id', $timezoneId);
+    $provincesForCountry = $locationOptions['provincesByCountryId'][$currentCountryId] ?? [];
 @endphp
 
 <div>
@@ -43,16 +44,16 @@
 
 <div>
     <x-input-label :for="$provinceInputId" :value="__('Province / State')" />
-    <input type="hidden" name="{{ $provinceIdName }}" x-model="{{ $provinceModel }}">
     <select
         id="{{ $provinceInputId }}"
+        name="{{ $provinceIdName }}"
         x-model="{{ $provinceModel }}"
         class="{{ $selectClass }}"
     >
         <option value="">Select province / state</option>
-        <template x-for="(label, value) in {{ $provinceOptionsGetter }}" :key="value">
-            <option :value="value" x-text="label"></option>
-        </template>
+        @foreach ($provincesForCountry as $id => $name)
+            <option value="{{ $id }}" @selected($currentStateProvinceId !== '' && $currentStateProvinceId === (string) $id)>{{ $name }}</option>
+        @endforeach
     </select>
     <x-input-error class="mt-2" :messages="$errors->get('state_province_id')" />
 </div>
