@@ -8,16 +8,38 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('resources', function (Blueprint $table): void {
-            $table->longText('content')->nullable()->after('description');
-            $table->timestamp('pdf_generated_at')->nullable()->after('file_format');
-        });
+        if (! Schema::hasTable('resources')) {
+            return;
+        }
+
+        if (! Schema::hasColumn('resources', 'content')) {
+            Schema::table('resources', function (Blueprint $table): void {
+                $table->longText('content')->nullable();
+            });
+        }
+
+        if (! Schema::hasColumn('resources', 'pdf_generated_at')) {
+            Schema::table('resources', function (Blueprint $table): void {
+                $table->timestamp('pdf_generated_at')->nullable();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('resources', function (Blueprint $table): void {
-            $table->dropColumn(['content', 'pdf_generated_at']);
-        });
+        if (! Schema::hasTable('resources')) {
+            return;
+        }
+
+        $columns = array_values(array_filter(
+            ['content', 'pdf_generated_at'],
+            fn (string $column): bool => Schema::hasColumn('resources', $column),
+        ));
+
+        if ($columns !== []) {
+            Schema::table('resources', function (Blueprint $table) use ($columns): void {
+                $table->dropColumn($columns);
+            });
+        }
     }
 };

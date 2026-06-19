@@ -151,11 +151,19 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
+            $table->longText('content')->nullable();
             $table->string('type')->default('link');
+            $table->string('category')->default('general');
+            $table->unsignedInteger('sort_order')->default(0);
             $table->string('url')->nullable();
             $table->string('file_path')->nullable();
+            $table->string('file_format', 20)->nullable();
+            $table->timestamp('pdf_generated_at')->nullable();
             $table->boolean('is_published')->default(false);
+            $table->boolean('is_featured')->default(false);
             $table->timestamps();
+
+            $table->index(['type', 'category', 'is_published', 'sort_order'], 'resources_library_index');
         });
 
         Schema::create('events', function (Blueprint $table) {
