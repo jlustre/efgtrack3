@@ -152,8 +152,8 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->longText('content')->nullable();
-            $table->string('type')->default('link');
-            $table->string('category')->default('general');
+            $table->string('type', 50)->default('link');
+            $table->string('category', 50)->default('general');
             $table->unsignedInteger('sort_order')->default(0);
             $table->string('url')->nullable();
             $table->string('file_path')->nullable();
