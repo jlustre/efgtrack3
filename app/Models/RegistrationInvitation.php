@@ -96,4 +96,64 @@ class RegistrationInvitation extends Model
             && $this->uses_count < $this->max_uses
             && (bool) $this->sponsor?->is_active;
     }
+
+    public function statusKey(): string
+    {
+        if ($this->accepted_at !== null) {
+            return 'accepted';
+        }
+
+        if ($this->revoked_at !== null) {
+            return 'revoked';
+        }
+
+        if ($this->expires_at !== null && $this->expires_at->isPast()) {
+            return 'expired';
+        }
+
+        if ($this->uses_count >= $this->max_uses) {
+            return 'used';
+        }
+
+        return 'active';
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->statusKey()) {
+            'active' => 'Active',
+            'accepted' => 'Registered',
+            'expired' => 'Expired',
+            'revoked' => 'Deleted',
+            'used' => 'Used',
+            default => 'Closed',
+        };
+    }
+
+    public function outcomeDescription(): string
+    {
+        return match ($this->statusKey()) {
+            'active' => 'Waiting for registration',
+            'accepted' => $this->acceptedBy
+                ? 'Joined as '.$this->acceptedBy->name
+                : 'Registration completed',
+            'expired' => 'Link expired before it was used',
+            'revoked' => 'Cancelled by you',
+            'used' => 'All allowed uses were consumed',
+            default => 'No longer available',
+        };
+    }
+
+    public function recipientLabel(): string
+    {
+        if ($this->acceptedBy) {
+            return $this->acceptedBy->name.' ('.$this->acceptedBy->email.')';
+        }
+
+        if (filled($this->email)) {
+            return $this->email;
+        }
+
+        return 'Any email (open link)';
+    }
 }

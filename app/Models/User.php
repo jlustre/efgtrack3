@@ -76,11 +76,6 @@ class User extends Authenticatable
         return $this->hasOne(Profile::class);
     }
 
-    public function isEmployee(): bool
-    {
-        return $this->profile?->recruited_at !== null;
-    }
-
     public function rank(): BelongsTo
     {
         return $this->belongsTo(Rank::class);

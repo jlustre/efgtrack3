@@ -40,7 +40,7 @@ class NewMemberRegistrationService
             $this->sendTemplatedEmail('sponsor_new_member_welcome', $sponsor->email, $this->tokens($member, $sponsor, $agencyOwner));
         }
 
-        if ($agencyOwner && $agencyOwner->id !== $sponsor?->id) {
+        if ($agencyOwner) {
             $this->sendTemplatedEmail('agency_owner_new_member_welcome', $agencyOwner->email, $this->tokens($member, $sponsor, $agencyOwner));
         }
     }

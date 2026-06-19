@@ -10,24 +10,30 @@
                 email: @js($user->email),
                 phone: @js($user->profile?->phone ?? ''),
                 best_contact_time: @js($user->profile?->best_contact_time ?? ''),
-                license_number: @js($user->profile?->license_number ?? ''),
                 efg_associate_id: @js($user->profile?->efg_associate_id ?? ''),
                 efg_invite_link: @js($user->profile?->efg_invite_link ?? ''),
                 city: @js($user->profile?->city ?? ''),
-                country_id: @js($user->profile?->country_id ?? ''),
-                state_province_id: @js($user->profile?->state_province_id ?? ''),
-                timezone_id: @js($user->profile?->timezone_id ?? ''),
+                country_id: @js((string) ($user->profile?->country_id ?? '')),
+                state_province_id: @js((string) ($user->profile?->state_province_id ?? '')),
+                timezone_id: @js((string) ($user->profile?->timezone_id ?? '')),
                 bio: @js($user->profile?->bio ?? ''),
             },
             locationProvinces: @js($locationOptions['provincesByCountryId'] ?? []),
             get completionProvinceOptions() {
                 return this.locationProvinces[String(this.form.country_id)] || {};
             },
-            onCompletionCountryChange() {
-                const options = this.completionProvinceOptions;
-                if (this.form.state_province_id && ! Object.prototype.hasOwnProperty.call(options, String(this.form.state_province_id))) {
-                    this.form.state_province_id = '';
+            syncCompletionProvinceSelect() {
+                const next = window.rebuildProvinceSelectOptions(
+                    'completion_state_province_id',
+                    this.completionProvinceOptions,
+                    this.form.state_province_id,
+                );
+                if (next !== this.form.state_province_id) {
+                    this.form.state_province_id = next;
                 }
+            },
+            onCompletionCountryChange() {
+                this.syncCompletionProvinceSelect();
             },
             get completedFieldCount() {
                 return this.completionFields.filter((field) => field.filled).length;
@@ -35,26 +41,27 @@
             dismissProfileCompletion() {
                 this.profileCompletionOpen = false;
             },
+            refreshProfileCompletion(snapshot) {
+                this.completionFields = snapshot.fields ?? this.completionFields;
+                this.completionPercent = snapshot.percent ?? this.completionPercent;
+            },
         }"
+        x-init="$nextTick(() => syncCompletionProvinceSelect())"
+        x-on:profile-completion-updated.window="refreshProfileCompletion($event.detail.profile_completion)"
     >
-    <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Private Team Portal</p>
-            <h1 class="text-2xl font-semibold text-[#0B1F3A]">Dashboard</h1>
-        </div>
-
-        <div class="rounded-full border border-[#C8A24A]/40 bg-white px-4 py-2 text-sm font-semibold text-[#0B1F3A] shadow-sm">
-            Current Rank: {{ auth()->user()?->rank?->code ?? 'New Recruit' }}
-        </div>
-    </div>
-
-    @include('dashboard.partials.stat-card-themes')
-
     <div class="space-y-6">
+        @include('profile.partials.member-header', [
+            'user' => $user,
+            'badge' => 'Member Dashboard',
+            'showEfgDetails' => true,
+        ])
+
+        @include('dashboard.partials.stat-card-themes')
+
         <section
             x-data="dashboardStats(@js(['detailsUrlTemplate' => route('dashboard.stat-details', ['type' => '__TYPE__'])]))"
         >
-            <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Team</h2>
+            <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">My Team</h2>
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
                 @foreach ($statCards['team'] ?? [] as $card)
                     @php($theme = dashboardStatCardTheme($card['key'], 'team'))
@@ -115,11 +122,9 @@
                 </div>
             </section>
         @endif
-    </div>
 
-    @include('dashboard.partials.journey-hub', ['overview' => $overview ?? []])
+        @include('dashboard.partials.journey-hub', ['overview' => $overview ?? []])
 
-    <div class="mt-6">
         @include('dashboard.partials.recent-notifications-panel')
     </div>
 

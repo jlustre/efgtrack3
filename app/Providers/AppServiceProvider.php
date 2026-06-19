@@ -57,5 +57,17 @@ class AppServiceProvider extends ServiceProvider
             \App\Events\Fna\FnaMeetingScheduled::class,
             [\App\Listeners\Fna\SyncFnaProspectIntegration::class, 'handleMeetingScheduled'],
         );
+        Event::listen(
+            \App\Events\Support\SupportTicketCreated::class,
+            [\App\Listeners\Support\SendSupportTicketCreatedNotifications::class, 'handle'],
+        );
+        Event::listen(
+            \App\Events\Support\SupportTicketStatusChanged::class,
+            [\App\Listeners\Support\SendSupportTicketStatusChangedNotification::class, 'handle'],
+        );
+        Event::listen(
+            \App\Events\Support\SupportTicketAgentReplied::class,
+            [\App\Listeners\Support\SendSupportTicketAgentReplyNotification::class, 'handle'],
+        );
     }
 }

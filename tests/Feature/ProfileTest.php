@@ -10,6 +10,7 @@ use App\Services\DownlineHierarchyService;
 use App\Support\LocationOptions;
 use Database\Seeders\ChecklistSeeder;
 use Database\Seeders\ChecklistTypeSeeder;
+use Database\Seeders\CountrySeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StateProvinceSeeder;
@@ -18,11 +19,13 @@ use Database\Seeders\TeamSeeder;
 use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Concerns\StartsChecklistTypes;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
 {
     use RefreshDatabase;
+    use StartsChecklistTypes;
 
     public function test_profile_page_is_displayed(): void
     {
@@ -37,15 +40,39 @@ class ProfileTest extends TestCase
             ->assertDontSee('Delete Account')
             ->assertSee('Profile Details', false)
             ->assertSee('Update Profile Photo', false)
-            ->assertSee('Onboarding', false)
             ->assertSee('Recruits', false)
             ->assertSee('Annual Premium', false)
-            ->assertSee('Other Training', false)
+            ->assertSee('Checklists', false)
             ->assertSee('EFG Details', false)
             ->assertSee('Experior invite URL', false)
             ->assertSee('Save EFG Details', false)
             ->assertSee('Profile Completion', false)
             ->assertSee('Profile Tracking', false);
+    }
+
+    public function test_profile_checklists_tab_shows_started_checklist_summaries(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+        ]);
+
+        $user = User::factory()->create();
+        $this->startChecklistType($user, 'onboarding', startedAt: '2026-01-01');
+        $this->startChecklistType($user, 'licensing');
+
+        $this
+            ->actingAs($user)
+            ->get(route('profile.edit', ['tab' => 'checklists']))
+            ->assertOk()
+            ->assertSee('Checklists', false)
+            ->assertSee('Onboarding', false)
+            ->assertSee('Licensing', false)
+            ->assertSee('View details', false)
+            ->assertSee('Due', false)
+            ->assertSee('text-red-600', false)
+            ->assertDontSee('No checklists started yet', false);
     }
 
     public function test_profile_page_shows_completion_checklist_with_missing_fields(): void
@@ -72,7 +99,6 @@ class ProfileTest extends TestCase
             ->assertOk()
             ->assertSee('Profile Completion', false)
             ->assertSee('Still needed', false)
-            ->assertSee('License number', false)
             ->assertSee('EFG associate ID', false)
             ->assertSee('Profile photo', false)
             ->assertSee('Complete profile details', false)
@@ -91,6 +117,7 @@ class ProfileTest extends TestCase
         ]);
 
         $cfm = User::where('email', 'cfm@efgtrack.com')->firstOrFail();
+        $this->startChecklistType($cfm, 'onboarding');
 
         $this->actingAs($cfm)
             ->get(route('profile.edit', ['tab' => 'profile']))
@@ -101,10 +128,10 @@ class ProfileTest extends TestCase
             ->assertDontSee('Member Information', false);
 
         $this->actingAs($cfm)
-            ->get(route('profile.edit', ['tab' => 'onboarding']))
+            ->get(route('profile.edit', ['tab' => 'checklists']))
             ->assertOk()
-            ->assertSee('Onboarding Checklist', false)
-            ->assertSee('Field Apprenticeship Program', false);
+            ->assertSee('Onboarding', false)
+            ->assertSee('View details', false);
     }
 
     public function test_recruits_tab_shows_levels_and_total_with_search_and_filters(): void
@@ -194,7 +221,6 @@ class ProfileTest extends TestCase
                 'country_id' => LocationOptions::resolveCountryId('Canada'),
                 'timezone_id' => LocationOptions::resolveTimezoneId('Canada Eastern Time'),
                 'best_contact_time' => 'Morning (8am – 12pm)',
-                'license_number' => 'LIC-123',
                 'efg_associate_id' => 'EFG-2001',
                 'efg_invite_link' => 'https://efg.example.com/invite/2001',
                 'bio' => 'Building a strong financial services team.',
@@ -211,6 +237,13 @@ class ProfileTest extends TestCase
             ->assertSee('Profile saved', false)
             ->assertSee('Your profile was updated successfully.', false);
 
+        $ontarioId = LocationOptions::resolveStateProvinceId('Canada', 'Ontario');
+
+        $this->actingAs($user)
+            ->get(route('profile.edit', ['tab' => 'profile']))
+            ->assertOk()
+            ->assertSee('value="'.$ontarioId.'" selected', false);
+
         $user->refresh()->load('profile.stateProvince', 'profile.countryRecord', 'profile.timezoneRecord');
 
         $this->assertSame('Test User', $user->name);
@@ -222,9 +255,46 @@ class ProfileTest extends TestCase
         $this->assertSame('Canada', $user->profile->country);
         $this->assertSame('Canada Eastern Time', $user->profile->timezone);
         $this->assertSame('Morning (8am – 12pm)', $user->profile->best_contact_time);
-        $this->assertSame('LIC-123', $user->profile->license_number);
         $this->assertSame('EFG-2001', $user->profile->efg_associate_id);
         $this->assertSame('https://efg.example.com/invite/2001', $user->profile->efg_invite_link);
+    }
+
+    public function test_member_can_save_multiple_insurance_licenses_on_licenses_tab(): void
+    {
+        $this->seed([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->patch(route('profile.licenses.update'), [
+                'insurance_licenses' => [
+                    'Canada|Ontario',
+                    'Canada|British Columbia',
+                    'United States|California',
+                ],
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit', ['tab' => 'licenses']))
+            ->assertSessionHas('licenses_feedback', fn (array $feedback) => $feedback['type'] === 'success');
+
+        $user->refresh();
+
+        $this->assertSame(
+            ['Canada|British Columbia', 'Canada|Ontario', 'United States|California'],
+            $user->profile->insurance_licenses
+        );
+
+        $this->actingAs($user)
+            ->get(route('profile.edit', ['tab' => 'licenses']))
+            ->assertOk()
+            ->assertSee('Insurance Licenses', false)
+            ->assertSee('ON, CA', false)
+            ->assertSee('BC, CA', false)
+            ->assertSee('CA, US', false);
     }
 
     public function test_profile_update_shows_validation_errors_on_profile_tab(): void
@@ -406,7 +476,7 @@ class ProfileTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect(route('profile.edit', ['open_invitations' => 1]));
 
         $this->assertDatabaseHas('registration_invitations', [
             'sponsor_id' => $user->id,
@@ -439,10 +509,10 @@ class ProfileTest extends TestCase
         $response->assertSessionHasErrors('email');
     }
 
-    public function test_accepted_invitations_are_not_shown_on_profile(): void
+    public function test_accepted_invitations_appear_in_invitation_log_modal(): void
     {
         $user = User::factory()->create();
-        $acceptedUser = User::factory()->create(['email' => 'accepted@example.com']);
+        $acceptedUser = User::factory()->create(['email' => 'accepted@example.com', 'name' => 'Accepted Member']);
         $activeInvitation = RegistrationInvitation::factory()->for($user, 'sponsor')->create([
             'email' => 'active@example.com',
         ]);
@@ -461,9 +531,24 @@ class ProfileTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertSee('View Invitation Log')
+            ->assertSee('Invitation Link Log')
             ->assertSee($activeInvitation->code)
             ->assertSee('active@example.com')
-            ->assertDontSee('accepted@example.com');
+            ->assertSee('accepted@example.com')
+            ->assertSee('Registered')
+            ->assertSee('Accepted Member');
+    }
+
+    public function test_profile_opens_invitation_log_when_requested(): void
+    {
+        $user = User::factory()->create();
+
+        $this
+            ->actingAs($user)
+            ->get('/profile?open_invitations=1')
+            ->assertOk()
+            ->assertSee('Invitation Link Log', false);
     }
 
     public function test_member_can_delete_active_invitation_and_reinvite_same_email(): void
@@ -483,7 +568,7 @@ class ProfileTest extends TestCase
 
         $deleteResponse
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect(route('profile.edit', ['open_invitations' => 1]));
 
         $this->assertNotNull($invitation->refresh()->revoked_at);
 
@@ -495,7 +580,7 @@ class ProfileTest extends TestCase
 
         $createResponse
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect(route('profile.edit', ['open_invitations' => 1]));
 
         $this->assertSame(2, RegistrationInvitation::where('email', 'invitee@example.com')->count());
     }
@@ -536,7 +621,7 @@ class ProfileTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect(route('profile.edit', ['open_invitations' => 1]));
 
         Mail::assertSent(InvitationLinkMail::class, function (InvitationLinkMail $mail) use ($user) {
             return $mail->senderName === $user->name
@@ -568,7 +653,7 @@ class ProfileTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
+            ->assertRedirect(route('profile.edit', ['open_invitations' => 1]));
 
         Mail::assertSent(InvitationLinkMail::class, fn (InvitationLinkMail $mail): bool => str_contains($mail->emailBody, $url));
     }

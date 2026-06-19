@@ -1,44 +1,76 @@
 # EFGTrack — Prospect Sales Funnel
 **User Guide**
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Last updated:** June 2026  
 **Audience:** Associates, team leaders, CFMs, and agency owners managing personal prospects in EFGTrack  
 **Hub URL:** `/team/prospects` (sidebar: **Prospect Management**)
 
 ---
 
+## How to use this guide
+
+| If you want to… | Start here |
+|---|---|
+| Understand your private CRM | [Section 1](#1-what-this-module-does) |
+| Learn who can see your prospects | [Privacy rules](#2-privacy-and-data-ownership) |
+| Start prospecting today | [Quick start](#quick-start) |
+| Move prospects on the board | [Pipeline Board](#9-pipeline-board-kanban) |
+| Log calls and follow-ups | [Activities](#13-logging-activities-and-communications) |
+| Connect to FNA | [FNA integration](#22-fna-integration) |
+| Fix a problem | [Troubleshooting](#26-troubleshooting) |
+
+---
+
 ## Table of contents
+
+**Part 1 — Overview**
 
 1. [What this module does](#1-what-this-module-does)
 2. [Privacy and data ownership](#2-privacy-and-data-ownership)
 3. [Who can access what](#3-who-can-access-what)
-4. [Module map — pages and URLs](#4-module-map--pages-and-urls)
-5. [Recommended workflows](#5-recommended-workflows)
-6. [Prospect Management dashboard](#6-prospect-management-dashboard)
-7. [Adding and editing prospects](#7-adding-and-editing-prospects)
-8. [The sales funnel explained](#8-the-sales-funnel-explained)
-9. [Pipeline Board (Kanban)](#9-pipeline-board-kanban)
-10. [Insurance funnel stages](#10-insurance-funnel-stages)
-11. [Recruiting funnel stages](#11-recruiting-funnel-stages)
-12. [Prospect profile](#12-prospect-profile)
-13. [Logging activities and communications](#13-logging-activities-and-communications)
-14. [Follow-Up Center](#14-follow-up-center)
-15. [Stage automations](#15-stage-automations)
-16. [Appointment Calendar](#16-appointment-calendar)
-17. [Converting prospects](#17-converting-prospects)
-18. [Sharing prospects with mentors and leaders](#18-sharing-prospects-with-mentors-and-leaders)
-19. [Import and export](#19-import-and-export)
-20. [Analytics, goals, and team aggregates](#20-analytics-goals-and-team-aggregates)
-21. [AI Coach](#21-ai-coach)
-22. [FNA integration](#22-fna-integration)
-23. [Connections to Goals & Performance](#23-connections-to-goals--performance)
-24. [Key concepts](#24-key-concepts)
-25. [Tips and best practices](#25-tips-and-best-practices)
-26. [Troubleshooting](#26-troubleshooting)
-27. [Appendix](#27-appendix)
+4. [Module map — pages and URLs](#4-module-map-pages-and-urls)
+5. [The prospecting journey](#the-prospecting-journey)
+6. [Recommended workflows](#5-recommended-workflows)
+
+**Part 2 — Daily prospecting**
+
+7. [Quick start](#quick-start)
+8. [Prospect Management dashboard](#6-prospect-management-dashboard)
+9. [Adding and editing prospects](#7-adding-and-editing-prospects)
+10. [The sales funnel explained](#8-the-sales-funnel-explained)
+11. [Pipeline Board (Kanban)](#9-pipeline-board-kanban)
+12. [Insurance funnel stages](#10-insurance-funnel-stages)
+13. [Recruiting funnel stages](#11-recruiting-funnel-stages)
+14. [Prospect profile](#12-prospect-profile)
+15. [Logging activities and communications](#13-logging-activities-and-communications)
+16. [Follow-Up Center](#14-follow-up-center)
+17. [Stage automations](#15-stage-automations)
+18. [Appointment Calendar](#16-appointment-calendar)
+
+**Part 3 — Conversion and collaboration**
+
+19. [Converting prospects](#17-converting-prospects)
+20. [Sharing with mentors and leaders](#18-sharing-prospects-with-mentors-and-leaders)
+21. [Import and export](#19-import-and-export)
+
+**Part 4 — Insights and connections**
+
+22. [Analytics, goals, and team aggregates](#20-analytics-goals-and-team-aggregates)
+23. [AI Coach](#21-ai-coach)
+24. [FNA integration](#22-fna-integration)
+25. [Connections to Goals & Performance](#23-connections-to-goals-performance)
+
+**Part 5 — Reference**
+
+26. [Key concepts](#24-key-concepts)
+27. [Tips and best practices](#25-tips-and-best-practices)
+28. [Troubleshooting](#26-troubleshooting)
+29. [Appendix](#27-appendix)
 
 ---
+
+# Part 1 — Overview
 
 ## 1. What this module does
 
@@ -83,18 +115,18 @@ When collaborating, use **Share** on the prospect profile with the minimum permi
 
 ## 3. Who can access what
 
-Access is controlled by permissions on your role.
+| You need to… | Who typically can |
+|---|---|
+| Full CRM (dashboard, pipeline, profile, follow-ups) | Associates, members, CFMs, leaders |
+| View prospects **shared with you** | Anyone with shared-prospect access |
+| **Share** your prospects with a CFM or sponsor | Prospect owners with share permission |
+| **Import** CSV leads | Members with import enabled |
+| **Export** your list as CSV | Members with export enabled |
+| **Schedule** prospect appointments | Members with appointment permission |
 
-| Permission | Typical roles | What you can do |
-|---|---|---|
-| `manage prospects` | Member, associate, CFM, leaders | Full CRM: dashboard, pipeline, profile, follow-ups, appointments, analytics |
-| `view shared prospects` | Most roles with prospect access | View prospects **shared with you** (Shared With Me) |
-| `share prospects` | Members who own prospects | Grant and revoke sharing on your records |
-| `import prospects` | Members with import enabled | CSV import wizard |
-| `export prospects` | Members with export enabled | Download your prospect list as CSV |
-| `manage prospect appointments` | Members with appointment permission | Schedule and manage prospect appointments |
+If a menu item is missing or you get **403 Forbidden**, contact your agency administrator.
 
-If a menu item is missing or a page returns **403 Forbidden**, your role does not include the required permission. Contact your agency administrator.
+Technical permission names: [Appendix O](#o-permission-reference).
 
 ---
 
@@ -118,6 +150,23 @@ If a menu item is missing or a page returns **403 Forbidden**, your role does no
 | **Import** | `/team/prospects/import` | CSV import wizard |
 | **Export** | `/team/prospects/export` | Download CSV export |
 | **Prospect FNA** | `/team/prospects/records/{id}/fna` | FNA records linked to prospect |
+
+---
+
+## The prospecting journey
+
+```mermaid
+flowchart LR
+    A[Add prospect] --> B[Contact & log activity]
+    B --> C[Move pipeline stage]
+    C --> D[Follow-up & appointments]
+    D --> E[FNA / presentation]
+    E --> F[Convert to client or associate]
+```
+
+**Insurance path:** New Lead → Contact → Discovery → Financial Review → Solution → Application → Client
+
+**Recruiting path:** Prospect Added → Presentation → Registration Link → Active Associate
 
 ---
 
@@ -155,6 +204,20 @@ If a menu item is missing or a page returns **403 Forbidden**, your role does no
 3. Confirm import — all records are assigned to **you** only.
 4. Open **Pipeline Board** and assign appropriate stages.
 5. Set interest level and priority on hot leads.
+
+---
+
+# Part 2 — Daily prospecting
+
+## Quick start
+
+**Goal:** Log your first prospect and schedule a follow-up.
+
+1. **Prospect Management** → **Add Prospect**
+2. Enter name, funnel type (Insurance or Recruiting), source, interest level
+3. Open **Pipeline Board** — drag the card to the correct stage after first contact
+4. **Log Call** from the card or profile — set **next follow-up** date
+5. Tomorrow: open **Follow-Up Center** and work due items first
 
 ---
 
@@ -350,7 +413,7 @@ Open any prospect from the dashboard, pipeline board, or follow-up list.
 |---|---|---|
 | **Convert** | Owner | Client, associate, or inactive conversion |
 | **Share** | Owner | Grant collaboration access |
-| **Send FNA Link** | FNA permission | Invite prospect to complete FNA online |
+| **Send FNA Link** | FNA permission + license on profile | Invite prospect to complete FNA online — see [FNA integration](#22-fna-integration) |
 | **Edit** | Owner or edit permission | Update record |
 | **Activity** | View access | Dedicated activity page |
 | **Back** | Always | Return to dashboard |
@@ -374,7 +437,7 @@ Shows phone numbers, email, address, appointment date, follow-up date, tags, and
 | **Activities** | Structured activity log (calls, meetings, presentations) |
 | **Calls & Comms** | Communication log with type and direction |
 | **Notes** | Free-form notes (private notes visible only to you) |
-| **FNA** | Linked FNA records and client invite status |
+| **FNA** | Linked FNA records and client invite status — see [FNA integration](#22-fna-integration) and the [FNA Management User Guide](/support/documentation/fna-management) |
 
 ### Quick action buttons (on tabs)
 
@@ -502,6 +565,8 @@ Use appointments for discovery calls, FNA meetings, BOP presentations, and recru
 
 ---
 
+# Part 3 — Conversion and collaboration
+
 ## 17. Converting prospects
 
 When a prospect reaches a successful outcome, **Convert** records the result and updates their status.
@@ -592,6 +657,8 @@ Download a CSV of your prospects including ID, names, contact info, funnel type,
 
 ---
 
+# Part 4 — Insights and connections
+
 ## 20. Analytics, goals, and team aggregates
 
 **Analytics & Goals** (`/team/prospects/analytics`) measures pipeline health.
@@ -673,21 +740,86 @@ Additional lists highlight registrations/applications needing escalation and hot
 
 ## 22. FNA integration
 
-For insurance prospects, connect fact-finding to the **FNA (Financial Needs Analysis)** module.
+For insurance prospects, connect fact-finding to **FNA Management** (`/team/fna`). This section covers what you do **from the prospect side**. For the full FNA workflow — wizard steps, DIME analysis, CFM review, exports, and troubleshooting — see the **[FNA Management User Guide](/support/documentation/fna-management)**.
 
-### From prospect profile
+### Two ways to run an FNA on a prospect
 
-1. Click **Send FNA Link** (when you have FNA permissions).
-2. Prospect receives a client invite to complete the FNA wizard.
-3. Track status on the prospect **FNA** tab: Not Started → Scheduled → Completed.
+| Approach | Start here | Best when |
+|---|---|---|
+| **You enter the data** | Prospect **FNA** tab → **+ Create FNA**, or FNA Management → **+ New FNA** with prospect linked | In-person or phone fact-finding; trainee CFM review |
+| **Prospect completes online** | Prospect profile → **Send FNA Link** | Client portal self-serve before or after discovery call |
 
-### FNA status field
+Both paths link the FNA to the prospect record and update the prospect **FNA Status** field automatically when the linked FNA moves through workflow.
 
-When creating or editing a prospect, set **FNA Status** to match reality even before sending a link.
+### Send FNA Link (client portal)
+
+**Requires:** FNA Management access and a **license number** on My Profile.
+
+1. Open the prospect profile → **Send FNA Link**.
+2. Enter recipient details → **Create invite link**.
+3. Share the **URL and 6-digit security code** immediately (code shown once).
+4. When the prospect submits, review the imported data on the linked FNA record.
+
+Details: [Client portal invites](/support/documentation/fna-management#13-client-portal-invites) in the FNA guide.
+
+### Create an internal FNA record
+
+**URL:** `/team/prospects/records/{id}/fna`
+
+1. Open the prospect → **FNA** tab (or **Prospect FNAs** from the module map).
+2. Click **+ Create FNA**.
+3. Complete the [nine-step wizard](/support/documentation/fna-management#8-fna-wizard-nine-steps) and [DIME analysis](/support/documentation/fna-management#9-dime-analysis).
+4. [Submit to your CFM](/support/documentation/fna-management#11-submitting-to-your-cfm) when completeness is at least 60%.
+
+### Prospect FNA tab
+
+The **FNA** tab on the prospect profile shows:
+
+- Linked FNA records (reference code, status, completeness)
+- Client portal invite status (pending, in progress, submitted)
+- Quick link to open each record in FNA Management
+
+### FNA status field (on the prospect record)
+
+The **FNA Status** dropdown on create/edit forms:
+
+| Value | Meaning |
+|---|---|
+| **Not Started** | No FNA activity yet (or FNA still in draft / CFM review) |
+| **Scheduled** | CFM approved or client review meeting scheduled |
+| **Completed** | Presented, follow-up, converted, or closed |
+| **Declined** | Prospect declined FNA (set manually) |
+
+**Auto-sync:** When an FNA is linked, EFGTrack updates this field from the FNA workflow. You can still set **Declined** manually. Before sending a link, set the field to match reality if needed.
+
+| Linked FNA status | Prospect FNA Status becomes |
+|---|---|
+| Draft through Revision Requested | Not Started |
+| Approved by CFM, Scheduled for Client Review | Scheduled |
+| Presented, Follow-Up, Converted, Closed | Completed |
+
+Full status list: [FNA status lifecycle](/support/documentation/fna-management#20-fna-status-lifecycle).
 
 ### Pipeline alignment
 
-Move insurance prospects to **Financial Review** when FNA is in progress, and toward **Solution Presented** after review is complete.
+| Prospect stage | FNA activity |
+|---|---|
+| **Discovery Call** | Schedule FNA or discovery meeting; consider **Send FNA Link** |
+| **Financial Review** | FNA in progress — complete wizard, DIME, or review portal submission |
+| **Solution Presented** | FNA approved and client review completed |
+
+Move stages when the **milestone actually happened**, not when you plan it.
+
+### Appointments and calendar
+
+When scheduling a prospect appointment, choose **FNA Appointment** for discovery or review meetings. After CFM approval, you can also schedule from the FNA record’s **Client Meeting** panel — that event appears on your calendar and prospect timeline.
+
+### Where to go next
+
+| Topic | Guide |
+|---|---|
+| Full FNA module (wizard, DIME, CFM, export) | [FNA Management User Guide](/support/documentation/fna-management) |
+| FNA activity goals and scorecards | [Goals & Performance User Guide](/support/documentation/goals-and-performance) |
 
 ---
 
@@ -699,12 +831,15 @@ Prospect activity feeds your broader performance picture:
 |---|---|
 | **Period Goals** | Prospect analytics goals track contacts, appointments, presentations, etc. |
 | **Goals & Performance module** | KPI goals can sync prospecting metrics from CRM activity |
+| **FNA Management** | Link prospects to FNAs; **Send FNA Link**; FNA status syncs to prospect field — [FNA guide](/support/documentation/fna-management) |
 | **Performance Planner** | Income/recruiting funnels in Goals use the same activity language (contacts → appointments → presentations) |
 | **Rank advancement** | Production and recruiting outcomes from converted prospects support rank criteria |
 
-Use **Prospect Analytics** for operational weekly tracking and **Goals & Performance** (`/goals`) for strategic targets and coaching conversations.
+Use **Prospect Analytics** for operational weekly tracking and **[Goals & Performance](/support/documentation/goals-and-performance)** (`/goals`) for strategic targets and coaching conversations.
 
 ---
+
+# Part 5 — Reference
 
 ## 24. Key concepts
 
@@ -743,7 +878,8 @@ Use **Prospect Analytics** for operational weekly tracking and **Goals & Perform
 
 ### Insurance sales
 
-- Send **FNA link** before or right after discovery call.
+- Send **FNA link** before or after discovery — [FNA integration](#22-fna-integration) · [FNA guide](/support/documentation/fna-management)
+- Move to **Financial Review** when fact-finding starts; move to **Solution Presented** after the FNA review meeting.
 - Move to **Application Submitted** only when the app is actually with the carrier.
 - Convert to **Client** with policy number for clean production tracking.
 
@@ -769,63 +905,72 @@ Use **Prospect Analytics** for operational weekly tracking and **Goals & Perform
 
 ## 26. Troubleshooting
 
-### I cannot see Prospect Management in the menu
+### Prospect Management missing from menu
 
-- You need the `manage prospects` permission.
-- Contact your administrator if you are an active associate without access.
+**Cause:** No prospect CRM permission.  
+**Fix:** Contact administrator for **Prospect Management** access.
 
-### My prospect disappeared from the Pipeline Board
+---
 
-- Check funnel filter (Insurance vs Recruiting) — recruiting prospects do not appear on insurance board.
-- Archived, converted, or inactive prospects are hidden from the active board.
-- Verify status is **Active** on the prospect record.
+### Prospect disappeared from Pipeline Board
+
+**Cause:** Wrong funnel filter, or prospect archived/converted/inactive.  
+**Fix:** Check Insurance vs Recruiting filter; confirm status is **Active**.
+
+---
 
 ### Drag-and-drop did not save
 
-- Refresh the page and try again.
-- Ensure you own the prospect (shared collaborators may not have stage-edit rights).
-- Check internet connection — board saves via Livewire.
+**Cause:** Connection issue or insufficient share permission.  
+**Fix:** Refresh and retry. Only the **owner** (or collaborators with edit rights) can move stages.
 
-### I cannot convert a prospect
+---
 
-- Only the **owner** can convert (policy).
-- You may need appropriate role for associate invitation creation.
+### Cannot convert a prospect
+
+**Cause:** Only owner can convert; role may lack invite permissions.  
+**Fix:** Confirm you own the record; check role for associate invitation creation.
+
+---
 
 ### Shared user cannot see my prospect
 
-- Confirm share is not **revoked** or **expired**.
-- Confirm they are looking in **Shared With Me**, not their own dashboard.
-- Verify you selected the correct preset (CFM, Sponsor, User).
+**Cause:** Revoked, expired, or wrong share preset.  
+**Fix:** Confirm share is active; they should check **Shared With Me**, not their own dashboard.
+
+---
 
 ### Import skipped many rows
 
-- Duplicates match on **email or phone** — review duplicate report in step 3.
-- Fix CSV formatting; max file size is 2MB.
+**Cause:** Duplicates on email/phone or CSV formatting.  
+**Fix:** Review duplicate report in import step 3; max file size 2 MB.
+
+---
 
 ### Follow-up will not complete
 
-- Click **Complete** in Follow-Up Center after logging the contact.
-- If created by automation, complete or snooze explicitly.
+**Cause:** Not marked complete after contact.  
+**Fix:** Click **Complete** in Follow-Up Center (or snooze if appropriate).
+
+---
 
 ### AI Coach shows nothing
 
-- No rules currently match — generally a good sign.
-- Add more activity logging so rules can detect patterns.
-- Hot/inactive rules need interest level and last contact dates populated.
+**Cause:** No rules match — often a good sign.  
+**Fix:** Log more activity so rules can detect patterns; populate interest level and last contact dates.
+
+---
 
 ### Analytics conversion rate seems wrong
 
-- Conversion rate depends on converted vs total historical prospects.
-- New users with few conversions may see 0% until first client or associate conversion.
+**Cause:** Low historical volume for new users.  
+**Fix:** Rate improves after first client or associate conversion.
+
+---
 
 ### Permission denied (403)
 
-| Action | Typical permission needed |
-|---|---|
-| View own CRM | `manage prospects` |
-| Import CSV | `import prospects` |
-| Export CSV | `export prospects` |
-| View shared record | `view shared prospects` + active share |
+**Fix:** See [Section 3](#3-who-can-access-what) or [Appendix O](#o-permission-reference).
 
 ---
 
@@ -847,9 +992,11 @@ Cold · Warm · Hot
 
 Low · Medium · High · Urgent
 
-### D. FNA statuses
+### D. FNA statuses (prospect record field)
 
 Not Started · Scheduled · Completed · Declined
+
+When an FNA is linked, **Not Started / Scheduled / Completed** sync from FNA Management workflow. **Declined** is manual only. See [Section 22](#22-fna-integration) and the [FNA Management User Guide](/support/documentation/fna-management#18-prospect-integration).
 
 ### E. Activity types
 
@@ -901,14 +1048,28 @@ Prospect Added → Invitation Sent → Follow-Up → Presentation Scheduled → 
 
 ### N. Related EFGTrack modules
 
-| Module | URL | Relationship |
-|---|---|---|
-| Goals & Performance | `/goals` | Strategic targets and activity planning |
-| FNA Management | `/fna` | Client financial reviews |
-| Calendar | `/calendar` | Appointments and events |
-| My Tasks | `/tasks` | Tasks created from follow-up engine |
-| Team / Downline | `/team` | Sponsorship and hierarchy for recruit conversion |
+| Module | URL | User guide | Relationship |
+|---|---|---|---|
+| Goals & Performance | `/goals` | [Guide](/support/documentation/goals-and-performance) | Strategic targets and activity planning |
+| FNA Management | `/team/fna` | [Guide](/support/documentation/fna-management) | Financial needs analysis, client portal, CFM review |
+| Calendar | `/calendar` | — | Appointments and events |
+| My Tasks | `/tasks` | — | Tasks created from follow-up engine |
+| Team / Downline | `/team` | — | Sponsorship and hierarchy for recruit conversion |
+| Training Academy | `/training` | [Guide](/support/documentation/training-academy) | Prospecting and presentation courses |
+
+### O. Permission reference
+
+| Permission | Allows |
+|---|---|
+| `manage prospects` | Full personal CRM |
+| `view shared prospects` | Shared With Me records |
+| `share prospects` | Grant/revoke sharing on your records |
+| `import prospects` | CSV import wizard |
+| `export prospects` | CSV download |
+| `manage prospect appointments` | Appointment calendar |
 
 ---
 
-*This guide reflects the EFGTrack Prospect Sales Funnel module as implemented in EFGTrack. Stage names, automations, and permissions may vary by agency configuration.*
+*This guide reflects the EFGTrack Prospect Sales Funnel module. Stage names, automations, and permissions may vary by agency configuration.*
+
+*Questions? **Help & Support** → **Browse documentation** or `/support`.*

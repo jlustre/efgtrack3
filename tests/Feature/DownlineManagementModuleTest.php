@@ -81,7 +81,7 @@ class DownlineManagementModuleTest extends TestCase
             ->assertOk()
             ->assertSee('Sponsor Tree')
             ->assertSee('genealogyTreePan', false)
-            ->assertSee('searchMembers', false)
+            ->assertSee('searchUrl', false)
             ->assertSee('memberSearch', false)
             ->assertSee('Search your hierarchy (min. 3 characters)', false)
             ->assertDontSee('Zoom Out', false)
@@ -267,10 +267,25 @@ class DownlineManagementModuleTest extends TestCase
         $owner = User::where('email', 'downline-owner@efgtrack.com')->firstOrFail();
         $directLeader = User::where('sponsor_id', $owner->id)->firstOrFail();
 
-        $searchMembers = collect($this->actingAs($owner)->get(route('team.tree'))->assertOk()->viewData('searchMembers'));
+        $ownerSearchTerm = strtok($owner->name, ' ') ?: substr($owner->name, 0, 3);
+        $leaderSearchTerm = strtok($directLeader->name, ' ') ?: substr($directLeader->name, 0, 3);
 
-        $ownerMatch = $searchMembers->firstWhere('id', $owner->id);
-        $leaderMatch = $searchMembers->firstWhere('id', $directLeader->id);
+        $ownerMatch = collect(
+            $this->actingAs($owner)
+                ->getJson(route('team.tree.search', ['q' => $ownerSearchTerm]))
+                ->assertOk()
+                ->json('members')
+        )->firstWhere('id', $owner->id);
+
+        $leaderMatch = collect(
+            $this->actingAs($owner)
+                ->getJson(route('team.tree.search', ['q' => $leaderSearchTerm]))
+                ->assertOk()
+                ->json('members')
+        )->firstWhere('id', $directLeader->id);
+
+        $this->assertNotNull($ownerMatch);
+        $this->assertNotNull($leaderMatch);
 
         $this->assertSame(route('team.tree'), $ownerMatch['tree_top_url']);
         $this->assertSame(route('team.member.tree', $directLeader), $leaderMatch['tree_top_url']);

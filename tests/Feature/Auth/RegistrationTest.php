@@ -65,7 +65,9 @@ class RegistrationTest extends TestCase
             ->assertSee('Your Experior sponsor must be the same person as your EFGTrack sponsor')
             ->assertSee('If this is not the person who invited you, stop here and ask the correct sponsor to send their invitation link.')
             ->assertDontSee('Verified Sponsor')
-            ->assertSee('State / Province');
+            ->assertSee('State / Province')
+            ->assertSee('British Columbia', false)
+            ->assertSee('California', false);
     }
 
     public function test_registration_screen_shows_unavailable_message_for_unknown_invitation(): void

@@ -133,6 +133,13 @@ class AuthenticationTest extends TestCase
         $this->assertSame('Ontario', $user->profile->province);
         $this->assertSame('EFG-MODAL-1', $user->profile->efg_associate_id);
         $this->assertSame('https://experiorfinancial.com/invite/modal-1', $user->profile->efg_invite_link);
+
+        $ontarioId = LocationOptions::resolveStateProvinceId('Canada', 'Ontario');
+
+        $this->actingAs($user)
+            ->get(route('profile.edit', ['tab' => 'profile']))
+            ->assertOk()
+            ->assertSee('value="'.$ontarioId.'" selected', false);
     }
 
     public function test_users_can_logout(): void

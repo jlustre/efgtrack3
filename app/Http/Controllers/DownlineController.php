@@ -8,6 +8,7 @@ use App\Services\DownlineHierarchyService;
 use App\Services\MemberProfileTabsService;
 use App\Support\MemberDisplayName;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
@@ -51,29 +52,49 @@ class DownlineController extends Controller
             'root' => $this->memberCard($root->loadMissing(['profile', 'rank', 'sponsor', 'mentor']), $viewer),
             'children' => $children,
             'filters' => $this->filterOptions($viewer),
-            'searchMembers' => $this->treeSearchMembers($viewer),
         ]);
     }
 
-    /**
-     * @return list<array{id: int, name: string, tree_top_url: string}>
-     */
-    private function treeSearchMembers(User $viewer): array
+    public function treeSearch(Request $request): JsonResponse
     {
-        return $this->hierarchy->descendantsQuery($viewer, includeSelf: true)
+        $viewer = $request->user();
+        $term = trim((string) $request->string('q'));
+
+        if (mb_strlen($term) < 3) {
+            return response()->json(['members' => []]);
+        }
+
+        $likeTerm = '%'.addcslashes($term, '%_\\').'%';
+
+        $members = $this->hierarchy->descendantsQuery($viewer, includeSelf: true)
             ->whereIn('users.id', $this->hierarchy->visibleMembersQuery($viewer)->select('users.id'))
+            ->where(function (Builder $query) use ($likeTerm): void {
+                $query->where('users.name', 'like', $likeTerm)
+                    ->orWhere('users.email', 'like', $likeTerm);
+            })
             ->with('profile')
-            ->orderBy('name')
+            ->orderBy('users.name')
+            ->limit(25)
             ->get()
-            ->map(fn (User $member): array => [
-                'id' => $member->id,
-                'name' => MemberDisplayName::for($member),
-                'tree_top_url' => $member->id === $viewer->id
-                    ? route('team.tree')
-                    : route('team.member.tree', $member),
-            ])
+            ->map(fn (User $member): array => $this->treeSearchMemberPayload($member, $viewer))
             ->values()
             ->all();
+
+        return response()->json(['members' => $members]);
+    }
+
+    /**
+     * @return array{id: int, name: string, tree_top_url: string}
+     */
+    private function treeSearchMemberPayload(User $member, User $viewer): array
+    {
+        return [
+            'id' => $member->id,
+            'name' => MemberDisplayName::for($member),
+            'tree_top_url' => $member->id === $viewer->id
+                ? route('team.tree')
+                : route('team.member.tree', $member),
+        ];
     }
 
     public function orgChart(Request $request, ?User $user = null): View

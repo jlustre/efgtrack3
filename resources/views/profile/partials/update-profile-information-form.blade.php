@@ -77,10 +77,6 @@
                 <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->best_contact_time ?? 'Not added' }}</dd>
             </div>
             <div>
-                <dt class="text-xs font-semibold uppercase text-slate-500">License Number</dt>
-                <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->license_number ?? 'Not added' }}</dd>
-            </div>
-            <div>
                 <dt class="text-xs font-semibold uppercase text-slate-500">EFG Associate ID</dt>
                 <dd class="mt-1 text-sm font-semibold text-[#0B1F3A]">{{ $user->profile?->efg_associate_id ?? 'Not added' }}</dd>
             </div>
@@ -171,12 +167,6 @@
                     @endforeach
                 </select>
                 <x-input-error class="mt-2" :messages="$errors->get('best_contact_time')" />
-            </div>
-
-            <div>
-                <x-input-label for="license_number" :value="__('License Number')" />
-                <x-text-input id="license_number" name="license_number" type="text" class="mt-1 block w-full" :value="old('license_number', $user->profile?->license_number)" />
-                <x-input-error class="mt-2" :messages="$errors->get('license_number')" />
             </div>
 
             <div>

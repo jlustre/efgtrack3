@@ -1,4 +1,6 @@
+import Alpine from 'alpinejs';
 import './page-chrome';
+import { rebuildProvinceSelectOptions } from './location-province-select';
 import taskManagement from './task-management';
 import cfmManagement from './cfm-management';
 import profileTableFilter from './profile-table-filter';
@@ -9,6 +11,8 @@ import prospectActivitiesModal from './prospect-activities-modal';
 import genealogyTreePan from './genealogy-tree-pan';
 import dashboardStats from './dashboard-stats';
 import prospectKanbanBoard from './prospect-kanban-board';
+
+window.rebuildProvinceSelectOptions = rebuildProvinceSelectOptions;
 
 // Register Alpine data on Livewire's Alpine instance (started by @livewireScripts).
 document.addEventListener('alpine:init', () => {
@@ -23,3 +27,9 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('dashboardStats', dashboardStats);
     window.Alpine.data('prospectKanbanBoard', prospectKanbanBoard);
 });
+
+// Guest/auth pages load Vite but not @livewireScripts, so Alpine never booted there.
+if (document.querySelector('script[src*="livewire"]') === null) {
+    window.Alpine = Alpine;
+    Alpine.start();
+}

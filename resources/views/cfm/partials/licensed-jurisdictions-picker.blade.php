@@ -1,7 +1,10 @@
 @php
     $selectedKeys = $selectedKeys ?? [];
     $provincesByCountry = $locationOptions['provincesByCountry'] ?? [];
-    $inputClass = $inputClass ?? 'mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]';
+    $inputName = $inputName ?? 'licensed_jurisdictions';
+    $title = $title ?? 'Licensed provinces / states';
+    $description = $description ?? 'Select every jurisdiction where you hold a life insurance license. Apprentices are matched to CFMs licensed in their province or state.';
+    $checkboxName = str_ends_with($inputName, '[]') ? $inputName : $inputName.'[]';    $inputClass = $inputClass ?? 'mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]';
     $labelClass = $labelClass ?? 'text-xs font-semibold text-slate-600';
     $sectionClass = $sectionClass ?? 'rounded-lg border border-slate-200 bg-slate-50 p-3';
     $checkboxClass = $checkboxClass ?? 'mt-0.5 rounded border-gray-300 text-[#C8A24A] focus:ring-[#C8A24A]';
@@ -10,9 +13,9 @@
 @endphp
 
 <div class="{{ $sectionClass }}">
-    <p class="{{ $labelClass }}">Licensed provinces / states</p>
+    <p class="{{ $labelClass }}">{{ $title }}</p>
     <p class="mt-1 mb-3 text-xs text-slate-500">
-        Select every jurisdiction where you hold a life insurance license. Apprentices are matched to CFMs licensed in their province or state.
+        {{ $description }}
     </p>
 
     <div class="space-y-4 max-h-56 overflow-y-auto pr-1">
@@ -33,7 +36,7 @@
                         <label class="{{ $optionLabelClass }}">
                             <input
                                 type="checkbox"
-                                name="licensed_jurisdictions[]"
+                                name="{{ $checkboxName }}"
                                 value="{{ $jurisdictionKey }}"
                                 @checked(in_array($jurisdictionKey, $selectedKeys, true))
                                 class="{{ $checkboxClass }}"
@@ -46,10 +49,10 @@
         @endforeach
     </div>
 
-    @error('licensed_jurisdictions')
+    @error($inputName)
         <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
     @enderror
-    @error('licensed_jurisdictions.*')
+    @error($inputName.'.*')
         <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
     @enderror
 </div>

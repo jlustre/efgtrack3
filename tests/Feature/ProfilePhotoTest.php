@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Profile;
 use App\Models\User;
 use App\Services\ProfilePhotoService;
+use Database\Seeders\ProfileCompletionFieldSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -109,5 +111,65 @@ class ProfilePhotoTest extends TestCase
             ->assertSessionHas('show_profile_completion_modal', true);
 
         $this->assertNotNull($user->fresh()->profile?->profile_photo_path);
+    }
+
+    public function test_profile_photo_can_be_uploaded_via_json_for_completion_modal(): void
+    {
+        Storage::fake('public');
+
+        $this->seed([
+            RolePermissionSeeder::class,
+            ProfileCompletionFieldSeeder::class,
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->postJson(route('profile.photo.update'), [
+                'photo' => UploadedFile::fake()->image('dashboard.jpg', 400, 400),
+                'redirect_to' => 'dashboard',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message', 'Your profile photo was updated.')
+            ->assertJsonStructure([
+                'photo_url',
+                'profile_completion' => ['percent', 'is_complete', 'fields'],
+            ]);
+
+        $photoField = collect($response->json('profile_completion.fields'))
+            ->firstWhere('key', 'profile_photo_path');
+
+        $this->assertTrue($photoField['filled'] ?? false);
+        $this->assertNotNull($user->fresh()->profile?->profile_photo_path);
+    }
+
+    public function test_completion_modal_photo_upload_returns_json_validation_error_without_file(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('profile.photo.update'), [
+                'redirect_to' => 'dashboard',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['photo'])
+            ->assertJsonPath('errors.photo.0', 'Please choose a profile photo to upload.');
+    }
+
+    public function test_completion_modal_photo_upload_returns_json_validation_error_for_invalid_file(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('profile.photo.update'), [
+                'photo' => UploadedFile::fake()->create('notes.txt', 100, 'text/plain'),
+                'redirect_to' => 'dashboard',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['photo']);
     }
 }

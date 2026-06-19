@@ -19,9 +19,15 @@
             $dashboardUrl = Route::has('dashboard') ? route('dashboard') : $loginUrl;
             $primaryUrl = auth()->check() ? $dashboardUrl : $loginUrl;
             $primaryLabel = auth()->check() ? 'Open Dashboard' : 'Member Login';
+            $heroSlideImage = static function (int $number): string {
+                $jpg = "images/landing/slide{$number}.jpg";
+                $svg = "images/landing/slide{$number}.svg";
+
+                return file_exists(public_path($jpg)) ? $jpg : $svg;
+            };
             $heroSlides = [
                 [
-                    'image' => 'images/landing/slide1.jpg',
+                    'image' => $heroSlideImage(1),
                     'eyebrow' => 'Leadership Starts With Clarity',
                     'headline' => 'Develop Teams With Executive Precision.',
                     'body' => 'Bring sponsors, mentors, and new associates into one premium growth system built for Elite Financial Growth.',
@@ -30,7 +36,7 @@
                     'object' => 'object-center',
                 ],
                 [
-                    'image' => 'images/landing/slide2.jpg',
+                    'image' => $heroSlideImage(2),
                     'eyebrow' => 'Mentorship With Standards',
                     'headline' => 'Coach Every Associate With Confidence.',
                     'body' => 'Track sponsor relationships, mentor conversations, apprenticeship progress, and next steps without losing momentum.',
@@ -39,7 +45,7 @@
                     'object' => 'object-center',
                 ],
                 [
-                    'image' => 'images/landing/slide3.jpg',
+                    'image' => $heroSlideImage(3),
                     'eyebrow' => 'The Rank Path Is Visible',
                     'headline' => 'Turn Advancement Into A Guided Journey.',
                     'body' => 'From FA to EP, EFGTrack makes milestones, requirements, training, and leadership readiness clear.',
@@ -48,7 +54,7 @@
                     'object' => 'object-center',
                 ],
                 [
-                    'image' => 'images/landing/slide4.jpg',
+                    'image' => $heroSlideImage(4),
                     'eyebrow' => 'Command Center For Growth',
                     'headline' => 'See The Team. Know The Next Move.',
                     'body' => 'A private dashboard for onboarding, licensing, rank progress, events, announcements, and team visibility.',
@@ -57,7 +63,7 @@
                     'object' => 'object-center',
                 ],
                 [
-                    'image' => 'images/landing/slide5.jpg',
+                    'image' => $heroSlideImage(5),
                     'eyebrow' => 'Recognition Builds Culture',
                     'headline' => 'Celebrate Progress And Build Legacy.',
                     'body' => 'Highlight achievements, mentor wins, certification movement, and leadership milestones across your organization.',
@@ -66,7 +72,7 @@
                     'object' => 'object-center',
                 ],
                 [
-                    'image' => 'images/landing/slide6.jpg',
+                    'image' => $heroSlideImage(6),
                     'eyebrow' => 'Elite Financial Growth',
                     'headline' => 'Developing Leaders. Building Legacies.',
                     'body' => 'Unify training, resources, coaching, and performance tracking in one executive portal for serious builders.',
@@ -153,8 +159,8 @@
         <main id="home">
             <section class="relative flex min-h-screen items-center overflow-hidden pt-24">
                 @foreach ($heroSlides as $index => $slide)
-                    <div class="absolute inset-0 transition-opacity duration-700" x-show="heroIndex === {{ $index }}" x-cloak>
-                        <img src="{{ asset($slide['image']) }}" alt="{{ $slide['headline'] }}" class="h-full w-full object-cover {{ $slide['object'] }} opacity-95">
+                    <div class="absolute inset-0 transition-opacity duration-700" x-show="heroIndex === {{ $index }}" @if ($index > 0) x-cloak @endif>
+                        <img src="{{ asset($slide['image']) }}" alt="{{ $slide['headline'] }}" class="h-full w-full object-cover {{ $slide['object'] }} opacity-95" loading="{{ $index === 0 ? 'eager' : 'lazy' }}">
                         <div class="absolute inset-0 z-10 bg-gradient-to-r from-black/90 via-black/58 to-black/18"></div>
                         <div class="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-transparent to-black/30"></div>
 

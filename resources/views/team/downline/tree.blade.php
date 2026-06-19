@@ -1,5 +1,5 @@
 <x-app-layout>
-    <section class="space-y-6" x-data="genealogyTreePan(@js(['searchMembers' => $searchMembers]))">
+    <section class="space-y-6" x-data="genealogyTreePan(@js(['searchUrl' => route('team.tree.search')]))">
         <div class="rounded-lg border border-slate-700 bg-gradient-to-br from-[#05070B] via-[#07111F] to-[#1B2433] p-6 text-white shadow-sm">
             <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
@@ -55,6 +55,12 @@
                 </ul>
                 <p x-show="memberSearch.trim().length > 0 && memberSearch.trim().length < 3" class="mt-1 text-xs text-slate-500">
                     Type at least 3 characters to search your hierarchy.
+                </p>
+                <p x-show="memberSearchLoading" x-cloak class="mt-1 text-xs text-slate-500">
+                    Searching…
+                </p>
+                <p x-show="! memberSearchLoading && memberSearch.trim().length >= 3 && memberSearchMatches().length === 0" x-cloak class="mt-1 text-xs text-slate-500">
+                    No members match your search.
                 </p>
             </div>
 

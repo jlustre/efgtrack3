@@ -23,11 +23,29 @@ class UpdateProfilePhotoRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'photo.required' => 'Please choose a profile photo to upload.',
+            'photo.image' => 'Please choose a valid profile photo (JPEG, PNG, or WebP, up to 2 MB).',
+            'photo.mimes' => 'Please choose a valid profile photo (JPEG, PNG, or WebP, up to 2 MB).',
+            'photo.max' => 'Profile photos must be 2 MB or smaller.',
+        ];
+    }
+
     protected function failedValidation(Validator $validator): void
     {
+        if ($this->expectsJson()) {
+            throw new ValidationException($validator);
+        }
+
         session()->flash('profile_feedback', [
             'type' => 'error',
-            'message' => 'Please choose a valid profile photo (JPEG, PNG, or WebP, up to 2 MB).',
+            'message' => $validator->errors()->first('photo')
+                ?? 'Please choose a valid profile photo (JPEG, PNG, or WebP, up to 2 MB).',
         ]);
 
         if ($this->input('redirect_to') === 'dashboard') {

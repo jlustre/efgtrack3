@@ -22,7 +22,12 @@ class DashboardController extends Controller
     public function index(Request $request, ProfileCompletionService $profileCompletion): View
     {
         $user = $request->user();
-        $user->loadMissing('profile');
+        $user->loadMissing([
+            'profile',
+            'rank',
+            'team',
+            'sponsor',
+        ]);
 
         return view('dashboard', [
             'user' => $user,

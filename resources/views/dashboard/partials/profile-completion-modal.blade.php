@@ -7,14 +7,18 @@
 <div
     x-show="profileCompletionOpen"
     x-cloak
-    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4"
     role="dialog"
     aria-modal="true"
     aria-labelledby="profile-completion-modal-title"
 >
     <div
-        class="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-[#C8A24A]/30 bg-white shadow-2xl"
-        x-on:click.outside="dismissProfileCompletion()"
+        class="absolute inset-0 bg-slate-950/65"
+        x-on:click="dismissProfileCompletion()"
+        aria-hidden="true"
+    ></div>
+    <div
+        class="relative z-10 flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-[#C8A24A]/30 bg-white shadow-2xl"
     >
         <div class="shrink-0 border-b border-slate-200 bg-gradient-to-r from-[#0B1F3A] to-[#132F55] px-6 py-5 text-white">
             <div class="flex items-start justify-between gap-4">
@@ -109,12 +113,6 @@
                             @endforeach
                         </select>
                         <x-input-error class="mt-2" :messages="$errors->get('best_contact_time')" />
-                    </div>
-
-                    <div>
-                        <x-input-label for="completion_license_number" :value="__('License Number')" />
-                        <x-text-input id="completion_license_number" name="license_number" type="text" class="mt-1 block w-full" x-model="form.license_number" />
-                        <x-input-error class="mt-2" :messages="$errors->get('license_number')" />
                     </div>
 
                     <div>

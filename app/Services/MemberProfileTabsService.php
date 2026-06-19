@@ -4,11 +4,16 @@ namespace App\Services;
 
 use App\Models\Checklist;
 use App\Models\User;
+use App\Models\UserChecklistTypeStart;
+use App\Support\ChecklistDueDisplay;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 
 class MemberProfileTabsService
 {
+    private const CHECKLIST_DATE_FORMAT = 'm/d/Y';
+
     public function __construct(private readonly ChecklistService $checklists) {}
 
     public function forUser(User $user): array
@@ -20,22 +25,144 @@ class MemberProfileTabsService
         $cfm = $this->checklistRows($user, 'cfm-training');
         $recruits = $this->recruitRows($user);
         $annualPremium = $this->annualPremiumRows($user, $onboarding, $fap, $cfm);
-        $otherTraining = $this->otherTrainingRows($user);
 
         return [
-            'onboarding' => $onboarding,
-            'onboarding_started' => $this->checklists->hasTypeStarted($user, 'onboarding'),
-            'fap' => $fap,
-            'fap_started' => $this->checklists->hasTypeStarted($user, 'fap'),
-            'cfm' => $cfm,
-            'cfm_started' => $this->checklists->hasTypeStarted($user, 'cfm-training'),
             'recruits' => $recruits,
             'recruitsTotal' => count($recruits),
             'recruitsDirectTotal' => collect($recruits)->where('level', 1)->count(),
             'annualPremium' => $annualPremium,
             'annualPremiumTotal' => $this->sumAnnualPremium($annualPremium),
-            'otherTraining' => $otherTraining,
+            'checklistSummaries' => $this->checklistSummaries($user),
         ];
+    }
+
+    /**
+     * @return list<array{
+     *     code: string,
+     *     name: string,
+     *     description: string|null,
+     *     percent: int,
+     *     completed: int,
+     *     total: int,
+     *     started_at: string|null,
+     *     started_by: string|null,
+     *     route: string|null,
+     *     items: list<array<string, string>>
+     * }>
+     */
+    private function checklistSummaries(User $user): array
+    {
+        return UserChecklistTypeStart::query()
+            ->where('user_id', $user->id)
+            ->with(['checklistType', 'starter'])
+            ->get()
+            ->sortBy(fn (UserChecklistTypeStart $start): int => $start->checklistType?->sort_order ?? 999)
+            ->map(fn (UserChecklistTypeStart $start) => $this->buildChecklistSummary($user, $start))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function buildChecklistSummary(User $user, UserChecklistTypeStart $start): ?array
+    {
+        $type = $start->checklistType;
+
+        if (! $type) {
+            return null;
+        }
+
+        $code = $type->code;
+        $steps = $this->stepsForSummary($user, $code);
+        $progress = $this->checklists->userProgressFor($user->id, $steps->pluck('id'));
+        $startDate = $start->started_at?->copy()->startOfDay();
+        $completed = $steps->filter(
+            fn (Checklist $step): bool => ($progress->get($step->id)?->status ?? 'not_started') === 'completed',
+        )->count();
+        $typeCompletionDue = $startDate && $type->max_complete_days
+            ? $this->checklists->typeCompletionDueDate($startDate, $code)
+            : null;
+
+        return [
+            'code' => $code,
+            'name' => $type->name,
+            'description' => $type->description,
+            'percent' => $this->percentForType($user, $code, $steps),
+            'completed' => $completed,
+            'total' => $steps->count(),
+            'started_at' => $start->started_at?->format(self::CHECKLIST_DATE_FORMAT),
+            'started_by' => $start->starter?->name,
+            'due_at' => $typeCompletionDue?->format(self::CHECKLIST_DATE_FORMAT),
+            'is_due_overdue' => $typeCompletionDue
+                && $completed < $steps->count()
+                && ChecklistDueDisplay::isOverdue($typeCompletionDue),
+            'route' => $this->trackerRouteFor($code),
+            'items' => $steps
+                ->map(function (Checklist $step) use ($user, $code, $progress, $startDate): array {
+                    $dueAt = $startDate
+                        ? $this->checklists->expectedDueDate($step->nth_day, $startDate)
+                        : null;
+
+                    return $this->formatChecklistRow(
+                        $step->title,
+                        $this->categoryLabelForStep($user, $code, $step),
+                        (bool) $step->is_required,
+                        $progress->get($step->id),
+                        $dueAt,
+                    );
+                })
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return Collection<int, Checklist>
+     */
+    private function stepsForSummary(User $user, string $typeCode): Collection
+    {
+        if ($typeCode === 'onboarding') {
+            return $this->checklists->activeSteps('onboarding', $user->profile?->country);
+        }
+
+        if ($typeCode === 'fap') {
+            return $this->checklists->activeSteps('fap', null, 'Field Apprenticeship Program');
+        }
+
+        return $this->checklists->activeSteps($typeCode);
+    }
+
+    /**
+     * @param  Collection<int, Checklist>  $steps
+     */
+    private function percentForType(User $user, string $typeCode, Collection $steps): int
+    {
+        if ($steps->isEmpty()) {
+            return 0;
+        }
+
+        return $this->checklists->checklistPercent($steps->pluck('id')->all(), $user->id);
+    }
+
+    private function categoryLabelForStep(User $user, string $typeCode, Checklist $step): string
+    {
+        return match ($typeCode) {
+            'onboarding' => $step->country ?: 'Global',
+            default => $step->group_label ?? '—',
+        };
+    }
+
+    private function trackerRouteFor(string $typeCode): ?string
+    {
+        return match ($typeCode) {
+            'onboarding' => 'onboarding.index',
+            'licensing' => 'licensing.index',
+            'fap' => 'apprenticeship.index',
+            'cfm-training' => 'cfm-training.index',
+            default => null,
+        };
     }
 
     public function annualPremiumTotal(User $user): int
@@ -100,8 +227,13 @@ class MemberProfileTabsService
             ->all();
     }
 
-    private function formatChecklistRow(string $title, string $category, bool $required, mixed $progress): array
-    {
+    private function formatChecklistRow(
+        string $title,
+        string $category,
+        bool $required,
+        mixed $progress,
+        ?CarbonInterface $dueAt = null,
+    ): array {
         $status = $progress?->status ?? 'not_started';
 
         return [
@@ -110,8 +242,10 @@ class MemberProfileTabsService
             'required' => $required ? 'Yes' : 'No',
             'status' => str($status)->replace('_', ' ')->title()->toString(),
             'status_key' => $status,
-            'submitted_at' => $this->formatDate($progress?->submitted_at ?? null),
-            'completed_at' => $this->formatDate($progress?->completed_at ?? null),
+            'due_at' => $dueAt ? $dueAt->format(self::CHECKLIST_DATE_FORMAT) : '—',
+            'is_due_overdue' => ChecklistDueDisplay::isOverdue($dueAt, $status),
+            'submitted_at' => $this->formatChecklistDate($progress?->submitted_at ?? null),
+            'completed_at' => $this->formatChecklistDate($progress?->completed_at ?? null),
         ];
     }
 
@@ -240,52 +374,13 @@ class MemberProfileTabsService
         ];
     }
 
-    private function otherTrainingRows(User $user): array
+    private function formatChecklistDate(mixed $value): string
     {
-        $lessons = DB::table('training_lessons')
-            ->join('training_modules', 'training_modules.id', '=', 'training_lessons.training_module_id')
-            ->join('training_categories', 'training_categories.id', '=', 'training_modules.training_category_id')
-            ->where('training_modules.is_published', true)
-            ->whereNull('training_modules.deleted_at')
-            ->whereNull('training_lessons.deleted_at')
-            ->whereNull('training_categories.deleted_at')
-            ->orderBy('training_categories.sort_order')
-            ->orderBy('training_modules.sort_order')
-            ->orderBy('training_lessons.sort_order')
-            ->select([
-                'training_lessons.id',
-                'training_lessons.title as lesson',
-                'training_modules.title as module',
-                'training_categories.name as category',
-            ])
-            ->get();
-
-        if ($lessons->isEmpty()) {
-            return [];
+        if (! $value) {
+            return '—';
         }
 
-        $progress = DB::table('training_progress')
-            ->where('user_id', $user->id)
-            ->whereIn('training_lesson_id', $lessons->pluck('id'))
-            ->get()
-            ->keyBy('training_lesson_id');
-
-        return $lessons
-            ->map(function (object $lesson) use ($progress): array {
-                $row = $progress->get($lesson->id);
-                $status = $row->status ?? 'not_started';
-
-                return [
-                    'module' => $lesson->module,
-                    'lesson' => $lesson->lesson,
-                    'category' => $lesson->category,
-                    'status' => str($status)->replace('_', ' ')->title()->toString(),
-                    'status_key' => $status,
-                    'completed_at' => $this->formatDate($row->completed_at ?? null),
-                ];
-            })
-            ->values()
-            ->all();
+        return Carbon::parse($value)->format(self::CHECKLIST_DATE_FORMAT);
     }
 
     private function formatDate(mixed $value): string
