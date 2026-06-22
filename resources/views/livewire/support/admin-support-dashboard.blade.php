@@ -1,62 +1,61 @@
-<div class="space-y-4">
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-xs uppercase text-zinc-500">Open tickets</p>
-            <p class="mt-1 text-2xl font-bold text-zinc-100">{{ $metrics['open_tickets'] }}</p>
-        </div>
-        <div class="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-            <p class="text-xs uppercase text-red-300">Urgent SLA breach</p>
-            <p class="mt-1 text-2xl font-bold text-red-200 animate-pulse">{{ $metrics['urgent_breaches'] }}</p>
-        </div>
-        <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-            <p class="text-xs uppercase text-amber-300">At risk</p>
-            <p class="mt-1 text-2xl font-bold text-amber-200">{{ $metrics['at_risk'] }}</p>
-        </div>
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-xs uppercase text-zinc-500">Awaiting user</p>
-            <p class="mt-1 text-2xl font-bold text-zinc-100">{{ $metrics['awaiting_user'] }}</p>
-        </div>
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-xs uppercase text-zinc-500">Wishlist submitted</p>
-            <p class="mt-1 text-2xl font-bold text-zinc-100">{{ $metrics['wishlist_submitted'] }}</p>
-        </div>
-        <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-            <p class="text-xs uppercase text-emerald-300">In development</p>
-            <p class="mt-1 text-2xl font-bold text-emerald-200">{{ $metrics['wishlist_in_development'] }}</p>
+<div class="space-y-6">
+    <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+        <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            @foreach ([
+                ['label' => 'Open tickets', 'value' => $metrics['open_tickets'], 'theme' => 'navy', 'subtitle' => 'Active in queue'],
+                ['label' => 'Urgent SLA breach', 'value' => $metrics['urgent_breaches'], 'theme' => 'red', 'subtitle' => 'Immediate response needed', 'pulse' => true],
+                ['label' => 'At risk', 'value' => $metrics['at_risk'], 'theme' => 'amber', 'subtitle' => 'Approaching SLA deadline'],
+                ['label' => 'Awaiting user', 'value' => $metrics['awaiting_user'], 'theme' => 'slate', 'subtitle' => 'Pending user reply'],
+                ['label' => 'Wishlist submitted', 'value' => $metrics['wishlist_submitted'], 'theme' => 'gold', 'subtitle' => 'Enhancement requests'],
+                ['label' => 'In development', 'value' => $metrics['wishlist_in_development'], 'theme' => 'emerald', 'subtitle' => 'Wishlist in progress'],
+            ] as $card)
+                <x-tracker-stat-card :label="$card['label']" :subtitle="$card['subtitle']" :theme="$card['theme']">
+                    @if ($card['pulse'] ?? false)
+                        <span class="animate-pulse">{{ $card['value'] }}</span>
+                    @else
+                        {{ $card['value'] }}
+                    @endif
+                </x-tracker-stat-card>
+            @endforeach
         </div>
     </div>
 
-    <div class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div class="grid gap-3 lg:grid-cols-5">
-            <input type="search" wire:model.live.debounce.300ms="global_search" placeholder="Search tickets…" class="rounded-lg border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-100 lg:col-span-2">
-            <select wire:model.live="filter_status" class="rounded-lg border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-100">
+            <input
+                type="search"
+                wire:model.live.debounce.300ms="global_search"
+                placeholder="Search tickets…"
+                class="rounded-lg border-slate-300 bg-white p-3 text-sm text-[#0B1F3A] shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A] lg:col-span-2"
+            >
+            <select wire:model.live="filter_status" class="rounded-lg border-slate-300 bg-white p-3 text-sm text-[#0B1F3A] shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                 <option value="">All statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->id }}">{{ $status->name }}</option>
                 @endforeach
             </select>
-            <select wire:model.live="filter_module" class="rounded-lg border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-100">
+            <select wire:model.live="filter_module" class="rounded-lg border-slate-300 bg-white p-3 text-sm text-[#0B1F3A] shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                 <option value="">All modules</option>
                 @foreach ($modules as $key => $label)
                     <option value="{{ $key }}">{{ $label }}</option>
                 @endforeach
             </select>
-            <select wire:model.live="filter_urgency" class="rounded-lg border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-100">
+            <select wire:model.live="filter_urgency" class="rounded-lg border-slate-300 bg-white p-3 text-sm text-[#0B1F3A] shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                 <option value="">All urgency</option>
                 @foreach ($urgencyLevels as $key => $label)
                     <option value="{{ $key }}">{{ $label }}</option>
                 @endforeach
             </select>
         </div>
-        <label class="mt-3 flex items-center gap-2 text-sm text-zinc-300">
-            <input type="checkbox" wire:model.live="toggle_sla_breach_only" class="rounded border-zinc-600 text-amber-500 focus:ring-amber-500/50">
+        <label class="mt-3 flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" wire:model.live="toggle_sla_breach_only" class="rounded border-slate-300 text-[#C8A24A] focus:ring-[#C8A24A]">
             SLA breach only
         </label>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <table class="min-w-full text-sm">
-            <thead class="bg-zinc-950 text-left text-xs uppercase tracking-wide text-zinc-500">
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                     <th class="px-4 py-3">Ticket</th>
                     <th class="px-4 py-3">Subject</th>
@@ -66,20 +65,20 @@
                     <th class="px-4 py-3">Status</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-zinc-800 text-zinc-300">
+            <tbody class="divide-y divide-slate-100 text-slate-700">
                 @foreach ($tickets as $ticket)
-                    <tr wire:click="openTicket({{ $ticket->id }})" class="cursor-pointer hover:bg-zinc-800/60">
-                        <td class="px-4 py-3 font-mono text-amber-300">{{ $ticket->ticket_number }}</td>
-                        <td class="px-4 py-3">{{ $ticket->subject }}</td>
+                    <tr wire:click="openTicket({{ $ticket->id }})" class="cursor-pointer transition hover:bg-[#FFF9EA]/60">
+                        <td class="px-4 py-3 font-mono font-semibold text-[#8A6A1F]">{{ $ticket->ticket_number }}</td>
+                        <td class="px-4 py-3 text-[#0B1F3A]">{{ $ticket->subject }}</td>
                         <td class="px-4 py-3">{{ $ticket->user?->name }}</td>
                         <td class="px-4 py-3">{{ $ticket->computed_priority_score ?? $ticket->priority_score }}</td>
                         <td class="px-4 py-3">
                             @if ($ticket->sla_status === 'overdue')
-                                <span class="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-300 animate-pulse">Overdue</span>
+                                <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 animate-pulse">Overdue</span>
                             @elseif ($ticket->sla_status === 'at_risk')
-                                <span class="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-300 animate-pulse">At risk</span>
+                                <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">At risk</span>
                             @else
-                                <span class="text-zinc-500">On track</span>
+                                <span class="text-slate-500">On track</span>
                             @endif
                         </td>
                         <td class="px-4 py-3">{{ $ticket->status?->name }}</td>
@@ -87,25 +86,25 @@
                 @endforeach
             </tbody>
         </table>
-        <div class="border-t border-zinc-800 p-4">{{ $tickets->links() }}</div>
+        <div class="border-t border-slate-200 p-4">{{ $tickets->links() }}</div>
     </div>
 
     @if ($selectedTicket)
-        <div class="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-black/70 p-4" wire:click.self="closeTicketModal">
-            <div class="w-full max-w-3xl rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl">
+        <div class="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-[#0B1F3A]/40 p-4 backdrop-blur-sm" wire:click.self="closeTicketModal">
+            <div class="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="font-mono text-amber-400">{{ $selectedTicket->ticket_number }}</p>
-                        <h3 class="mt-1 text-lg font-semibold text-zinc-100">{{ $selectedTicket->subject }}</h3>
-                        <p class="mt-2 text-sm text-zinc-400">{{ $selectedTicket->description }}</p>
+                        <p class="font-mono text-sm font-semibold text-[#8A6A1F]">{{ $selectedTicket->ticket_number }}</p>
+                        <h3 class="mt-1 text-lg font-semibold text-[#0B1F3A]">{{ $selectedTicket->subject }}</h3>
+                        <p class="mt-2 text-sm text-slate-600">{{ $selectedTicket->description }}</p>
                     </div>
-                    <button type="button" wire:click="closeTicketModal" class="text-zinc-400 hover:text-zinc-200">✕</button>
+                    <button type="button" wire:click="closeTicketModal" class="text-slate-400 transition hover:text-slate-600">✕</button>
                 </div>
 
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="text-xs uppercase text-zinc-500">Assign to</label>
-                        <select wire:model="assign_to" class="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-100">
+                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Assign to</label>
+                        <select wire:model="assign_to" class="mt-1 w-full rounded-lg border-slate-300 bg-white p-3 text-sm text-[#0B1F3A] shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                             <option value="">Unassigned</option>
                             @foreach ($agents as $agent)
                                 <option value="{{ $agent->id }}">{{ $agent->name }}</option>
@@ -113,8 +112,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="text-xs uppercase text-zinc-500">Status</label>
-                        <select wire:model="new_status_id" class="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-100">
+                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</label>
+                        <select wire:model="new_status_id" class="mt-1 w-full rounded-lg border-slate-300 bg-white p-3 text-sm text-[#0B1F3A] shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                             @foreach ($statuses as $status)
                                 <option value="{{ $status->id }}">{{ $status->name }}</option>
                             @endforeach
@@ -123,17 +122,17 @@
                 </div>
 
                 <div class="mt-4">
-                    <label class="text-xs uppercase text-zinc-500">Reply to user</label>
-                    <textarea wire:model="agent_reply" rows="3" class="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-100"></textarea>
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Reply to user</label>
+                    <textarea wire:model="agent_reply" rows="3" class="mt-1 w-full rounded-lg border-slate-300 bg-white p-3 text-sm text-[#0B1F3A] shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"></textarea>
                 </div>
                 <div class="mt-3">
-                    <label class="text-xs uppercase text-zinc-500">Internal note</label>
-                    <textarea wire:model="internal_note" rows="2" class="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-100"></textarea>
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Internal note</label>
+                    <textarea wire:model="internal_note" rows="2" class="mt-1 w-full rounded-lg border-slate-300 bg-white p-3 text-sm text-[#0B1F3A] shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"></textarea>
                 </div>
 
                 <div class="mt-4 flex flex-wrap gap-2">
-                    <button type="button" wire:click="saveTicketActions" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-black hover:bg-amber-600">Save changes</button>
-                    <button type="button" wire:click="convertToWishlist" class="rounded-lg border border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-800">Convert to wishlist</button>
+                    <button type="button" wire:click="saveTicketActions" class="rounded-lg bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#132F55]">Save changes</button>
+                    <button type="button" wire:click="convertToWishlist" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]">Convert to wishlist</button>
                 </div>
             </div>
         </div>

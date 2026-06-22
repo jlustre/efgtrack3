@@ -168,6 +168,15 @@ class TrackerChecklistController extends Controller
 
         $confirmed = $validated['decision'] === 'confirmed';
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $confirmed
+                    ? $config['statusPrefix'].' item confirmed.'
+                    : $config['statusPrefix'].' item rejected.',
+                'decision' => $validated['decision'],
+            ]);
+        }
+
         return back()->with('status', $confirmed ? $config['statusPrefix'].'-item-confirmed' : $config['statusPrefix'].'-item-rejected');
     }
 

@@ -129,6 +129,12 @@ class CfmRecommendationEngine
             $factors[] = ['key' => 'hierarchy', 'label' => 'same hierarchy', 'points' => 5];
         }
 
+        $uplineCfmIds = array_map('intval', $associate['uplineCfmIds'] ?? []);
+        if (in_array((int) $cfm['id'], $uplineCfmIds, true)) {
+            $score += 12;
+            $factors[] = ['key' => 'upline', 'label' => 'trainee upline in hierarchy', 'points' => 12];
+        }
+
         $overdue = (int) ($cfm['overdueTasks'] ?? 0);
         if ($overdue > 0) {
             $penalty = min(20, $overdue * 5);

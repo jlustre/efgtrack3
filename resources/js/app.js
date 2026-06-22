@@ -11,6 +11,9 @@ import prospectActivitiesModal from './prospect-activities-modal';
 import genealogyTreePan from './genealogy-tree-pan';
 import dashboardStats from './dashboard-stats';
 import prospectKanbanBoard from './prospect-kanban-board';
+import globalSearch from './global-search';
+import notificationPush from './notification-push';
+import { initSidebarNavigation, refreshSidebarNavigation } from './sidebar-navigation';
 
 window.rebuildProvinceSelectOptions = rebuildProvinceSelectOptions;
 
@@ -26,7 +29,12 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('genealogyTreePan', genealogyTreePan);
     window.Alpine.data('dashboardStats', dashboardStats);
     window.Alpine.data('prospectKanbanBoard', prospectKanbanBoard);
+    window.Alpine.data('globalSearch', () => globalSearch(window.__efgSearchSuggestUrl ?? '/search/suggest'));
+    window.Alpine.data('notificationPush', notificationPush);
 });
+
+document.addEventListener('DOMContentLoaded', () => initSidebarNavigation());
+document.addEventListener('livewire:navigated', () => refreshSidebarNavigation());
 
 // Guest/auth pages load Vite but not @livewireScripts, so Alpine never booted there.
 if (document.querySelector('script[src*="livewire"]') === null) {

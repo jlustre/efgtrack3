@@ -297,6 +297,32 @@ class ProfileTest extends TestCase
             ->assertSee('CA, US', false);
     }
 
+    public function test_cfm_profile_license_save_syncs_cfm_mentor_licensed_jurisdictions(): void
+    {
+        $this->seed([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+            RolePermissionSeeder::class,
+        ]);
+
+        $user = User::factory()->create();
+        $user->assignRole('certified-field-mentor');
+
+        $this->actingAs($user)
+            ->patch(route('profile.licenses.update'), [
+                'insurance_licenses' => [
+                    'United States|California',
+                ],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $user->refresh()->load(['profile', 'cfmMentorProfile']);
+
+        $this->assertSame(['United States|California'], $user->profile->insurance_licenses);
+        $this->assertSame(['United States|California'], $user->cfmMentorProfile?->licensed_jurisdictions);
+    }
+
     public function test_profile_update_shows_validation_errors_on_profile_tab(): void
     {
         $this->seed([
@@ -402,6 +428,82 @@ class ProfileTest extends TestCase
             'user_id' => $user->id,
             'efg_invite_link' => 'not-a-valid-url',
         ]);
+    }
+
+    public function test_experior_invite_link_must_be_unique_across_members(): void
+    {
+        $inviteLink = 'https://experiorfinancialgroup.com/invite?EFG123456';
+
+        $existingUser = User::factory()->create();
+        Profile::query()->create([
+            'user_id' => $existingUser->id,
+            'efg_invite_link' => $inviteLink,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from(route('profile.edit'))
+            ->patch(route('profile.invite-link.update'), [
+                'efg_invite_link' => $inviteLink,
+            ])
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHasErrors('efg_invite_link')
+            ->assertSessionHas('efg_details_feedback', fn (array $feedback) => $feedback['type'] === 'error');
+
+        $this->assertDatabaseMissing('profiles', [
+            'user_id' => $user->id,
+            'efg_invite_link' => $inviteLink,
+        ]);
+    }
+
+    public function test_profile_update_rejects_duplicate_experior_invite_link(): void
+    {
+        $inviteLink = 'https://experiorfinancialgroup.com/invite?EFG123456';
+
+        $existingUser = User::factory()->create();
+        Profile::query()->create([
+            'user_id' => $existingUser->id,
+            'efg_invite_link' => $inviteLink,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from(route('profile.edit', ['tab' => 'profile']))
+            ->patch('/profile', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'efg_invite_link' => $inviteLink,
+                'bio' => 'Hello I am great',
+            ])
+            ->assertRedirect(route('profile.edit', ['tab' => 'profile']))
+            ->assertSessionHasErrors('efg_invite_link')
+            ->assertSessionHas('profile_feedback', fn (array $feedback) => $feedback['type'] === 'error');
+
+        $this->assertDatabaseMissing('profiles', [
+            'user_id' => $user->id,
+            'efg_invite_link' => $inviteLink,
+        ]);
+    }
+
+    public function test_member_can_keep_their_own_experior_invite_link(): void
+    {
+        $inviteLink = 'https://experiorfinancialgroup.com/invite?EFG123456';
+        $user = User::factory()->create();
+        Profile::query()->create([
+            'user_id' => $user->id,
+            'efg_invite_link' => $inviteLink,
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('profile.invite-link.update'), [
+                'efg_invite_link' => $inviteLink,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertSame($inviteLink, $user->fresh()->profile->efg_invite_link);
     }
 
     public function test_member_can_clear_experior_invite_link(): void

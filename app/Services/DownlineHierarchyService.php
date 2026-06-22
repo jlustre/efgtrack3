@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Checklist;
 use App\Models\ChecklistProgress;
+use App\Models\Team;
 use App\Models\User;
 use App\Support\MemberDisplayName;
 use Illuminate\Database\Eloquent\Builder;
@@ -78,6 +79,32 @@ class DownlineHierarchyService
             ->when(! $includeSelf, fn (Builder $query) => $query->where('user_hierarchy_paths.depth', '>', 0));
     }
 
+    /**
+     * @return Collection<int, int>
+     */
+    public function uplineUserIds(User $member): Collection
+    {
+        return DB::table('user_hierarchy_paths')
+            ->where('descendant_id', $member->id)
+            ->where('depth', '>', 0)
+            ->orderBy('depth')
+            ->pluck('ancestor_id')
+            ->map(fn ($id) => (int) $id);
+    }
+
+    public function isUplineOf(User $ancestor, User $descendant): bool
+    {
+        if ($ancestor->id === $descendant->id) {
+            return false;
+        }
+
+        return DB::table('user_hierarchy_paths')
+            ->where('ancestor_id', $ancestor->id)
+            ->where('descendant_id', $descendant->id)
+            ->where('depth', '>', 0)
+            ->exists();
+    }
+
     public function directRecruitsQuery(User $root): Builder
     {
         return User::query()->where('sponsor_id', $root->id);
@@ -131,6 +158,10 @@ class DownlineHierarchyService
             return true;
         }
 
+        if ($viewer->hasRole('agency-owner') && $this->memberBelongsToAgencyOwnerTeam($viewer, $member)) {
+            return true;
+        }
+
         if ($viewer->teamVisibilityGrants()
             ->where('visible_user_id', $member->id)
             ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
@@ -147,6 +178,42 @@ class DownlineHierarchyService
         }
 
         return $query->exists();
+    }
+
+    public function canEnterProductionFor(User $viewer, User $member): bool
+    {
+        if ($viewer->id === $member->id) {
+            return true;
+        }
+
+        if (! $this->canViewMember($viewer, $member)) {
+            return false;
+        }
+
+        if ($viewer->hasAnyRole(['super-admin', 'admin', 'agency-owner'])) {
+            return true;
+        }
+
+        if ($viewer->hasRole('certified-field-mentor')) {
+            return $viewer->mentorAssignments()
+                ->where('apprentice_id', $member->id)
+                ->where('status', 'active')
+                ->exists();
+        }
+
+        return false;
+    }
+
+    private function memberBelongsToAgencyOwnerTeam(User $agencyOwner, User $member): bool
+    {
+        if (! $member->team_id) {
+            return false;
+        }
+
+        return Team::query()
+            ->where('id', $member->team_id)
+            ->where('owner_id', $agencyOwner->id)
+            ->exists();
     }
 
     public function memberMetrics(User $member): array

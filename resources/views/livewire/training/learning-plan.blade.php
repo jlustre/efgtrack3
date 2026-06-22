@@ -24,22 +24,18 @@
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Courses completed</p>
-            <p class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ $plan['stats']['courses_completed'] }} / {{ $plan['stats']['courses_available'] }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Active assignments</p>
-            <p class="mt-2 text-2xl font-bold text-sky-700">{{ $plan['stats']['active_assignments'] }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Enrolled paths</p>
-            <p class="mt-2 text-2xl font-bold text-[#8A6A1F]">{{ count($plan['enrolled_paths']) }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Priority actions</p>
-            <p class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ count($plan['priority_rows']) }}</p>
-        </div>
+        @foreach ([
+            ['label' => 'Courses completed', 'value' => $plan['stats']['courses_completed'].' / '.$plan['stats']['courses_available'], 'theme' => 'emerald'],
+            ['label' => 'Active assignments', 'value' => $plan['stats']['active_assignments'], 'theme' => 'cyan'],
+            ['label' => 'Enrolled paths', 'value' => count($plan['enrolled_paths']), 'theme' => 'gold'],
+            ['label' => 'Priority actions', 'value' => count($plan['priority_rows']), 'theme' => 'navy'],
+        ] as $card)
+            <x-tracker-stat-card
+                :label="$card['label']"
+                :value="$card['value']"
+                :theme="$card['theme']"
+            />
+        @endforeach
     </div>
 
     <div class="grid gap-6 xl:grid-cols-3">

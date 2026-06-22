@@ -1,18 +1,22 @@
 <div class="space-y-6">
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        @foreach ([
-            ['label' => 'Total Goals', 'value' => $summary['total'], 'accent' => 'text-[#0B1F3A]'],
-            ['label' => 'Active', 'value' => $summary['active'], 'accent' => 'text-sky-700'],
-            ['label' => 'Completed', 'value' => $summary['completed'], 'accent' => 'text-emerald-700'],
-            ['label' => 'Off Track', 'value' => $summary['off_track'], 'accent' => 'text-amber-700'],
-            ['label' => 'Completion %', 'value' => $summary['completion_percent'].'%', 'accent' => 'text-[#8A6A1F]'],
-            ['label' => 'Current Streak', 'value' => $summary['current_streak'].' days', 'accent' => 'text-violet-700'],
-        ] as $card)
-            <div class="rounded-xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $card['label'] }}</p>
-                <p class="mt-2 text-2xl font-bold {{ $card['accent'] }}">{{ $card['value'] }}</p>
-            </div>
-        @endforeach
+    <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+        <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+            @foreach ([
+                ['label' => 'Total Goals', 'value' => $summary['total'], 'theme' => 'navy', 'subtitle' => 'All goals in your portfolio'],
+                ['label' => 'Active', 'value' => $summary['active'], 'theme' => 'cyan', 'subtitle' => 'Currently in progress'],
+                ['label' => 'Completed', 'value' => $summary['completed'], 'theme' => 'emerald', 'subtitle' => 'Goals fully achieved'],
+                ['label' => 'Off Track', 'value' => $summary['off_track'], 'theme' => 'amber', 'subtitle' => 'Needs attention or coaching'],
+                ['label' => 'Completion %', 'value' => $summary['completion_percent'].'%', 'theme' => 'gold', 'subtitle' => 'Overall completion rate'],
+                ['label' => 'Current Streak', 'value' => $summary['current_streak'].' days', 'theme' => 'violet', 'subtitle' => 'Consecutive days on pace'],
+            ] as $card)
+                <x-tracker-stat-card
+                    :label="$card['label']"
+                    :value="$card['value']"
+                    :subtitle="$card['subtitle']"
+                    :theme="$card['theme']"
+                />
+            @endforeach
+        </div>
     </div>
 
     <div class="grid gap-6 xl:grid-cols-3">

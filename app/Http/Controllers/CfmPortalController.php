@@ -6,10 +6,14 @@ use App\Http\Requests\UpdateCfmPortalCalendarSharingRequest;
 use App\Http\Requests\UpdateCfmPortalProfileRequest;
 use App\Services\CalendarShareService;
 use App\Services\CfmAssignmentWorkflowService;
+use App\Services\CfmPortal\CfmProgressReportService;
+use App\Services\CfmPortal\CfmRosterExportService;
 use App\Services\CfmPortalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CfmPortalController extends Controller
 {
@@ -87,5 +91,23 @@ class CfmPortalController extends Controller
                 'type' => 'success',
                 'message' => 'Your first welcome email was sent to '.$assignment->apprentice->name.'.',
             ]);
+    }
+
+    public function downloadReport(Request $request, \App\Models\CfmProgressReport $report, CfmProgressReportService $reports): Response
+    {
+        $viewer = $request->user();
+        $cfmUserId = $request->integer('cfm') ?: null;
+        $cfm = app(CfmPortalService::class)->payloadFor($viewer, $cfmUserId)['cfmUser'];
+
+        return $reports->downloadPdf($cfm, $report);
+    }
+
+    public function exportRoster(Request $request, CfmRosterExportService $exports): StreamedResponse
+    {
+        $viewer = $request->user();
+        $cfmUserId = $request->integer('cfm') ?: null;
+        $cfm = app(CfmPortalService::class)->payloadFor($viewer, $cfmUserId)['cfmUser'];
+
+        return $exports->downloadCsv($cfm);
     }
 }

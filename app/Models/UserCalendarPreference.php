@@ -17,6 +17,7 @@ class UserCalendarPreference extends Model
         return [
             'visible_calendar_categories' => 'array',
             'show_weekends' => 'boolean',
+            'share_schedule_blocks_with_mentor' => 'boolean',
         ];
     }
 

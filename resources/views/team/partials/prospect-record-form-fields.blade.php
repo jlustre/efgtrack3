@@ -73,8 +73,7 @@
         <select name="pipeline_stage_id" class="mt-1 block w-full rounded-lg border-slate-300 bg-white text-sm shadow-sm">
             <option value="">Select stage</option>
             @foreach ($stages as $stage)
-                @php $stageId = $stage->pipeline_stage_id ?? $stage->id; @endphp
-                <option value="{{ $stageId }}" @selected((string) $selectedStageId === (string) $stageId)>{{ $stage->name }}</option>
+                <option value="{{ $stage['id'] }}" @selected((string) $selectedStageId === (string) $stage['id'])>{{ $stage['label'] }}</option>
             @endforeach
         </select>
     </label>

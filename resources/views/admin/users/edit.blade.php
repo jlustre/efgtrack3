@@ -72,6 +72,54 @@
                 </div>
             </form>
 
+            <section class="rounded-lg border border-amber-200 bg-white p-6 shadow-sm">
+                <h2 class="text-lg font-semibold text-[#0B1F3A]">Messaging Access</h2>
+                <p class="mt-2 text-sm text-slate-600">Suspend a member from sending messages when messaging is used for non-business or inappropriate topics.</p>
+
+                @if ($managedUser->isMessagingSuspended())
+                    <div class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        <p class="font-semibold">Messaging suspended since {{ $managedUser->messaging_suspended_at?->format('M j, Y g:i A') }}</p>
+                        @if ($managedUser->messaging_suspension_reason)
+                            <p class="mt-2"><span class="font-semibold">Reason:</span> {{ $managedUser->messaging_suspension_reason }}</p>
+                        @endif
+                        @if ($managedUser->messagingSuspendedBy)
+                            <p class="mt-1 text-xs text-red-700">Suspended by {{ $managedUser->messagingSuspendedBy->name }}</p>
+                        @endif
+                    </div>
+
+                    <form method="POST" action="{{ route('admin.users.messaging.restore', $managedUser) }}" class="mt-4" data-no-page-loader>
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">Restore Messaging Access</button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('admin.users.messaging.suspend', $managedUser) }}" class="mt-4 space-y-4" data-no-page-loader onsubmit="return confirm('Suspend this member from messaging?');">
+                        @csrf
+                        @method('PATCH')
+
+                        <div>
+                            <label for="messaging_suspension_reason" class="text-xs font-semibold uppercase tracking-wide text-slate-500">Suspension reason</label>
+                            <textarea
+                                id="messaging_suspension_reason"
+                                name="messaging_suspension_reason"
+                                rows="3"
+                                required
+                                class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+                                placeholder="Example: Repeated personal/off-topic messages after prior warning."
+                            >{{ old('messaging_suspension_reason') }}</textarea>
+                            @error('messaging_suspension_reason')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            @error('messaging')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <button type="submit" class="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700">Suspend Messaging Access</button>
+                    </form>
+                @endif
+            </section>
+
             <section class="rounded-lg border border-red-200 bg-white p-6 shadow-sm">
                 <h2 class="text-lg font-semibold text-red-700">Archive User</h2>
                 <p class="mt-2 text-sm text-slate-600">Soft delete this user and deactivate their account. Related profile, invitation, and mentor assignment records are preserved as archived records.</p>

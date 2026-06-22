@@ -10,9 +10,8 @@ use App\Models\GoalAchievement;
 use App\Models\GoalCategory;
 use App\Models\GoalReminder;
 use App\Models\MemberProductionEntry;
+use App\Models\Notification;
 use App\Models\User;
-use App\Notifications\Goals\GoalAchievementNotification;
-use App\Notifications\Goals\GoalReminderNotification;
 use App\Services\Goals\GoalAchievementService;
 use App\Services\Goals\GoalHierarchyRollupService;
 use App\Services\Goals\GoalProductionService;
@@ -22,10 +21,10 @@ use App\Services\Goals\GoalScorecardService;
 use Database\Seeders\GoalBadgeSeeder;
 use Database\Seeders\GoalCategorySeeder;
 use Database\Seeders\GoalTemplateSeeder;
+use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -39,6 +38,7 @@ class GoalsPhase2Test extends TestCase
 
         $this->seed([
             RolePermissionSeeder::class,
+            NotificationConfigSeeder::class,
             GoalCategorySeeder::class,
             GoalTemplateSeeder::class,
             GoalBadgeSeeder::class,
@@ -119,8 +119,6 @@ class GoalsPhase2Test extends TestCase
 
     public function test_due_reminder_sends_notification(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
         $categoryId = GoalCategory::query()->value('id');
 
@@ -148,7 +146,12 @@ class GoalsPhase2Test extends TestCase
 
         app(GoalReminderService::class)->processDueReminders();
 
-        Notification::assertSentTo($user, GoalReminderNotification::class);
+        $this->assertTrue(
+            Notification::query()
+                ->where('notifiable_id', $user->id)
+                ->where('data->trigger', 'goal_reminder')
+                ->exists()
+        );
     }
 
     public function test_scorecard_generation_persists_record(): void

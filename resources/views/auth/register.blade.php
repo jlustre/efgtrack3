@@ -1,10 +1,12 @@
 <x-guest-layout>
     @php
         $timezones = $locationOptions['timezones'];
-        $currentCountry = old('country');
-        $currentProvince = old('province');
-        $provinceOptions = $locationOptions['provincesByCountry'][$currentCountry] ?? [];
-        $provinceIsLegacy = filled($currentProvince) && ! array_key_exists($currentProvince, $provinceOptions) && ! in_array($currentProvince, $provinceOptions, true);
+        $currentCountryId = (string) old('country_id', '');
+        $currentProvinceId = (string) old('state_province_id', '');
+        $currentTimezoneId = (string) old('timezone_id', '');
+        $provinceOptions = $locationOptions['provincesByCountryId'][$currentCountryId] ?? [];
+        $provinceIsLegacy = filled($currentProvinceId)
+            && ! array_key_exists($currentProvinceId, $provinceOptions);
     @endphp
 
     <div class="min-h-screen bg-[radial-gradient(circle_at_10%_20%,#111111,#000000)] px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
@@ -75,16 +77,16 @@
                             action="{{ route('register') }}"
                             class="space-y-5"
                             x-data="{
-                                editCountry: @js($currentCountry ?? ''),
-                                editProvince: @js($currentProvince ?? ''),
-                                editProvinces: @js($locationOptions['provincesByCountry']),
+                                editCountryId: @js($currentCountryId),
+                                editProvinceId: @js($currentProvinceId),
+                                editProvinces: @js($locationOptions['provincesByCountryId']),
                                 get editProvinceOptions() {
-                                    return this.editProvinces[this.editCountry] || {};
+                                    return this.editProvinces[String(this.editCountryId)] || {};
                                 },
                                 onCountryChange() {
                                     const options = this.editProvinceOptions;
-                                    if (this.editProvince && ! Object.prototype.hasOwnProperty.call(options, this.editProvince)) {
-                                        this.editProvince = '';
+                                    if (this.editProvinceId && ! Object.prototype.hasOwnProperty.call(options, this.editProvinceId)) {
+                                        this.editProvinceId = '';
                                     }
                                 },
                             }"
@@ -137,60 +139,63 @@
                             <div class="grid gap-5 sm:grid-cols-2">
                                 <div>
                                     <label for="password" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Password</label>
-                                    <input id="password" name="password" type="password" required autocomplete="new-password" placeholder="Create password" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
+                                    <x-password-input variant="guest" id="password" name="password" required autocomplete="new-password" placeholder="Create password" class="mt-2" />
                                     <x-input-error :messages="$errors->get('password')" class="mt-2" />
                                 </div>
 
                                 <div>
                                     <label for="password_confirmation" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Confirm Password</label>
-                                    <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password" placeholder="Confirm password" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
+                                    <x-password-input variant="guest" id="password_confirmation" name="password_confirmation" required autocomplete="new-password" placeholder="Confirm password" class="mt-2" />
                                     <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                                 </div>
                             </div>
 
                             <div class="grid gap-5 sm:grid-cols-2">
                                 <div>
-                                    <label for="country" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Country</label>
-                                    <select id="country" name="country" required x-model="editCountry" @change="onCountryChange()" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
-                                        <option value="" disabled @selected(! old('country'))>Select jurisdiction</option>
-                                        @foreach (['Canada', 'United States', 'Philippines', 'Mexico'] as $country)
-                                            <option value="{{ $country }}" @selected(old('country') === $country)>{{ $country }}</option>
+                                    <label for="country_id" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Country <span class="text-red-400">*</span></label>
+                                    <select id="country_id" name="country_id" required x-model="editCountryId" @change="onCountryChange()" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
+                                        <option value="" disabled @selected($currentCountryId === '')>Select country</option>
+                                        @foreach ($registrationCountries as $countryId => $countryName)
+                                            <option value="{{ $countryId }}" @selected($currentCountryId === (string) $countryId)>{{ $countryName }}</option>
                                         @endforeach
                                     </select>
-                                    <x-input-error :messages="$errors->get('country')" class="mt-2" />
+                                    <p class="mt-2 text-xs text-slate-400">Required to match you with a CFM licensed in your jurisdiction.</p>
+                                    <x-input-error :messages="$errors->get('country_id')" class="mt-2" />
                                 </div>
 
                                 <div>
-                                    <label for="timezone" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Timezone</label>
-                                    <select id="timezone" name="timezone" required class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
-                                        <option value="" disabled @selected(! old('timezone'))>Select your local timezone</option>
-                                        @foreach ($timezones as $timezoneValue => $timezoneLabel)
-                                            <option value="{{ is_numeric($timezoneValue) ? $timezoneLabel : $timezoneValue }}" @selected(old('timezone') === (is_numeric($timezoneValue) ? $timezoneLabel : $timezoneValue))>{{ $timezoneLabel }}</option>
+                                    <label for="timezone_id" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Timezone <span class="text-red-400">*</span></label>
+                                    <select id="timezone_id" name="timezone_id" required class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
+                                        <option value="" disabled @selected($currentTimezoneId === '')>Select your local timezone</option>
+                                        @foreach ($timezones as $timezoneId => $timezoneLabel)
+                                            <option value="{{ $timezoneId }}" @selected($currentTimezoneId === (string) $timezoneId)>{{ $timezoneLabel }}</option>
                                         @endforeach
                                     </select>
-                                    <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
+                                    <x-input-error :messages="$errors->get('timezone_id')" class="mt-2" />
                                 </div>
                             </div>
 
                             <div class="grid gap-5 sm:grid-cols-2">
                                 <div>
-                                    <label for="province" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">State / Province</label>
+                                    <label for="state_province_id" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">State / Province <span class="text-red-400">*</span></label>
                                     <select
-                                        id="province"
-                                        name="province"
-                                        x-model="editProvince"
+                                        id="state_province_id"
+                                        name="state_province_id"
+                                        x-model="editProvinceId"
                                         required
-                                        class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
+                                        :disabled="! editCountryId"
+                                        class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 focus:border-[#D4AF37] focus:ring-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        <option value="" disabled @selected(! $currentProvince)>Select state / province</option>
+                                        <option value="" disabled @selected($currentProvinceId === '')>Select state / province</option>
                                         @if ($provinceIsLegacy)
-                                            <option value="{{ $currentProvince }}" selected>{{ $currentProvince }}</option>
+                                            <option value="{{ $currentProvinceId }}" selected>{{ $provinceOptions[$currentProvinceId] ?? 'Previously selected' }}</option>
                                         @endif
                                         <template x-for="(label, value) in editProvinceOptions" :key="value">
                                             <option :value="value" x-text="label"></option>
                                         </template>
                                     </select>
-                                    <x-input-error :messages="$errors->get('province')" class="mt-2" />
+                                    <p class="mt-2 text-xs text-slate-400">Choose the state or province where you are licensed and will build your business.</p>
+                                    <x-input-error :messages="$errors->get('state_province_id')" class="mt-2" />
                                 </div>
 
                                 <div>

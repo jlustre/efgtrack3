@@ -17,22 +17,18 @@
             </form>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-4">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             @foreach ([
-                ['label' => 'Unread', 'value' => $unreadCount, 'accent' => 'bg-[#C8A24A]'],
-                ['label' => 'Read', 'value' => $readCount, 'accent' => 'bg-[#0B1F3A]'],
-                ['label' => 'Total', 'value' => $notifications->total(), 'accent' => 'bg-emerald-500'],
-                ['label' => 'Types', 'value' => $typeCounts->count(), 'accent' => 'bg-sky-500'],
+                ['label' => 'Unread', 'value' => $unreadCount, 'theme' => 'gold'],
+                ['label' => 'Read', 'value' => $readCount, 'theme' => 'navy'],
+                ['label' => 'Total', 'value' => $notifications->total(), 'theme' => 'emerald'],
+                ['label' => 'Types', 'value' => $typeCounts->count(), 'theme' => 'cyan'],
             ] as $stat)
-                <section class="rounded-lg border border-slate-400 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-5 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $stat['label'] }}</p>
-                            <div class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ $stat['value'] }}</div>
-                        </div>
-                        <span class="h-3 w-3 rounded-full {{ $stat['accent'] }}"></span>
-                    </div>
-                </section>
+                <x-tracker-stat-card
+                    :label="$stat['label']"
+                    :value="$stat['value']"
+                    :theme="$stat['theme']"
+                />
             @endforeach
         </div>
 

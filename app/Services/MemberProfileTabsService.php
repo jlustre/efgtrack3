@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Checklist;
+use App\Models\MemberProductionEntry;
 use App\Models\User;
 use App\Models\UserChecklistTypeStart;
 use App\Support\ChecklistDueDisplay;
@@ -336,6 +337,22 @@ class MemberProfileTabsService
                     $recruit->name.' — new team member',
                     5000,
                     $recruit->joined_at?->format('M j, Y') ?? '—'
+                ));
+            });
+
+        MemberProductionEntry::query()
+            ->where('user_id', $user->id)
+            ->where('status', 'posted')
+            ->whereYear('posted_at', $year)
+            ->orderByDesc('posted_at')
+            ->get()
+            ->each(function (MemberProductionEntry $entry) use ($rows, $year): void {
+                $rows->push($this->formatAnnualPremiumRow(
+                    $year,
+                    'Manual Entry',
+                    $entry->description ?: ($entry->policy_reference ?: 'Production entry'),
+                    (int) round((float) $entry->annual_premium),
+                    $entry->posted_at?->format('M j, Y') ?? '—',
                 ));
             });
 

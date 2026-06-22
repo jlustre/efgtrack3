@@ -41,13 +41,8 @@
             dismissProfileCompletion() {
                 this.profileCompletionOpen = false;
             },
-            refreshProfileCompletion(snapshot) {
-                this.completionFields = snapshot.fields ?? this.completionFields;
-                this.completionPercent = snapshot.percent ?? this.completionPercent;
-            },
         }"
         x-init="$nextTick(() => syncCompletionProvinceSelect())"
-        x-on:profile-completion-updated.window="refreshProfileCompletion($event.detail.profile_completion)"
     >
     <div class="space-y-6">
         @include('profile.partials.member-header', [
@@ -62,31 +57,36 @@
             x-data="dashboardStats(@js(['detailsUrlTemplate' => route('dashboard.stat-details', ['type' => '__TYPE__'])]))"
         >
             <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">My Team</h2>
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
                 @foreach ($statCards['team'] ?? [] as $card)
-                    @php($theme = dashboardStatCardTheme($card['key'], 'team'))
-                    <section @class([$theme['card']])>
-                        <div class="flex items-center justify-between gap-2">
-                            <h3 @class(['text-sm font-semibold', $theme['label']])>{{ $card['label'] }}</h3>
-                            <span @class(['text-lg font-bold', $theme['value']])>{{ $card['value'] }}</span>
-                        </div>
-                        <div class="mt-3 flex items-center gap-2">
-                            <div @class(['h-2 min-w-0 flex-1 rounded-full', $theme['bar_track']])>
-                                <div @class(['h-2 rounded-full', $theme['bar_fill']]) style="width: {{ $card['bar'] }}%"></div>
+                    @php
+                        $theme = dashboardTrackerStatTheme($card['key']);
+                        $bar = dashboardStatBarClasses($theme);
+                    @endphp
+                    <div class="space-y-3">
+                        <x-tracker-stat-card
+                            :label="$card['label']"
+                            :value="$card['value']"
+                            :theme="$theme"
+                            subtitle="Team average completion"
+                        />
+                        <div class="flex items-center gap-2 px-1">
+                            <div @class(['h-2 min-w-0 flex-1 rounded-full', $bar['track']])>
+                                <div @class(['h-2 rounded-full', $bar['fill']]) style="width: {{ $card['bar'] }}%"></div>
                             </div>
                             <button
                                 type="button"
-                                @class(['inline-flex shrink-0 items-center gap-1 rounded-full border bg-white/60 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wide transition backdrop-blur-sm', $theme['button']])
+                                class="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wide text-[#0B1F3A] transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]"
                                 x-on:click="openModal(@js($card['key']), @js($card['label']))"
                                 aria-label="View {{ $card['label'] }} details"
                             >
-                                <svg @class(['h-3 w-3', $theme['icon']]) viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <svg class="h-3 w-3 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path>
                                 </svg>
                                 View
                             </button>
                         </div>
-                    </section>
+                    </div>
                 @endforeach
             </div>
 
@@ -98,25 +98,46 @@
                 <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">My Progress</h2>
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                     @foreach ($statCards['personal'] as $card)
-                        @php($theme = dashboardStatCardTheme($card['key'], 'personal'))
+                        @php
+                            $theme = dashboardTrackerStatTheme($card['key']);
+                            $bar = dashboardStatBarClasses($theme);
+                            $showBar = $card['show_bar'] ?? true;
+                            $subtitle = match ($card['key']) {
+                                'profile' => 'Complete your member profile',
+                                'onboarding' => 'Onboarding checklist progress',
+                                'credentials' => 'Licensing milestone progress',
+                                'apprenticeship' => 'Field apprenticeship progress',
+                                'training' => 'CFM training progress',
+                                'prospects' => 'Active prospects in your CRM',
+                                'hot_prospects' => 'High-priority leads',
+                                'followups_due' => 'Due today or overdue',
+                                'prospect_conversion' => 'Prospect to client rate',
+                                'recruits' => 'Members in your downline',
+                                'production' => 'Annual production total',
+                                'fna' => 'Approved FNA submissions',
+                                default => null,
+                            };
+                        @endphp
                         @if (! empty($card['url']))
-                            <a href="{{ $card['url'] }}" @class([$theme['card'], 'block transition hover:border-[#C8A24A]'])>
-                        @else
-                            <section @class([$theme['card']])>
+                            <a href="{{ $card['url'] }}" class="block rounded-lg transition hover:scale-[1.01] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A24A]">
                         @endif
-                            <div class="flex items-center justify-between gap-2">
-                                <h3 @class(['text-sm font-semibold', $theme['label']])>{{ $card['label'] }}</h3>
-                                <span @class(['text-base font-bold', $theme['value']])>{{ $card['value'] }}</span>
-                            </div>
-                            @if ($card['show_bar'] ?? true)
-                                <div @class(['mt-2 h-1.5 rounded-full', $theme['bar_track']])>
-                                    <div @class(['h-1.5 rounded-full', $theme['bar_fill']]) style="width: {{ $card['bar'] }}%"></div>
+                        <div class="space-y-2">
+                            <x-tracker-stat-card
+                                :label="$card['label']"
+                                :value="$card['value']"
+                                :theme="$theme"
+                                :subtitle="$subtitle"
+                            />
+                            @if ($showBar)
+                                <div class="px-1">
+                                    <div @class(['h-1.5 rounded-full', $bar['track']])>
+                                        <div @class(['h-1.5 rounded-full', $bar['fill']]) style="width: {{ $card['bar'] }}%"></div>
+                                    </div>
                                 </div>
                             @endif
+                        </div>
                         @if (! empty($card['url']))
                             </a>
-                        @else
-                            </section>
                         @endif
                     @endforeach
                 </div>

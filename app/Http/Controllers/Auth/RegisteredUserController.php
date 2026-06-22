@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Events\NewMemberRegistered;
 use App\Http\Controllers\Controller;
+use App\Models\Country;
 use App\Models\RegistrationInvitation;
 use App\Models\Profile;
 use App\Models\Rank;
@@ -24,6 +25,13 @@ use Spatie\Permission\Models\Role;
 
 class RegisteredUserController extends Controller
 {
+    private const REGISTRATION_COUNTRIES = [
+        'Canada',
+        'United States',
+        'Philippines',
+        'Mexico',
+    ];
+
     /**
      * Display the registration view.
      */
@@ -40,9 +48,15 @@ class RegisteredUserController extends Controller
 
         abort_unless($invitation->isAvailable(), 403, 'This invitation link is no longer available.');
 
+        $locationOptions = LocationOptions::forPortal();
+        $registrationCountries = collect($locationOptions['countries'])
+            ->filter(fn (string $name): bool => in_array($name, self::REGISTRATION_COUNTRIES, true))
+            ->all();
+
         return view('auth.register', [
             'invitation' => $invitation,
-            'locationOptions' => LocationOptions::forPortal(),
+            'locationOptions' => $locationOptions,
+            'registrationCountries' => $registrationCountries,
         ]);
     }
 
@@ -60,21 +74,31 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'efg_associate_id' => ['required', 'string', 'max:100', 'unique:profiles,efg_associate_id'],
             'city' => ['required', 'string', 'max:120'],
-            'province' => ['required', 'string', 'max:120'],
-            'country' => ['required', 'string', 'in:Canada,United States,Philippines,Mexico'],
-            'timezone' => ['required', 'string', 'max:120'],
+            'country_id' => ['required', 'integer', 'exists:countries,id'],
+            'state_province_id' => ['required', 'integer', 'exists:state_provinces,id'],
+            'timezone_id' => ['required', 'integer', 'exists:timezones,id'],
             'sponsor_confirmed' => ['accepted'],
             'active_associate_confirmed' => ['accepted'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        if (! LocationOptions::isValidProvince($request->string('country')->toString(), $request->string('province')->toString())) {
+        $countryId = $request->integer('country_id');
+        $stateProvinceId = $request->integer('state_province_id');
+        $countryName = Country::query()->whereKey($countryId)->value('name');
+
+        if (! in_array($countryName, self::REGISTRATION_COUNTRIES, true)) {
             throw ValidationException::withMessages([
-                'province' => 'Select a valid province or state for the chosen country.',
+                'country_id' => 'Select a supported registration country.',
             ]);
         }
 
-        $user = DB::transaction(function () use ($request): User {
+        if (! LocationOptions::isValidStateProvinceId($countryId, $stateProvinceId)) {
+            throw ValidationException::withMessages([
+                'state_province_id' => 'Select a valid province or state for the chosen country.',
+            ]);
+        }
+
+        $user = DB::transaction(function () use ($request, $countryId, $stateProvinceId): User {
             $invitation = RegistrationInvitation::query()
                 ->with('sponsor')
                 ->where('code', $request->string('registration_code')->toString())
@@ -115,11 +139,11 @@ class RegisteredUserController extends Controller
                 'is_online' => true,
             ]);
 
-            $locationIds = LocationOptions::profileLocationIds(
-                $request->string('country')->toString(),
-                $request->string('province')->toString(),
-                $request->string('timezone')->toString(),
-            );
+            $locationIds = [
+                'country_id' => $countryId,
+                'state_province_id' => $stateProvinceId,
+                'timezone_id' => $request->integer('timezone_id'),
+            ];
 
             $user->profile()->create([
                 'efg_associate_id' => $request->string('efg_associate_id')->toString(),
@@ -130,9 +154,8 @@ class RegisteredUserController extends Controller
                 'is_efg_active_associate' => true,
             ]);
 
-            if (Role::where('name', 'member')->exists()) {
-                $user->assignRole('member');
-            }
+            $memberRole = Role::findOrCreate('member');
+            $user->assignRole($memberRole);
 
             $invitation->forceFill([
                 'accepted_by' => $user->id,

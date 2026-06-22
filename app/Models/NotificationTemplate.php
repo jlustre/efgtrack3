@@ -15,6 +15,13 @@ class NotificationTemplate extends Model
         'name',
         'subject',
         'body',
+        'in_app_title',
+        'in_app_message',
+        'sms_body',
+        'push_title',
+        'push_body',
+        'action_label',
+        'action_url_template',
         'channels',
         'placeholders',
         'is_default',
@@ -57,6 +64,21 @@ class NotificationTemplate extends Model
     public function renderBody(array $tokens): string
     {
         return $this->render($this->body, $tokens);
+    }
+
+    public function renderSmsBody(array $tokens): string
+    {
+        return $this->render((string) ($this->sms_body ?? ''), $tokens);
+    }
+
+    public function renderPushTitle(array $tokens): string
+    {
+        return $this->render((string) ($this->push_title ?? $this->subject), $tokens);
+    }
+
+    public function renderPushBody(array $tokens): string
+    {
+        return $this->render((string) ($this->push_body ?? $this->in_app_message ?? ''), $tokens);
     }
 
     private function render(string $content, array $tokens): string

@@ -46,7 +46,10 @@
         @endif
 
         <div class="grid gap-4 lg:grid-cols-3">
-            <div class="rounded-xl border border-[#C8A24A]/30 bg-[#FFF9EA] p-5 shadow-sm lg:col-span-1">
+            <a
+                href="#cfm-checklist-phases"
+                class="group rounded-xl border border-[#C8A24A]/30 bg-[#FFF9EA] p-5 shadow-sm transition hover:border-[#C8A24A] hover:shadow-md lg:col-span-1"
+            >
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-semibold text-[#8A6A1F]">Overall Progress</p>
                     <span class="rounded-full bg-[#C8A24A]/20 px-2.5 py-1 text-xs font-bold text-[#8A6A1F]">{{ $stats['percent'] }}%</span>
@@ -56,31 +59,38 @@
                 <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
                     <div class="h-full rounded-full bg-[#C8A24A] transition-all" style="width: {{ $stats['percent'] }}%"></div>
                 </div>
-            </div>
+                <p class="mt-3 text-xs font-semibold text-[#8A6A1F] opacity-0 transition group-hover:opacity-100">Jump to checklist ↓</p>
+            </a>
 
             <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
                 <h2 class="text-sm font-semibold text-[#0B1F3A]">Phase Overview</h2>
                 <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                     @foreach ($phases as $phase)
-                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                        <a
+                            href="#cfm-checklist-phase-{{ $phase['phase_number'] }}"
+                            class="group rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 transition hover:border-[#C8A24A] hover:bg-[#FFF9EA]"
+                        >
                             <div class="flex items-center justify-between gap-2">
                                 <span class="text-xs font-semibold text-slate-500">Phase {{ $phase['phase_number'] }}</span>
                                 <span class="text-xs font-bold text-[#8A6A1F]">{{ $phase['percent'] }}%</span>
                             </div>
                             <p class="mt-1 line-clamp-2 text-sm text-[#0B1F3A]">{{ $phase['phase_title'] }}</p>
                             <p class="mt-1 text-xs text-slate-500">{{ $phase['completed'] }}/{{ $phase['total'] }} complete</p>
-                        </div>
+                            <p class="mt-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[#8A6A1F] opacity-0 transition group-hover:opacity-100">View phase ↓</p>
+                        </a>
                     @endforeach
                 </div>
             </div>
         </div>
 
-        <div class="space-y-4">
+        <div id="cfm-checklist-phases" class="scroll-mt-6 space-y-4">
             @php($checklistRow = 0)
             @foreach ($phases as $phase)
                 <div
+                    id="cfm-checklist-phase-{{ $phase['phase_number'] }}"
                     x-data="{ open: {{ $phase['percent'] < 100 ? 'true' : 'false' }} }"
-                    class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+                    x-on:cfm-checklist-open.window="if ($el.id === window.location.hash.slice(1)) open = true"
+                    class="scroll-mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
                 >
                     <button
                         type="button"
@@ -192,4 +202,27 @@
             @endforeach
         </div>
     </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const openPhaseFromHash = () => {
+                const hash = window.location.hash;
+                if (! hash.startsWith('#cfm-checklist-phase-')) {
+                    return;
+                }
+
+                const target = document.querySelector(hash);
+                if (! target) {
+                    return;
+                }
+
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                window.dispatchEvent(new CustomEvent('cfm-checklist-open'));
+            };
+
+            openPhaseFromHash();
+            window.addEventListener('hashchange', openPhaseFromHash);
+        });
+    </script>
 </x-app-layout>

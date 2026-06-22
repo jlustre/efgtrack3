@@ -87,6 +87,8 @@
         }"
         x-init="@if ($previewDocumentId) $nextTick(() => openPreview(@js($previewDocumentId))) @endif"
     >
+        @include('resources.partials.hub-quick-nav')
+
         @if (session('status') === 'document-seeder-updated')
             <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                 <p class="font-semibold">Document seeder updated</p>
@@ -115,8 +117,9 @@
             <div class="border-b border-slate-100 bg-[#0B1F3A] px-6 py-6 text-white">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Resource Library</p>
-                        <h1 class="mt-2 text-2xl font-semibold">Documents</h1>
+                        <a href="{{ route('resources.index') }}" class="text-xs font-semibold uppercase tracking-wide text-[#C8A24A] hover:text-white">← Resource Library</a>
+                        <p class="mt-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Documents</p>
+                        <h1 class="mt-1 text-2xl font-semibold">Document library</h1>
                         <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-200">
                             Onboarding packets, forms, scripts, guides, and compliance resources to support your field development.
                         </p>

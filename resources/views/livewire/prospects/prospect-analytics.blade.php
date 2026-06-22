@@ -14,19 +14,20 @@
 
         <div class="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-4">
             @foreach ([
-                ['label' => 'Active Prospects', 'value' => $summary['total']],
-                ['label' => 'New (30 days)', 'value' => $summary['new_30d']],
-                ['label' => 'Hot Prospects', 'value' => $summary['hot']],
-                ['label' => 'Follow-Ups Due', 'value' => $summary['followups_due']],
-                ['label' => 'Upcoming Appts', 'value' => $summary['appointments_upcoming']],
-                ['label' => 'Conversion Rate', 'value' => $summary['conversion_rate'].'%'],
-                ['label' => 'Insurance Pipeline', 'value' => $summary['insurance_count']],
-                ['label' => 'Recruiting Pipeline', 'value' => $summary['recruiting_count']],
+                ['label' => 'Active Prospects', 'value' => $summary['total'], 'theme' => 'navy'],
+                ['label' => 'New (30 days)', 'value' => $summary['new_30d'], 'theme' => 'cyan'],
+                ['label' => 'Hot Prospects', 'value' => $summary['hot'], 'theme' => 'red'],
+                ['label' => 'Follow-Ups Due', 'value' => $summary['followups_due'], 'theme' => 'amber'],
+                ['label' => 'Upcoming Appts', 'value' => $summary['appointments_upcoming'], 'theme' => 'violet'],
+                ['label' => 'Conversion Rate', 'value' => $summary['conversion_rate'].'%', 'theme' => 'gold'],
+                ['label' => 'Insurance Pipeline', 'value' => $summary['insurance_count'], 'theme' => 'cyan'],
+                ['label' => 'Recruiting Pipeline', 'value' => $summary['recruiting_count'], 'theme' => 'emerald'],
             ] as $card)
-                <div class="rounded-lg border border-[#C8A24A]/40 bg-white/80 p-5 shadow-sm">
-                    <p class="text-sm font-semibold text-slate-600">{{ $card['label'] }}</p>
-                    <div class="mt-3 text-3xl font-semibold text-[#0B1F3A]">{{ $card['value'] }}</div>
-                </div>
+                <x-tracker-stat-card
+                    :label="$card['label']"
+                    :value="$card['value']"
+                    :theme="$card['theme']"
+                />
             @endforeach
         </div>
     </div>
@@ -42,15 +43,16 @@
             </div>
             <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach ([
-                    ['label' => 'Team Prospects', 'value' => $teamAggregates['total_prospects']],
-                    ['label' => 'Team Hot', 'value' => $teamAggregates['hot_prospects']],
-                    ['label' => 'Follow-Ups Due', 'value' => $teamAggregates['followups_due']],
-                    ['label' => 'Avg Conversion', 'value' => $teamAggregates['avg_conversion_rate'].'%'],
+                    ['label' => 'Team Prospects', 'value' => $teamAggregates['total_prospects'], 'theme' => 'navy'],
+                    ['label' => 'Team Hot', 'value' => $teamAggregates['hot_prospects'], 'theme' => 'red'],
+                    ['label' => 'Follow-Ups Due', 'value' => $teamAggregates['followups_due'], 'theme' => 'amber'],
+                    ['label' => 'Avg Conversion', 'value' => $teamAggregates['avg_conversion_rate'].'%', 'theme' => 'gold'],
                 ] as $card)
-                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-[#C8A24A]">{{ $card['label'] }}</p>
-                        <p class="mt-2 text-2xl font-bold">{{ $card['value'] }}</p>
-                    </div>
+                    <x-tracker-stat-card
+                        :label="$card['label']"
+                        :value="$card['value']"
+                        :theme="$card['theme']"
+                    />
                 @endforeach
             </div>
         </div>

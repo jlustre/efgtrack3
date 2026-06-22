@@ -62,6 +62,23 @@ class FnaAnalyticsService
         ];
     }
 
+    public function metricCountFor(User $user, string $metricKey, CarbonInterface $start, CarbonInterface $end): int
+    {
+        $query = $this->ownedRecordsQuery($user);
+
+        return match ($metricKey) {
+            'fna_approved' => (clone $query)
+                ->whereIn('status', $this->approvedStatuses())
+                ->whereNotNull('approved_at')
+                ->whereBetween('approved_at', [$start, $end])
+                ->count(),
+            default => (clone $query)
+                ->whereNotNull('submitted_at')
+                ->whereBetween('submitted_at', [$start, $end])
+                ->count(),
+        };
+    }
+
     public function awaitingReviewList(User $user, int $limit = 5): Collection
     {
         $query = $user->can('review trainee fna records')

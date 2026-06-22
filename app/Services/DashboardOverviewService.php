@@ -8,6 +8,7 @@ use App\Models\Checklist;
 use App\Models\ChecklistProgress;
 use App\Models\Rank;
 use App\Models\User;
+use App\Services\Communication\CommunicationHubService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,6 +20,7 @@ class DashboardOverviewService
         private readonly ProfileCompletionService $profileCompletion,
         private readonly TaskController $tasks,
         private readonly ChecklistService $checklists,
+        private readonly CommunicationHubService $communicationHub,
     ) {}
 
     public function forUser(User $user): array
@@ -196,26 +198,17 @@ class DashboardOverviewService
      *     team_name: string|null,
      *     open_tasks: int,
      *     tasks_route: string,
-     *     announcements: list<array{title: string, meta: string}>,
+     *     announcements: list<array{title: string, meta: string, slug: string, is_unread: bool, priority: string}>,
      *     announcements_route: string,
+     *     announcements_unread_count: int,
+     *     announcements_featured: list<array{title: string, summary: string|null, slug: string, category: string|null, priority: string}>,
+     *     announcements_pending_critical: list<array{title: string, slug: string, priority: string, summary: string|null}>,
      *     team_route: string
      * }
      */
     private function communications(User $user): array
     {
-        $announcements = DB::table('announcements')
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now())
-            ->whereNull('deleted_at')
-            ->orderByDesc('published_at')
-            ->limit(3)
-            ->get(['title', 'published_at'])
-            ->map(fn (object $row): array => [
-                'title' => $row->title,
-                'meta' => 'Posted '.$this->relativeTime($row->published_at),
-            ])
-            ->values()
-            ->all();
+        $snapshot = $this->communicationHub->dashboardCommunicationsFor($user);
 
         return [
             'mentor' => [
@@ -229,8 +222,11 @@ class DashboardOverviewService
             'team_name' => $user->team?->name,
             'open_tasks' => $this->tasks->openTaskCountFor($user),
             'tasks_route' => 'tasks.index',
-            'announcements' => $announcements,
-            'announcements_route' => 'announcements.index',
+            'announcements' => $snapshot['announcements'],
+            'announcements_route' => 'communications.index',
+            'announcements_unread_count' => $snapshot['unread_count'],
+            'announcements_featured' => $snapshot['featured'],
+            'announcements_pending_critical' => $snapshot['pending_critical'],
             'team_route' => 'team.index',
         ];
     }

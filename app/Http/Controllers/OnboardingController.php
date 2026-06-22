@@ -123,6 +123,13 @@ class OnboardingController extends Controller
 
         $confirmed = $validated['decision'] === 'confirmed';
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $confirmed ? 'Onboarding item confirmed.' : 'Onboarding item rejected.',
+                'decision' => $validated['decision'],
+            ]);
+        }
+
         return back()->with('status', $confirmed ? 'onboarding-item-confirmed' : 'onboarding-item-rejected');
     }
 }

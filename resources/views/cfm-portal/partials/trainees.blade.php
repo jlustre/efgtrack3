@@ -39,6 +39,14 @@
                                 </span>
                             </td>
                             <td class="space-x-2 py-2.5 text-right">
+                                @if (! empty($trainee['id']))
+                                    <a
+                                        href="{{ route('team.member.profile', $trainee['id']) }}"
+                                        class="inline-flex rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0B1F3A] transition hover:border-[#C8A24A] hover:text-[#8A6A1F]"
+                                    >
+                                        View profile
+                                    </a>
+                                @endif
                                 @if (! empty($trainee['assignmentId']))
                                     <button
                                         type="button"

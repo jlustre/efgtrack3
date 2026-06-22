@@ -11,7 +11,9 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('team.tree') }}" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Tree View</a>
+                        <a href="{{ route('team.production') }}" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Production</a>
+                        <a href="{{ route('team.recruiting.index') }}" class="rounded-lg border border-emerald-400 bg-emerald-400 px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Recruiting</a>
+                        <a href="{{ route('team.tree') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Tree View</a>
                         <a href="{{ route('team.hierarchy') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Hierarchy Table</a>
                         <a href="{{ route('team.org-chart') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Org Chart</a>
                         <a href="{{ route('team.table') }}" class="rounded-lg border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Flat Table</a>
@@ -20,22 +22,26 @@
             </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            @foreach ([
-                ['label' => 'Total Team', 'value' => $stats['total_team']],
-                ['label' => 'Direct Recruits', 'value' => $stats['direct_recruits']],
-                ['label' => 'Active Associates', 'value' => $stats['active_associates']],
-                ['label' => 'Licensed Associates', 'value' => $stats['licensed_associates']],
-                ['label' => 'New This Month', 'value' => $stats['new_this_month']],
-                ['label' => 'Pending Licensing', 'value' => $stats['pending_licensing']],
-                ['label' => 'CFM Assigned', 'value' => $stats['cfm_assigned']],
-                ['label' => 'Training Average', 'value' => $stats['training_average'].'%'],
-            ] as $card)
-                <div class="rounded-lg border border-slate-400 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-5 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wide text-slate-500">{{ $card['label'] }}</div>
-                    <div class="mt-3 text-2xl font-semibold text-[#0B1F3A]">{{ $card['value'] }}</div>
-                </div>
-            @endforeach
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+            <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach ([
+                    ['label' => 'Total Team', 'value' => $stats['total_team'], 'theme' => 'navy', 'subtitle' => 'Members in your downline'],
+                    ['label' => 'Direct Recruits', 'value' => $stats['direct_recruits'], 'theme' => 'cyan', 'subtitle' => 'First-level recruits'],
+                    ['label' => 'Active Associates', 'value' => $stats['active_associates'], 'theme' => 'emerald', 'subtitle' => 'Currently active members'],
+                    ['label' => 'Licensed Associates', 'value' => $stats['licensed_associates'], 'theme' => 'gold', 'subtitle' => 'Fully licensed producers'],
+                    ['label' => 'New This Month', 'value' => $stats['new_this_month'], 'theme' => 'violet', 'subtitle' => 'Recent team growth'],
+                    ['label' => 'Pending Licensing', 'value' => $stats['pending_licensing'], 'theme' => 'amber', 'subtitle' => 'Awaiting licensure'],
+                    ['label' => 'CFM Assigned', 'value' => $stats['cfm_assigned'], 'theme' => 'slate', 'subtitle' => 'With mentor coverage'],
+                    ['label' => 'Training Average', 'value' => $stats['training_average'].'%', 'theme' => 'cyan', 'subtitle' => 'Team training completion'],
+                ] as $card)
+                    <x-tracker-stat-card
+                        :label="$card['label']"
+                        :value="$card['value']"
+                        :subtitle="$card['subtitle']"
+                        :theme="$card['theme']"
+                    />
+                @endforeach
+            </div>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-2">

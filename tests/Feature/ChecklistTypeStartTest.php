@@ -41,7 +41,131 @@ class ChecklistTypeStartTest extends TestCase
             ->get(route('onboarding.index'))
             ->assertOk()
             ->assertSee('Not started yet')
+            ->assertSee('Start checklist')
             ->assertDontSee('Overall Progress');
+    }
+
+    public function test_member_can_start_own_onboarding_checklist(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            CountrySeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+        ]);
+
+        $member = $this->member();
+
+        $this->actingAs($member)
+            ->post(route('checklists.type.start', 'onboarding'), [
+                'started_at' => '2026-04-15',
+            ])
+            ->assertRedirect(route('onboarding.index'));
+
+        $this->assertDatabaseHas('user_checklist_type_starts', [
+            'user_id' => $member->id,
+            'started_at' => '2026-04-15 00:00:00',
+            'started_by' => $member->id,
+        ]);
+
+        $this->actingAs($member)
+            ->get(route('onboarding.index'))
+            ->assertOk()
+            ->assertSee('My Onboarding')
+            ->assertDontSee('Not started yet');
+    }
+
+    public function test_member_can_start_own_licensing_and_fap_checklists(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            CountrySeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+        ]);
+
+        $member = $this->member();
+
+        foreach (['licensing' => 'licensing.index', 'fap' => 'apprenticeship.index'] as $typeCode => $routeName) {
+            $this->actingAs($member)
+                ->post(route('checklists.type.start', $typeCode), [
+                    'started_at' => '2026-05-01',
+                ])
+                ->assertRedirect(route($routeName));
+
+            $this->actingAs($member)
+                ->get(route($routeName))
+                ->assertOk()
+                ->assertDontSee('Not started yet');
+        }
+    }
+
+    public function test_member_cannot_start_cfm_training_without_prerequisites(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            CountrySeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+        ]);
+
+        $member = $this->member();
+
+        $this->actingAs($member)
+            ->get(route('cfm-training.index'))
+            ->assertOk()
+            ->assertSee('Not started yet')
+            ->assertSee('Prerequisites required')
+            ->assertDontSee('Start checklist');
+
+        $this->actingAs($member)
+            ->from(route('cfm-training.index'))
+            ->post(route('checklists.type.start', 'cfm-training'), [
+                'started_at' => '2026-04-15',
+            ])
+            ->assertRedirect(route('cfm-training.index'))
+            ->assertSessionHasErrors('type');
+    }
+
+    public function test_member_can_start_cfm_training_when_onboarding_licensing_and_fap_are_complete(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            CountrySeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+        ]);
+
+        $member = $this->member();
+
+        foreach (['onboarding', 'licensing', 'fap'] as $typeCode) {
+            $this->startChecklistType($member, $typeCode);
+            $this->completeChecklistType($member, $typeCode);
+        }
+
+        $this->actingAs($member)
+            ->get(route('cfm-training.index'))
+            ->assertOk()
+            ->assertSee('Not started yet')
+            ->assertSee('Start checklist');
+
+        $this->actingAs($member)
+            ->post(route('checklists.type.start', 'cfm-training'), [
+                'started_at' => '2026-06-01',
+            ])
+            ->assertRedirect(route('cfm-training.index'));
+
+        $this->assertDatabaseHas('user_checklist_type_starts', [
+            'user_id' => $member->id,
+            'started_at' => '2026-06-01 00:00:00',
+            'started_by' => $member->id,
+        ]);
+
+        $this->actingAs($member)
+            ->get(route('cfm-training.index'))
+            ->assertOk()
+            ->assertSee('CFM Training Checklist')
+            ->assertDontSee('Not started yet');
     }
 
     public function test_ao_can_start_onboarding_with_explicit_day_one_date(): void
@@ -110,23 +234,6 @@ class ChecklistTypeStartTest extends TestCase
             ->assertOk()
             ->assertSee('Licensing Tracker')
             ->assertDontSee('Not started yet');
-    }
-
-    public function test_member_cannot_start_own_checklist(): void
-    {
-        $this->seed([
-            RolePermissionSeeder::class,
-            CountrySeeder::class,
-            ChecklistTypeSeeder::class,
-        ]);
-
-        $member = $this->member();
-
-        $this->actingAs($member)
-            ->post(route('team.member.checklist-type.start', ['user' => $member, 'typeCode' => 'onboarding']), [
-                'started_at' => '2026-04-15',
-            ])
-            ->assertForbidden();
     }
 
     public function test_super_admin_can_start_own_licensing_from_tracker_page(): void

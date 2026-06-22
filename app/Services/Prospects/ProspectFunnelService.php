@@ -106,6 +106,12 @@ class ProspectFunnelService
      */
     public function logActivity(Prospect $prospect, User $actor, array $attributes): ProspectActivity
     {
+        $metadata = is_array($attributes['metadata'] ?? null) ? $attributes['metadata'] : [];
+
+        if (filled($attributes['subject'] ?? null)) {
+            $metadata['subject'] = $attributes['subject'];
+        }
+
         $activity = ProspectActivity::create([
             'prospect_id' => $prospect->id,
             'user_id' => $actor->id,
@@ -116,6 +122,7 @@ class ProspectFunnelService
             'notes' => $attributes['notes'] ?? null,
             'next_action' => $attributes['next_action'] ?? null,
             'next_follow_up_at' => $attributes['next_follow_up_at'] ?? null,
+            'metadata' => $metadata !== [] ? $metadata : null,
         ]);
 
         $prospect->update([
@@ -124,7 +131,25 @@ class ProspectFunnelService
             'next_follow_up_at' => $activity->next_follow_up_at ?? $prospect->next_follow_up_at,
         ]);
 
-        return $activity;
+        if (filled($attributes['pipeline_stage_id'] ?? null)) {
+            $stageId = (int) $attributes['pipeline_stage_id'];
+
+            if ($stageId !== (int) $prospect->pipeline_stage_id) {
+                $stageLabel = $this->stageLabelForFunnel($prospect->prospect_funnel_id, $stageId);
+                $activity->update([
+                    'metadata' => array_merge($activity->metadata ?? [], [
+                        'pipeline_stage_id' => $stageId,
+                        'pipeline_stage_name' => $stageLabel,
+                    ]),
+                ]);
+
+                $this->updateProspect($prospect->fresh(), $actor, [
+                    'pipeline_stage_id' => $stageId,
+                ], 'activity_log');
+            }
+        }
+
+        return $activity->fresh();
     }
 
     /**
@@ -251,6 +276,96 @@ class ProspectFunnelService
             ->where('prospect_funnel_id', $funnelId)
             ->orderBy('sort_order')
             ->get();
+    }
+
+    /**
+     * @return list<array{id: int, name: string, label: string, sequence: int, slug: string|null}>
+     */
+    public function numberedStagesForFunnel(?int $funnelId): array
+    {
+        return $this->stagesForFunnel($funnelId)
+            ->values()
+            ->map(function ($stage, int $index): array {
+                $sequence = $index + 1;
+                $name = (string) $stage->name;
+
+                return [
+                    'id' => (int) ($stage->pipeline_stage_id ?? $stage->id),
+                    'name' => $name,
+                    'label' => "{$sequence}. {$name}",
+                    'sequence' => $sequence,
+                    'slug' => $stage->slug ?? null,
+                ];
+            })
+            ->all();
+    }
+
+    public function stageLabelForFunnel(?int $funnelId, int $stageId): ?string
+    {
+        foreach ($this->numberedStagesForFunnel($funnelId) as $stage) {
+            if ($stage['id'] === $stageId) {
+                return $stage['label'];
+            }
+        }
+
+        return PipelineStage::query()->whereKey($stageId)->value('name');
+    }
+
+    public function primaryFunnelIdFor(User $user): int
+    {
+        $funnelId = Prospect::query()
+            ->where('owner_id', $user->id)
+            ->where('status', 'active')
+            ->where('is_archived', false)
+            ->whereNull('deleted_at')
+            ->whereNotNull('prospect_funnel_id')
+            ->select('prospect_funnel_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('prospect_funnel_id')
+            ->orderByDesc('total')
+            ->value('prospect_funnel_id');
+
+        if ($funnelId) {
+            return (int) $funnelId;
+        }
+
+        $defaultFunnelId = ProspectFunnel::query()
+            ->whereNull('user_id')
+            ->where('is_default', true)
+            ->where('is_active', true)
+            ->value('id');
+
+        if ($defaultFunnelId) {
+            return (int) $defaultFunnelId;
+        }
+
+        return (int) ProspectFunnel::query()
+            ->whereNull('user_id')
+            ->where('key', 'insurance')
+            ->value('id');
+    }
+
+    /**
+     * @return Collection<int, object{id: int, name: string, label: string, sequence: int, slug: string|null, prospect_count: int}>
+     */
+    public function pipelineSummaryFor(User $user, ?int $funnelId = null): Collection
+    {
+        $funnelId = $funnelId ?? $this->primaryFunnelIdFor($user);
+
+        $counts = Prospect::query()
+            ->where('owner_id', $user->id)
+            ->where('prospect_funnel_id', $funnelId)
+            ->where('status', 'active')
+            ->where('is_archived', false)
+            ->whereNull('deleted_at')
+            ->groupBy('pipeline_stage_id')
+            ->select('pipeline_stage_id', DB::raw('COUNT(*) as total'))
+            ->pluck('total', 'pipeline_stage_id');
+
+        return collect($this->numberedStagesForFunnel($funnelId))
+            ->map(fn (array $stage) => (object) [
+                ...$stage,
+                'prospect_count' => (int) ($counts[$stage['id']] ?? 0),
+            ]);
     }
 
     public function resolveFunnel(string $funnelType, ?int $funnelId = null): ProspectFunnel

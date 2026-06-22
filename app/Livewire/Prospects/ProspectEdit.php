@@ -103,6 +103,9 @@ class ProspectEdit extends Component
     {
         $funnel = $funnels->resolveFunnel($value);
         $this->prospect_funnel_id = $funnel->id;
+
+        $numberedStages = $funnels->numberedStagesForFunnel($funnel->id);
+        $this->pipeline_stage_id = $numberedStages[0]['id'] ?? null;
     }
 
     public function save(ProspectFunnelService $funnels): void
@@ -123,7 +126,7 @@ class ProspectEdit extends Component
         return view('livewire.prospects.prospect-edit', [
             'funnels' => $funnels->funnelsForSelect(),
             'sources' => DB::table('prospect_sources')->where('is_active', true)->orderBy('sort_order')->get(),
-            'stages' => $funnels->stagesForFunnel($this->prospect_funnel_id),
+            'stages' => $funnels->numberedStagesForFunnel($this->prospect_funnel_id),
             'funnelTypes' => config('prospects.funnel_types'),
             'fnaStatuses' => config('prospects.fna_statuses'),
         ]);

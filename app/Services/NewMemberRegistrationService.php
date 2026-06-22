@@ -6,8 +6,8 @@ use App\Events\NewMemberRegistered;
 use App\Mail\TemplatedMail;
 use App\Models\EmailTemplate;
 use App\Models\User;
-use App\Notifications\AssignCfmReminderNotification;
-use App\Notifications\RecommendCfmReminderNotification;
+use App\Support\EmailTemplateTokens;
+use App\Services\Notifications\NotificationOrchestrator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
@@ -17,11 +17,12 @@ class NewMemberRegistrationService
     public function __construct(
         private readonly MemberUplineService $memberUpline,
         private readonly DownlineHierarchyService $downlineHierarchy,
+        private readonly NotificationOrchestrator $notifications,
     ) {}
 
     public function process(User $member): void
     {
-        $member->loadMissing(['sponsor', 'team']);
+        $member->loadMissing(['sponsor', 'team', 'profile']);
 
         $sponsor = $member->sponsor;
         $agencyOwner = $this->memberUpline->agencyOwner($member);
@@ -48,11 +49,52 @@ class NewMemberRegistrationService
     private function sendCfmAssignmentNotifications(User $member, ?User $sponsor, ?User $agencyOwner): void
     {
         if ($agencyOwner) {
-            $agencyOwner->notify(new AssignCfmReminderNotification($member));
+            $this->notifications->dispatch('assign_cfm_reminder', [
+                'queue' => true,
+                'recipients' => [$agencyOwner->id],
+                'module' => 'registration',
+                'priority' => 'high',
+                'related' => ['type' => User::class, 'id' => $member->id],
+                'related_user_id' => $member->id,
+                'template_data' => [
+                    'member_name' => $member->name,
+                ],
+                'payload' => [
+                    'category' => 'Mentor Assignment',
+                    'member_id' => $member->id,
+                    'member_name' => $member->name,
+                ],
+                'action_link' => [
+                    'route' => 'team.cfms',
+                    'label' => 'Assign CFM',
+                ],
+            ]);
         }
 
         if ($sponsor && $agencyOwner?->id !== $sponsor->id) {
-            $sponsor->notify(new RecommendCfmReminderNotification($member, $agencyOwner));
+            $this->notifications->dispatch('recommend_cfm_reminder', [
+                'queue' => true,
+                'recipients' => [$sponsor->id],
+                'module' => 'registration',
+                'priority' => 'medium',
+                'related' => ['type' => User::class, 'id' => $member->id],
+                'related_user_id' => $member->id,
+                'template_data' => [
+                    'member_name' => $member->name,
+                    'agency_owner_name' => $agencyOwner?->name ?? 'your agency owner',
+                ],
+                'payload' => [
+                    'category' => 'Mentor Assignment',
+                    'member_id' => $member->id,
+                    'member_name' => $member->name,
+                    'agency_owner_name' => $agencyOwner?->name ?? 'your agency owner',
+                ],
+                'action_link' => [
+                    'route' => 'team.member',
+                    'params' => ['user' => $member->id],
+                    'label' => 'View member',
+                ],
+            ]);
         }
     }
 
@@ -86,15 +128,15 @@ class NewMemberRegistrationService
 
     private function tokens(User $member, ?User $sponsor, ?User $agencyOwner): array
     {
-        return [
+        return EmailTemplateTokens::merge(array_merge(
+            EmailTemplateTokens::forMember($member),
+            [
             'app_name' => config('app.name', 'EFGTrack'),
-            'member_name' => $member->name,
-            'member_email' => $member->email,
             'sponsor_name' => $sponsor?->name ?? 'your sponsor',
             'agency_owner_name' => $agencyOwner?->name ?? $this->memberUpline->agencyOwnerName($member),
             'dashboard_url' => route('dashboard'),
             'profile_url' => route('profile.edit'),
             'trigger' => NewMemberRegistered::TRIGGER,
-        ];
+        ]), route('dashboard', [], false));
     }
 }

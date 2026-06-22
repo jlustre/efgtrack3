@@ -56,6 +56,8 @@
 
     >
 
+        @include('resources.partials.hub-quick-nav')
+
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
 
             <div class="border-b border-slate-100 bg-[#0B1F3A] px-6 py-6 text-white">
@@ -64,9 +66,11 @@
 
                     <div>
 
-                        <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Resource Library</p>
+                        <a href="{{ route('resources.index') }}" class="text-xs font-semibold uppercase tracking-wide text-[#C8A24A] hover:text-white">← Resource Library</a>
 
-                        <h1 class="mt-2 text-2xl font-semibold">Links</h1>
+                        <p class="mt-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Links</p>
+
+                        <h1 class="mt-1 text-2xl font-semibold">Quick links</h1>
 
                         <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-200">
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CfmMentorProfile;
 use App\Models\MentorAssignment;
 use App\Models\User;
 use Database\Seeders\CfmManagementSeeder;
@@ -104,6 +105,147 @@ class CfmAssignmentTest extends TestCase
             ->where('apprentice_id', $associate->id)
             ->where('status', 'pending')
             ->count());
+    }
+
+    public function test_assignment_skips_cfm_approval_when_not_required(): void
+    {
+        $this->seed([
+            RankSeeder::class,
+            RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
+            TeamSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+            TaskScenarioSeeder::class,
+            CfmManagementSeeder::class,
+        ]);
+
+        $agencyOwner = User::where('email', 'agency-owner@efgtrack.com')->firstOrFail();
+        $cfm = User::where('email', 'maria.cfm@efgtrack.com')->firstOrFail();
+        $associate = User::where('email', 'fap.queue2@example.com')->firstOrFail();
+
+        $this->actingAs($agencyOwner)
+            ->postJson(route('team.cfms.assign'), [
+                'associate_id' => $associate->id,
+                'cfm_id' => $cfm->id,
+                'require_cfm_approval' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', 'active');
+
+        $associate->refresh();
+        $this->assertSame($cfm->id, $associate->mentor_id);
+
+        $this->assertDatabaseHas('mentor_assignments', [
+            'mentor_id' => $cfm->id,
+            'apprentice_id' => $associate->id,
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_cannot_assign_cfm_as_own_trainee(): void
+    {
+        $this->seed([
+            RankSeeder::class,
+            RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
+            TeamSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+            TaskScenarioSeeder::class,
+        ]);
+
+        $cfm = User::factory()->create();
+        $cfm->assignRole(['super-admin', 'certified-field-mentor']);
+
+        CfmMentorProfile::updateOrCreate(
+            ['user_id' => $cfm->id],
+            [
+                'certification_status' => 'certified',
+                'hierarchy_access' => 'my_hierarchy',
+                'max_apprentices' => 6,
+                'licensed_jurisdictions' => ['Canada|Ontario'],
+            ]
+        );
+
+        $cfm->profile()->updateOrCreate(
+            ['user_id' => $cfm->id],
+            [
+                'country' => 'Canada',
+                'province' => 'Ontario',
+                'insurance_licenses' => ['Canada|Ontario'],
+            ]
+        );
+
+        $this->actingAs($cfm)
+            ->postJson(route('team.cfms.assign'), [
+                'associate_id' => $cfm->id,
+                'cfm_id' => $cfm->id,
+                'require_cfm_approval' => false,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['cfm_id']);
+    }
+
+    public function test_sponsor_cfm_can_be_assigned_to_direct_recruit_as_upline(): void
+    {
+        $this->seed([
+            RankSeeder::class,
+            RolePermissionSeeder::class,
+            EmailTemplateSeeder::class,
+            TeamSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+            TaskScenarioSeeder::class,
+        ]);
+
+        $sponsorCfm = User::factory()->create(['name' => 'Sponsor CFM']);
+        $sponsorCfm->assignRole(['super-admin', 'certified-field-mentor']);
+
+        CfmMentorProfile::updateOrCreate(
+            ['user_id' => $sponsorCfm->id],
+            [
+                'certification_status' => 'certified',
+                'hierarchy_access' => 'my_hierarchy',
+                'max_apprentices' => 6,
+                'licensed_jurisdictions' => ['Canada|Ontario'],
+            ]
+        );
+
+        $sponsorCfm->profile()->updateOrCreate(
+            ['user_id' => $sponsorCfm->id],
+            [
+                'country' => 'Canada',
+                'province' => 'Ontario',
+                'insurance_licenses' => ['Canada|Ontario'],
+            ]
+        );
+
+        $recruit = User::factory()->create([
+            'name' => 'Joey Lustre',
+            'sponsor_id' => $sponsorCfm->id,
+        ]);
+        $recruit->profile()->updateOrCreate(
+            ['user_id' => $recruit->id],
+            [
+                'country' => 'Canada',
+                'province' => 'Ontario',
+            ]
+        );
+
+        app(\App\Services\DownlineHierarchyService::class)->rebuild();
+
+        $this->actingAs($sponsorCfm)
+            ->postJson(route('team.cfms.assign'), [
+                'associate_id' => $recruit->id,
+                'cfm_id' => $sponsorCfm->id,
+                'require_cfm_approval' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', 'active');
+
+        $recruit->refresh();
+        $this->assertSame($sponsorCfm->id, $recruit->mentor_id);
     }
 
     public function test_agency_owner_can_assign_associate_via_web_form(): void

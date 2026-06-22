@@ -77,7 +77,7 @@ class ProspectQuickLogModal extends Component
         $this->status = $prospect->status;
         $this->interest_level = $prospect->interest_level;
         $this->priority = $prospect->priority;
-        $this->pipeline_stage_id = null;
+        $this->pipeline_stage_id = $prospect->pipeline_stage_id;
 
         $this->reset([
             'activity_outcome',
@@ -131,6 +131,7 @@ class ProspectQuickLogModal extends Component
             'activity_notes' => ['nullable', 'string', 'max:5000'],
             'activity_next_action' => ['nullable', 'string', 'max:5000'],
             'activity_next_follow_up_at' => ['nullable', 'date'],
+            'pipeline_stage_id' => ['nullable', 'integer', 'exists:pipeline_stages,id'],
         ]);
 
         $activity = $funnels->logActivity($prospect, auth()->user(), [
@@ -140,6 +141,7 @@ class ProspectQuickLogModal extends Component
             'notes' => $validated['activity_notes'],
             'next_action' => $validated['activity_next_action'],
             'next_follow_up_at' => $validated['activity_next_follow_up_at'],
+            'pipeline_stage_id' => $validated['pipeline_stage_id'] ?? null,
         ]);
 
         if (filled($validated['activity_next_action'])) {
@@ -222,14 +224,8 @@ class ProspectQuickLogModal extends Component
 
         if ($this->prospectId) {
             $prospect = Prospect::query()->find($this->prospectId);
-            if ($prospect?->prospect_funnel_id) {
-                $stages = $funnels->stagesForFunnel($prospect->prospect_funnel_id);
-            } else {
-                $stages = DB::table('pipeline_stages')
-                    ->whereNull('user_id')
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->get();
+            if ($prospect) {
+                $stages = collect($funnels->numberedStagesForFunnel($prospect->prospect_funnel_id));
             }
         }
 

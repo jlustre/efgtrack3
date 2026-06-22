@@ -56,8 +56,26 @@ class ProfileUpdateRequest extends FormRequest
                 'max:100',
                 Rule::unique('profiles', 'efg_associate_id')->ignore($profileId),
             ],
-            'efg_invite_link' => ['nullable', 'string', 'max:2048', 'url'],
+            'efg_invite_link' => [
+                'nullable',
+                'string',
+                'max:2048',
+                'url',
+                Rule::unique('profiles', 'efg_invite_link')->ignore($profileId),
+            ],
             'bio' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'efg_invite_link.url' => 'Enter a valid Experior invite URL (including https://).',
+            'efg_invite_link.unique' => 'This Experior invite link is already in use by another member.',
+            'efg_associate_id.unique' => 'This EFG Associate ID is already in use by another member.',
         ];
     }
 

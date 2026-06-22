@@ -7,26 +7,22 @@
         </p>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Published courses</p>
-            <p class="mt-2 text-3xl font-bold text-emerald-700">{{ $stats['courses_published'] }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Draft courses</p>
-            <p class="mt-2 text-3xl font-bold text-amber-700">{{ $stats['courses_draft'] }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Lessons</p>
-            <p class="mt-2 text-3xl font-bold text-[#0B1F3A]">{{ $stats['lessons'] }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Learning paths</p>
-            <p class="mt-2 text-3xl font-bold text-[#8A6A1F]">{{ $stats['paths'] }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">Certifications</p>
-            <p class="mt-2 text-3xl font-bold text-sky-700">{{ $stats['certifications'] }}</p>
+    <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+        <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
+            @foreach ([
+                ['label' => 'Published courses', 'value' => $stats['courses_published'], 'theme' => 'emerald', 'subtitle' => 'Live in academy'],
+                ['label' => 'Draft courses', 'value' => $stats['courses_draft'], 'theme' => 'amber', 'subtitle' => 'Not yet published'],
+                ['label' => 'Lessons', 'value' => $stats['lessons'], 'theme' => 'navy', 'subtitle' => 'Across all courses'],
+                ['label' => 'Learning paths', 'value' => $stats['paths'], 'theme' => 'gold', 'subtitle' => 'Role-based sequences'],
+                ['label' => 'Certifications', 'value' => $stats['certifications'], 'theme' => 'cyan', 'subtitle' => 'Credential programs'],
+            ] as $card)
+                <x-tracker-stat-card
+                    :label="$card['label']"
+                    :value="$card['value']"
+                    :subtitle="$card['subtitle']"
+                    :theme="$card['theme']"
+                />
+            @endforeach
         </div>
     </div>
 

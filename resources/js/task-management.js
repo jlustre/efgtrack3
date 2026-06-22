@@ -58,6 +58,11 @@ export default function taskManagement(initial = {}) {
             assignedToMe: 0,
         },
         calendarLabel: initial.calendarLabel ?? '',
+        reviewSubmitting: false,
+        reviewError: null,
+        commentSubmitting: false,
+        commentError: null,
+        commentBody: '',
 
         get filteredTasks() {
             return this.tasks.filter((task) => {
@@ -123,6 +128,9 @@ export default function taskManagement(initial = {}) {
 
         selectTask(task) {
             this.selectedTask = task;
+            this.reviewError = null;
+            this.commentError = null;
+            this.commentBody = '';
 
             if (window.innerWidth < 1280) {
                 this.mobileDetail = true;
@@ -132,6 +140,105 @@ export default function taskManagement(initial = {}) {
         openTask(task) {
             if (task?.actionUrl) {
                 window.location.href = task.actionUrl;
+            }
+        },
+
+        async submitConfirmationReview(event) {
+            const form = event.target;
+
+            if (! (form instanceof HTMLFormElement) || ! this.selectedTask?.reviewUrl) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const submitter = event.submitter;
+
+            if (submitter?.name) {
+                formData.set(submitter.name, submitter.value);
+            }
+
+            this.reviewSubmitting = true;
+            this.reviewError = null;
+
+            try {
+                const response = await fetch(this.selectedTask.reviewUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (! response.ok) {
+                    const validationMessage = data.errors
+                        ? Object.values(data.errors).flat()[0]
+                        : null;
+
+                    throw new Error(validationMessage || data.message || 'Could not submit confirmation review.');
+                }
+
+                const reviewedTaskId = this.selectedTask.id;
+                this.tasks = this.tasks.filter((task) => task.id !== reviewedTaskId);
+                this.selectedTask = this.tasks[0] ?? null;
+                form.reset();
+            } catch (error) {
+                this.reviewError = error.message || 'Could not submit confirmation review.';
+            } finally {
+                this.reviewSubmitting = false;
+            }
+        },
+
+        async submitTaskComment() {
+            const task = this.selectedTask;
+
+            if (! task || task.source !== 'database' || ! task.databaseId) {
+                return;
+            }
+
+            const body = this.commentBody.trim();
+
+            if (! body) {
+                this.commentError = 'Enter an activity note before saving.';
+
+                return;
+            }
+
+            this.commentSubmitting = true;
+            this.commentError = null;
+
+            try {
+                const response = await fetch(`/tasks/${task.databaseId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ body }),
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (! response.ok) {
+                    const validationMessage = data.errors
+                        ? Object.values(data.errors).flat()[0]
+                        : null;
+
+                    throw new Error(validationMessage || data.message || 'Could not save activity note.');
+                }
+
+                task.comments = [data.comment, ...(task.comments ?? [])];
+                this.commentBody = '';
+            } catch (error) {
+                this.commentError = error.message || 'Could not save activity note.';
+            } finally {
+                this.commentSubmitting = false;
             }
         },
 

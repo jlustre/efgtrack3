@@ -629,6 +629,29 @@ class LocationOptions
     }
 
     /**
+     * @param  array<int, mixed>|null  ...$keyLists
+     * @return list<string>
+     */
+    public static function mergeLicensedJurisdictionKeys(?array ...$keyLists): array
+    {
+        $merged = [];
+
+        foreach ($keyLists as $keys) {
+            if (! is_array($keys)) {
+                continue;
+            }
+
+            foreach ($keys as $key) {
+                if (is_string($key) && $key !== '') {
+                    $merged[] = $key;
+                }
+            }
+        }
+
+        return self::normalizeLicensedJurisdictionKeys($merged);
+    }
+
+    /**
      * @param  list<string>  $keys
      * @return list<string>
      */

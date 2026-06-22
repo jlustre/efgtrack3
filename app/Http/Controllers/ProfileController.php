@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Http\Requests\StoreMemberProductionEntryRequest;
 use App\Http\Requests\UpdateProfileInsuranceLicensesRequest;
 use App\Http\Requests\UpdateProfileInviteLinkRequest;
 use App\Http\Requests\UpdateProfilePhotoRequest;
@@ -10,11 +11,14 @@ use App\Mail\InvitationLinkMail;
 use App\Models\EmailTemplate;
 use App\Models\RegistrationInvitation;
 use App\Models\User;
+use App\Services\CfmManagementService;
 use App\Services\DownlineHierarchyService;
+use App\Services\MemberProductionService;
 use App\Services\MemberProfileTabsService;
 use App\Services\MemberUplineService;
 use App\Services\ProfileCompletionService;
 use App\Services\ProfilePhotoService;
+use App\Support\EmailTemplateTokens;
 use App\Support\LocationOptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +36,7 @@ class ProfileController extends Controller
         private readonly ProfilePhotoService $profilePhotos,
         private readonly DownlineHierarchyService $downlineHierarchy,
         private readonly ProfileCompletionService $profileCompletion,
+        private readonly MemberProductionService $memberProduction,
     ) {}
 
     /**
@@ -108,6 +113,32 @@ class ProfileController extends Controller
                 'locationOptions' => LocationOptions::forPortal(),
                 'canViewSensitive' => $viewer->can('viewSensitive', $user),
             ],
+            'canEnterProduction' => $viewer->can('enterProduction', $user),
+        ]);
+    }
+
+    public function storeProduction(StoreMemberProductionEntryRequest $request): RedirectResponse
+    {
+        $member = $request->user();
+        $this->authorize('enterProduction', $member);
+
+        $this->memberProduction->createForMember($member, $request->user(), $request->validated());
+
+        return Redirect::route('profile.edit', ['tab' => 'annual-premium'])->with('production_feedback', [
+            'type' => 'success',
+            'message' => 'Production entry was recorded successfully.',
+        ]);
+    }
+
+    public function storeMemberProduction(StoreMemberProductionEntryRequest $request, User $user): RedirectResponse
+    {
+        $this->authorize('enterProduction', $user);
+
+        $this->memberProduction->createForMember($user, $request->user(), $request->validated());
+
+        return Redirect::route('team.member.profile', ['user' => $user, 'tab' => 'annual-premium'])->with('production_feedback', [
+            'type' => 'success',
+            'message' => 'Production entry was recorded for '.$user->name.'.',
         ]);
     }
 
@@ -151,10 +182,17 @@ class ProfileController extends Controller
 
     public function updateInsuranceLicenses(UpdateProfileInsuranceLicensesRequest $request): RedirectResponse
     {
-        $request->user()->profile()->updateOrCreate(
-            ['user_id' => $request->user()->id],
-            ['insurance_licenses' => $request->normalizedInsuranceLicenses()],
+        $user = $request->user();
+        $licenses = $request->normalizedInsuranceLicenses();
+
+        $user->profile()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['insurance_licenses' => $licenses],
         );
+
+        if ($user->hasRole('certified-field-mentor')) {
+            app(CfmManagementService::class)->syncLicensedJurisdictions($user, $licenses);
+        }
 
         return Redirect::route('profile.edit', ['tab' => 'licenses'])->with('licenses_feedback', [
             'type' => 'success',
@@ -202,20 +240,10 @@ class ProfileController extends Controller
             ]);
         }
 
-        $redirectRoute = $request->input('redirect_to') === 'dashboard'
-            ? route('dashboard')
-            : route('profile.edit', ['tab' => 'profile']);
-
-        $redirect = Redirect::to($redirectRoute)->with('profile_feedback', [
+        return Redirect::route('profile.edit', ['tab' => 'profile'])->with('profile_feedback', [
             'type' => 'success',
             'message' => 'Your profile photo was updated.',
         ]);
-
-        if ($request->input('redirect_to') === 'dashboard') {
-            $redirect->with('show_profile_completion_modal', true);
-        }
-
-        return $redirect;
     }
 
     public function destroyPhoto(Request $request): RedirectResponse|JsonResponse
@@ -234,20 +262,10 @@ class ProfileController extends Controller
             ]);
         }
 
-        $redirectRoute = $request->input('redirect_to') === 'dashboard'
-            ? route('dashboard')
-            : route('profile.edit', ['tab' => 'profile']);
-
-        $redirect = Redirect::to($redirectRoute)->with('profile_feedback', [
+        return Redirect::route('profile.edit', ['tab' => 'profile'])->with('profile_feedback', [
             'type' => 'success',
             'message' => 'Your profile photo was removed.',
         ]);
-
-        if ($request->input('redirect_to') === 'dashboard') {
-            $redirect->with('show_profile_completion_modal', true);
-        }
-
-        return $redirect;
     }
 
     public function createInvitation(Request $request): RedirectResponse
@@ -361,13 +379,13 @@ class ProfileController extends Controller
             ->where('is_active', true)
             ->first();
 
-        $tokens = [
+        $tokens = EmailTemplateTokens::merge([
             'app_name' => config('app.name', 'EFGTrack'),
             'sponsor_name' => $invitation->sponsor?->name ?? 'An EFGTrack member',
             'registration_link' => $invitation->invitationUrl(),
             'registration_code' => $invitation->code,
             'expires_at' => $invitation->expires_at?->format('F j, Y') ?? 'the expiration date',
-        ];
+        ], EmailTemplateTokens::pathFromUrl($invitation->invitationUrl()));
 
         return [
             'subject' => $template?->renderSubject($tokens) ?? 'You are invited to join '.config('app.name', 'EFGTrack'),

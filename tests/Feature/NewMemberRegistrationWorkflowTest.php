@@ -5,19 +5,22 @@ namespace Tests\Feature;
 use App\Events\NewMemberRegistered;
 use App\Mail\TemplatedMail;
 use App\Models\EmailTemplate;
+use App\Models\Notification;
 use App\Models\RegistrationInvitation;
 use App\Models\Team;
 use App\Models\User;
-use App\Notifications\AssignCfmReminderNotification;
-use App\Notifications\RecommendCfmReminderNotification;
 use App\Services\NewMemberRegistrationService;
+use Database\Seeders\CountrySeeder;
 use Database\Seeders\EmailTemplateSeeder;
+use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\StateProvinceSeeder;
+use Database\Seeders\TimezoneSeeder;
+use App\Support\LocationOptions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class NewMemberRegistrationWorkflowTest extends TestCase
@@ -29,9 +32,13 @@ class NewMemberRegistrationWorkflowTest extends TestCase
         parent::setUp();
 
         $this->seed([
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
             RankSeeder::class,
             RolePermissionSeeder::class,
             EmailTemplateSeeder::class,
+            NotificationConfigSeeder::class,
         ]);
     }
 
@@ -120,28 +127,25 @@ class NewMemberRegistrationWorkflowTest extends TestCase
 
     public function test_registration_creates_cfm_assignment_notifications_for_sponsor_and_agency_owner(): void
     {
-        Notification::fake();
-
         [$invitation, $sponsor, $agencyOwner] = $this->createInvitationContext(withAgencyOwner: true);
 
         $this->post('/register', $this->registrationPayload($invitation));
 
-        Notification::assertSentTo($agencyOwner, AssignCfmReminderNotification::class, function (AssignCfmReminderNotification $notification): bool {
-            $payload = $notification->toArray(new User());
+        $this->assertTrue(
+            Notification::query()
+                ->where('notifiable_id', $agencyOwner->id)
+                ->where('data->trigger', 'assign_cfm_reminder')
+                ->where('data->category', 'Mentor Assignment')
+                ->exists()
+        );
 
-            return $payload['trigger'] === 'new_member_registration'
-                && $payload['category'] === 'Mentor Assignment'
-                && str_contains($payload['title'], 'Assign a CFM for New Recruit');
-        });
-
-        Notification::assertSentTo($sponsor, RecommendCfmReminderNotification::class, function (RecommendCfmReminderNotification $notification) use ($agencyOwner): bool {
-            $payload = $notification->toArray(new User());
-
-            return $payload['trigger'] === 'new_member_registration'
-                && $payload['category'] === 'Mentor Assignment'
-                && str_contains($payload['title'], 'Recommend a CFM for New Recruit')
-                && str_contains($payload['message'], $agencyOwner->name);
-        });
+        $this->assertTrue(
+            Notification::query()
+                ->where('notifiable_id', $sponsor->id)
+                ->where('data->trigger', 'recommend_cfm_reminder')
+                ->where('data->category', 'Mentor Assignment')
+                ->exists()
+        );
     }
 
     public function test_registration_persists_notifications_for_dashboard_and_topbar(): void
@@ -192,8 +196,6 @@ class NewMemberRegistrationWorkflowTest extends TestCase
 
     public function test_sponsor_who_is_agency_owner_receives_single_notification(): void
     {
-        Notification::fake();
-
         $agencyOwner = User::factory()->create(['name' => 'Agency Owner Sponsor']);
         $agencyOwner->assignRole('agency-owner');
 
@@ -211,8 +213,20 @@ class NewMemberRegistrationWorkflowTest extends TestCase
 
         $this->post('/register', $this->registrationPayload($invitation, email: 'owner.recruit@example.com', associateId: 'EFG-OWNER-1'));
 
-        Notification::assertSentToTimes($agencyOwner, AssignCfmReminderNotification::class, 1);
-        Notification::assertNotSentTo($agencyOwner, RecommendCfmReminderNotification::class);
+        $this->assertSame(
+            1,
+            Notification::query()
+                ->where('notifiable_id', $agencyOwner->id)
+                ->where('data->trigger', 'assign_cfm_reminder')
+                ->count()
+        );
+
+        $this->assertFalse(
+            Notification::query()
+                ->where('notifiable_id', $agencyOwner->id)
+                ->where('data->trigger', 'recommend_cfm_reminder')
+                ->exists()
+        );
     }
 
     public function test_sponsor_who_is_agency_owner_receives_agency_owner_welcome_email(): void
@@ -282,6 +296,10 @@ class NewMemberRegistrationWorkflowTest extends TestCase
         string $email = 'new.recruit@example.com',
         string $associateId = 'EFG-9001',
     ): array {
+        $countryId = LocationOptions::resolveCountryId('Canada');
+        $stateProvinceId = LocationOptions::resolveStateProvinceId('Canada', 'Ontario');
+        $timezoneId = LocationOptions::resolveTimezoneId('Canada Eastern Time');
+
         return [
             'registration_code' => $invitation->code,
             'first_name' => 'New',
@@ -289,9 +307,9 @@ class NewMemberRegistrationWorkflowTest extends TestCase
             'email' => $email,
             'efg_associate_id' => $associateId,
             'city' => 'Toronto',
-            'province' => 'Ontario',
-            'country' => 'Canada',
-            'timezone' => 'Canada Eastern Time',
+            'country_id' => $countryId,
+            'state_province_id' => $stateProvinceId,
+            'timezone_id' => $timezoneId,
             'sponsor_confirmed' => '1',
             'active_associate_confirmed' => '1',
             'password' => 'password',

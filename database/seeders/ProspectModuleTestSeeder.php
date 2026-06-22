@@ -85,6 +85,7 @@ class ProspectModuleTestSeeder extends Seeder
         $appointmentTypeId = (int) DB::table('appointment_types')->value('id');
 
         $this->seedCuratedProspects($sourceId, $sharePermissionId, $appointmentTypeId);
+        $this->seedActivityLogSummaryData();
         $this->seedGoals();
         $this->seedSampleImportCsv();
         $this->seedImportHistory();
@@ -313,6 +314,118 @@ class ProspectModuleTestSeeder extends Seeder
                 $this->appointment($prospect, $appointmentTypeId, $data['appointment_at']);
             }
         }
+    }
+
+    private function seedActivityLogSummaryData(): void
+    {
+        $callTypeId = (int) DB::table('communication_types')->where('name', 'Call')->value('id');
+        $prospects = Prospect::query()->where('owner_id', $this->owner->id)->get()->keyBy('email');
+
+        $kanban = $prospects->get('kanban.test.hot@example.com');
+        $maria = $prospects->get('presentation.maria@example.com');
+        $sam = $prospects->get('recruit.sam@example.com');
+        $grace = $prospects->get('upcoming.grace@example.com');
+        $dana = $prospects->get('convert.dana@example.com');
+        $chris = $prospects->get('client.chris@example.com');
+
+        if ($kanban) {
+            $this->seedSummaryActivity($kanban->id, 'phone_call', now()->subDays(2), 'No answer');
+            $this->seedSummaryActivity($kanban->id, 'phone_call', now()->subDay(), 'Connected');
+            if ($callTypeId) {
+                $this->seedSummaryCommunication($kanban->id, $callTypeId, now(), 'Left voicemail');
+            }
+        }
+
+        if ($maria) {
+            $this->seedSummaryActivity($maria->id, 'zoom_meeting', now()->subDays(3), 'Completed');
+            $this->seedSummaryActivity($maria->id, 'presentation', now()->subDay(), 'Attended');
+            $this->seedSummaryStageHistory($maria, $this->stageIds['presentation-completed'] ?? null, now()->subDay());
+        }
+
+        if ($sam) {
+            $this->seedSummaryStageHistory($sam, $this->stageIds['invitation-sent'] ?? null, now()->subDays(2));
+        }
+
+        if ($grace) {
+            $grace->update(['fna_status' => 'completed', 'updated_at' => now()->subDay()]);
+            $this->seedSummaryActivity($grace->id, 'financial_review', now()->subDay(), 'Completed');
+            $this->seedSummaryStageHistory($grace, $this->stageIds['financial-review'] ?? null, now()->subDays(3));
+        }
+
+        if ($dana) {
+            $this->seedSummaryStageHistory($dana, $this->stageIds['became-associate'] ?? null, now()->subDays(1));
+            DB::table('prospect_conversions')->updateOrInsert(
+                ['prospect_id' => $dana->id, 'conversion_type' => 'associate'],
+                [
+                    'converted_by' => $this->owner->id,
+                    'converted_at' => now()->subDay(),
+                    'notes' => 'QA associate conversion for activity summary.',
+                    'created_at' => now()->subDay(),
+                    'updated_at' => now(),
+                ]
+            );
+        }
+
+        if ($chris) {
+            $this->seedSummaryStageHistory($chris, $this->stageIds['became-client'] ?? null, now());
+            DB::table('prospect_conversions')->updateOrInsert(
+                ['prospect_id' => $chris->id, 'conversion_type' => 'client'],
+                [
+                    'converted_by' => $this->owner->id,
+                    'converted_at' => now(),
+                    'notes' => 'QA client conversion for activity summary.',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+        }
+    }
+
+    private function seedSummaryActivity(string $prospectId, string $type, $occurredAt, string $outcome): void
+    {
+        DB::table('prospect_activities')->insert([
+            'prospect_id' => $prospectId,
+            'user_id' => $this->owner->id,
+            'activity_type' => $type,
+            'outcome' => $outcome,
+            'notes' => 'Activity log summary QA seed.',
+            'occurred_at' => $occurredAt,
+            'created_at' => $occurredAt,
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function seedSummaryCommunication(string $prospectId, int $callTypeId, $contactedAt, string $outcome): void
+    {
+        DB::table('prospect_communications')->insert([
+            'prospect_id' => $prospectId,
+            'user_id' => $this->owner->id,
+            'communication_type_id' => $callTypeId,
+            'direction' => 'outbound',
+            'outcome' => $outcome,
+            'notes' => 'Activity log summary QA seed.',
+            'contacted_at' => $contactedAt,
+            'created_at' => $contactedAt,
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function seedSummaryStageHistory(Prospect $prospect, ?int $stageId, $createdAt): void
+    {
+        if (! $stageId) {
+            return;
+        }
+
+        DB::table('prospect_stage_history')->insert([
+            'prospect_id' => $prospect->id,
+            'from_stage_id' => null,
+            'to_stage_id' => $stageId,
+            'from_funnel_id' => $prospect->prospect_funnel_id,
+            'to_funnel_id' => $prospect->prospect_funnel_id,
+            'changed_by' => $this->owner->id,
+            'change_source' => 'qa_seed',
+            'created_at' => $createdAt,
+        ]);
     }
 
     private function seedGoals(): void

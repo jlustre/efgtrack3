@@ -16,8 +16,11 @@ class NotificationType extends Model
         'description',
         'icon',
         'color',
+        'group',
         'sort_order',
         'is_active',
+        'user_configurable',
+        'digest_eligible',
     ];
 
     protected function casts(): array
@@ -25,6 +28,8 @@ class NotificationType extends Model
         return [
             'sort_order' => 'integer',
             'is_active' => 'boolean',
+            'user_configurable' => 'boolean',
+            'digest_eligible' => 'boolean',
         ];
     }
 

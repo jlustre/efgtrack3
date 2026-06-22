@@ -126,12 +126,7 @@ class GoalMetricResolver
 
     private function fnaMetric(User $user, string $metricKey, Carbon $start, Carbon $end): int
     {
-        $summary = $this->fnaAnalytics->summaryFor($user);
-
-        return match ($metricKey) {
-            'fna_approved' => (int) ($summary['approved_fnas'] ?? 0),
-            default => (int) ($summary['total_fnas'] ?? 0),
-        };
+        return $this->fnaAnalytics->metricCountFor($user, $metricKey, $start, $end);
     }
 
     private function downlineMetric(User $user, string $metricKey): int

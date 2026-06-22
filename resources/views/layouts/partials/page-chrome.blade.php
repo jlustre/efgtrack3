@@ -49,6 +49,27 @@
             }
         }, true);
 
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+
+            if (! form || form.tagName !== 'FORM' || form.target === '_blank') {
+                return;
+            }
+
+            if (event.defaultPrevented || form.hasAttribute('data-no-page-loader')) {
+                return;
+            }
+
+            if (form.closest('[wire\\:id]') || Array.prototype.some.call(form.attributes, function (attribute) {
+                return attribute.name.indexOf('wire:') === 0;
+            })) {
+                return;
+            }
+
+            showPageLoader();
+            window.setTimeout(hidePageLoader, 15000);
+        });
+
         window.addEventListener('beforeunload', showPageLoader);
 
         function hidePageLoader() {
@@ -71,6 +92,7 @@
 
         window.addEventListener('load', hidePageLoader, { once: true });
         window.setTimeout(hidePageLoader, 12000);
+        document.addEventListener('livewire:navigated', hidePageLoader);
     })();
 </script>
 

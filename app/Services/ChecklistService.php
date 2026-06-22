@@ -9,6 +9,7 @@ use App\Models\MentorAssignment;
 use App\Models\User;
 use App\Models\UserChecklistTypeStart;
 use App\Support\ProfileLocationQuery;
+use App\Services\Notifications\ChecklistNotificationDispatcher;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -18,6 +19,10 @@ class ChecklistService
 {
     /** @var array<string, int|null> */
     private array $typeIdCache = [];
+
+    public function __construct(
+        private readonly ChecklistNotificationDispatcher $checklistNotifications,
+    ) {}
 
     public function typeId(string $code): ?int
     {
@@ -69,6 +74,10 @@ class ChecklistService
 
     public function canStartChecklistTypesFor(User $actor, User $member): bool
     {
+        if ((int) $actor->id === (int) $member->id) {
+            return true;
+        }
+
         if ($actor->hasAnyRole(['super-admin', 'admin', 'agency-owner'])) {
             return true;
         }
@@ -111,8 +120,20 @@ class ChecklistService
             'typeCode' => $typeCode,
             'member' => $member,
             'canStartNow' => $this->canStartChecklistTypeNow($actor, $member, $typeCode),
+            'isSelfStart' => (int) $actor->id === (int) $member->id,
             'unmetPrerequisites' => $unmetPrerequisites->pluck('name')->all(),
         ];
+    }
+
+    public function indexRouteForType(string $typeCode): string
+    {
+        return match ($typeCode) {
+            'onboarding' => 'onboarding.index',
+            'licensing' => 'licensing.index',
+            'fap' => 'apprenticeship.index',
+            'cfm-training' => 'cfm-training.index',
+            default => 'dashboard',
+        };
     }
 
     /**
@@ -161,12 +182,20 @@ class ChecklistService
         $typeId = $this->typeId($typeCode);
         abort_unless($typeId, 404);
 
-        return UserChecklistTypeStart::query()->create([
+        $start = UserChecklistTypeStart::query()->create([
             'user_id' => $member->id,
             'checklist_type_id' => $typeId,
             'started_at' => $startedAt ?? now()->toDateString(),
             'started_by' => $startedBy->id,
         ]);
+
+        $type = ChecklistType::query()->find($typeId);
+
+        if ($type) {
+            $this->checklistNotifications->typeStarted($member, $type, $startedBy);
+        }
+
+        return $start;
     }
 
     /**
@@ -394,6 +423,14 @@ class ChecklistService
                 'review_comments' => null,
             ],
         );
+
+        if ($completed) {
+            $checklist = Checklist::query()->with('type')->find($checklistId);
+
+            if ($checklist) {
+                $this->checklistNotifications->itemSubmitted($user, $checklist);
+            }
+        }
     }
 
     public function reviewUserProgress(User $reviewer, int $progressId, string $decision, ?string $comments = null): void
@@ -424,6 +461,18 @@ class ChecklistService
             'reviewed_at' => now(),
             'review_comments' => $comments,
         ]);
+
+        $this->checklistNotifications->itemReviewed($progress->fresh(['user', 'checklist.type']), $reviewer, $confirmed);
+
+        if ($confirmed) {
+            $progress->loadMissing('checklist.type');
+            $typeCode = $progress->checklist?->type?->code;
+
+            if ($typeCode) {
+                app(\App\Services\CfmEffectiveness\CfmMilestoneReviewTriggerService::class)
+                    ->maybeTriggerChecklistCompletion($progress->user, $typeCode);
+            }
+        }
     }
 
     public function confirmationItemsFor(User $user, string $typeCode): Collection
@@ -555,7 +604,7 @@ class ChecklistService
 
         $phases = $items
             ->groupBy('phase_number')
-            ->map(function (Collection $phaseItems, int $phaseNumber) use ($progressByItem) {
+            ->map(function (Collection $phaseItems, int $phaseNumber) use ($progressByItem, $startDate) {
                 $first = $phaseItems->first();
                 $completed = $phaseItems->filter(
                     fn (Checklist $item) => ($progressByItem->get($item->id)?->status ?? 'not_started') === 'completed'

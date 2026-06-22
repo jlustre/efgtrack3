@@ -44,7 +44,7 @@
                         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" /></svg>
                     </a>
                     <a href="{{ route('calendar.export', request()->query()) }}" class="{{ $chip() }}">Export</a>
-                    <a href="{{ route('calendar.settings') }}" class="{{ $chip() }}">Settings</a>
+                    <a href="{{ route('calendar.settings') }}" class="{{ $chip() }}">Availability</a>
                 </div>
             </div>
         </section>
@@ -157,6 +157,29 @@
                                         </div>
                                     @endforeach
                                 </div>
+                            </div>
+                        @endif
+
+                        @if (($sharedScheduleBlockOwners ?? collect())->isNotEmpty())
+                            <div class="space-y-2 border-t border-[#516070]/15 pt-4">
+                                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Shared Availability</p>
+                                <div class="space-y-2">
+                                    @foreach ($sharedScheduleBlockOwners as $owner)
+                                        <div class="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-[#0B1F3A]">
+                                            <p class="truncate font-semibold">{{ $owner->name }}</p>
+                                            <p class="text-[0.65rem] font-medium uppercase tracking-wide text-slate-500">
+                                                {{ $owner->hasRole('certified-field-mentor') ? 'CFM blocked times' : 'Trainee blocked times' }}
+                                            </p>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <a href="{{ route('calendar.settings') }}" class="block text-xs font-semibold text-[#8A6A1F] hover:underline">Manage my availability →</a>
+                            </div>
+                        @else
+                            <div class="border-t border-[#516070]/15 pt-4">
+                                <a href="{{ route('calendar.settings') }}" class="block rounded-md border border-dashed border-[#C8A24A]/40 bg-[#FFF9EA] px-3 py-2 text-xs font-semibold text-[#8A6A1F] hover:bg-[#F7E8B8]">
+                                    Block work & personal times →
+                                </a>
                             </div>
                         @endif
 
@@ -314,13 +337,21 @@
                 @elseif ($viewMode === 'day')
                     <div class="overflow-x-auto">
                         <div class="min-w-[42rem] divide-y divide-[#516070]/15">
+                            @php
+                                $dayBlocks = collect($ownScheduleBlocksByDate[$currentDate->toDateString()] ?? [])
+                                    ->merge(collect($sharedScheduleBlocksByDate[$currentDate->toDateString()] ?? []));
+                            @endphp
                             @foreach ($hours as $hour)
                                 @php
                                     $hourEvents = $events->filter(fn ($event) => (int) $event->starts_at->format('G') === $hour);
+                                    $hourBlocks = $dayBlocks->filter(fn ($block) => (int) $block['starts_at']->format('G') === $hour || ((int) $block['starts_at']->format('G') < $hour && (int) $block['ends_at']->format('G') > $hour));
                                 @endphp
                                 <div class="grid grid-cols-[5rem_minmax(0,1fr)]">
                                     <div class="bg-[#F8FAFC] px-3 py-4 text-xs font-semibold text-slate-500">{{ sprintf('%02d:00', $hour) }}</div>
                                     <div class="min-h-20 space-y-2 px-3 py-3">
+                                        @foreach ($hourBlocks as $block)
+                                            @include('events.partials.schedule-block-chip', ['block' => $block, 'showOwner' => ($block['owner_id'] ?? auth()->id()) !== auth()->id()])
+                                        @endforeach
                                         @foreach ($hourEvents as $event)
                                             <a href="{{ route('calendar.events.show', $event) }}" class="{{ $eventCard }} block" style="background-color: {{ $event->display_color }}1A; border-color: {{ $event->display_color }};">
                                                 <div class="flex items-center gap-2">
@@ -348,8 +379,16 @@
                             </div>
                             <div class="grid min-h-[34rem]" style="grid-template-columns: repeat({{ $weekDays->count() }}, minmax(0, 1fr));">
                                 @foreach ($weekDays as $day)
+                                    @php
+                                        $dateKey = $day->toDateString();
+                                        $dayBlocks = collect($ownScheduleBlocksByDate[$dateKey] ?? [])
+                                            ->merge(collect($sharedScheduleBlocksByDate[$dateKey] ?? []));
+                                    @endphp
                                     <div class="space-y-2 border-r border-[#516070]/15 p-2 last:border-r-0">
-                                        @foreach ($eventsByDate->get($day->toDateString(), collect()) as $event)
+                                        @foreach ($dayBlocks as $block)
+                                            @include('events.partials.schedule-block-chip', ['block' => $block, 'compact' => true, 'showOwner' => ($block['owner_id'] ?? auth()->id()) !== auth()->id()])
+                                        @endforeach
+                                        @foreach ($eventsByDate->get($dateKey, collect()) as $event)
                                             <a href="{{ route('calendar.events.show', $event) }}" class="{{ $eventCard }} block" style="background-color: {{ $event->display_color }}1A; border-color: {{ $event->display_color }};">
                                                 <div class="truncate text-xs font-bold text-[#C8A24A]">{{ $event->is_all_day ? 'All day' : $event->starts_at->format('g:i A') }}</div>
                                                 <div class="truncate text-sm font-semibold text-[#0B1F3A]">{{ $event->title }}</div>
@@ -371,15 +410,23 @@
                             </div>
                             <div class="grid grid-cols-7">
                                 @foreach ($monthDays as $day)
+                                    @php
+                                        $dateKey = $day->toDateString();
+                                        $dayBlocks = collect($ownScheduleBlocksByDate[$dateKey] ?? [])
+                                            ->merge(collect($sharedScheduleBlocksByDate[$dateKey] ?? []));
+                                    @endphp
                                     <div class="min-h-36 border-b border-r border-[#516070]/15 bg-white p-2 last:border-r-0 {{ $day->month === $currentDate->month ? '' : 'bg-slate-50/70' }}">
                                         <div class="mb-2 flex items-center justify-between">
                                             <a href="{{ route('calendar.day', array_merge(request()->query(), ['date' => $day->toDateString()])) }}" class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold {{ $day->isToday() ? 'bg-[#C8A24A] text-[#0B1F3A]' : 'text-slate-600 hover:bg-[#FFF8E5]' }}">
                                                 {{ $day->day }}
                                             </a>
-                                            <span class="text-[0.65rem] font-semibold text-slate-400">{{ $eventsByDate->get($day->toDateString(), collect())->count() }}</span>
+                                            <span class="text-[0.65rem] font-semibold text-slate-400">{{ $eventsByDate->get($dateKey, collect())->count() + $dayBlocks->count() }}</span>
                                         </div>
                                         <div class="space-y-1.5">
-                                            @foreach ($eventsByDate->get($day->toDateString(), collect())->take(4) as $event)
+                                            @foreach ($dayBlocks->take(2) as $block)
+                                                @include('events.partials.schedule-block-chip', ['block' => $block, 'compact' => true])
+                                            @endforeach
+                                            @foreach ($eventsByDate->get($dateKey, collect())->take($dayBlocks->isEmpty() ? 4 : 2) as $event)
                                                 <a href="{{ route('calendar.events.show', $event) }}" class="block rounded-md border px-2 py-1 text-xs font-semibold text-[#0B1F3A] hover:shadow-sm" style="background-color: {{ $event->display_color }}1A; border-color: {{ $event->display_color }};">
                                                     <span class="mr-1 inline-block h-2 w-2 rounded-full" style="background-color: {{ $event->display_color }}"></span>
                                                     {{ $event->is_all_day ? '' : $event->starts_at->format('g:i').' ' }}{{ str($event->title)->limit(26) }}

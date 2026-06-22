@@ -1,22 +1,26 @@
 <div class="space-y-6">
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        @foreach ([
-            ['label' => 'Total FNAs', 'value' => $summary['total_fnas']],
-            ['label' => 'Draft FNAs', 'value' => $summary['draft_fnas']],
-            ['label' => 'Awaiting CFM Review', 'value' => $summary['awaiting_review']],
-            ['label' => 'Approved FNAs', 'value' => $summary['approved_fnas']],
-            ['label' => 'Revision Requested', 'value' => $summary['revision_requested']],
-            ['label' => 'DIME Completed', 'value' => $summary['dime_completed']],
-            ['label' => 'Meetings This Week', 'value' => $summary['meetings_this_week']],
-            ['label' => 'Avg Protection Gap', 'value' => $summary['avg_protection_gap'] !== null ? '$'.number_format($summary['avg_protection_gap'], 0) : '—'],
-            ['label' => 'Conversion After FNA', 'value' => $summary['conversion_after_fna'].'%'],
-            ['label' => 'Avg CFM Review Time', 'value' => $summary['avg_cfm_review_hours'] !== null ? $summary['avg_cfm_review_hours'].'h' : '—'],
-        ] as $card)
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm font-semibold text-slate-600">{{ $card['label'] }}</p>
-                <p class="mt-2 text-2xl font-semibold text-[#0B1F3A]">{{ $card['value'] }}</p>
-            </div>
-        @endforeach
+    <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+        <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+            @foreach ([
+                ['label' => 'Total FNAs', 'value' => $summary['total_fnas'], 'theme' => 'navy', 'subtitle' => 'All FNA records'],
+                ['label' => 'Draft FNAs', 'value' => $summary['draft_fnas'], 'theme' => 'slate', 'subtitle' => 'Still in progress'],
+                ['label' => 'Awaiting CFM Review', 'value' => $summary['awaiting_review'], 'theme' => 'amber', 'subtitle' => 'Submitted for review'],
+                ['label' => 'Approved FNAs', 'value' => $summary['approved_fnas'], 'theme' => 'emerald', 'subtitle' => 'CFM approved'],
+                ['label' => 'Revision Requested', 'value' => $summary['revision_requested'], 'theme' => 'red', 'subtitle' => 'Needs updates'],
+                ['label' => 'DIME Completed', 'value' => $summary['dime_completed'], 'theme' => 'gold', 'subtitle' => 'Protection analysis done'],
+                ['label' => 'Meetings This Week', 'value' => $summary['meetings_this_week'], 'theme' => 'cyan', 'subtitle' => 'Scheduled client meetings'],
+                ['label' => 'Avg Protection Gap', 'value' => $summary['avg_protection_gap'] !== null ? '$'.number_format($summary['avg_protection_gap'], 0) : '—', 'theme' => 'violet', 'subtitle' => 'Average coverage gap'],
+                ['label' => 'Conversion After FNA', 'value' => $summary['conversion_after_fna'].'%', 'theme' => 'emerald', 'subtitle' => 'Post-FNA conversion'],
+                ['label' => 'Avg CFM Review Time', 'value' => $summary['avg_cfm_review_hours'] !== null ? $summary['avg_cfm_review_hours'].'h' : '—', 'theme' => 'slate', 'subtitle' => 'Time to CFM decision'],
+            ] as $card)
+                <x-tracker-stat-card
+                    :label="$card['label']"
+                    :value="$card['value']"
+                    :subtitle="$card['subtitle']"
+                    :theme="$card['theme']"
+                />
+            @endforeach
+        </div>
     </div>
 
     <div class="grid gap-6 xl:grid-cols-2">

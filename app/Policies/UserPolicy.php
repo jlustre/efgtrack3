@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesDownlineVisibility;
+use App\Services\DownlineHierarchyService;
 
 class UserPolicy
 {
@@ -23,5 +24,10 @@ class UserPolicy
     {
         return $this->canViewMember($viewer, $member)
             && ($viewer->hasPermissionTo('assign mentors') || $viewer->hasAnyRole(['super-admin', 'admin', 'agency-owner']));
+    }
+
+    public function enterProduction(User $viewer, User $member): bool
+    {
+        return app(DownlineHierarchyService::class)->canEnterProductionFor($viewer, $member);
     }
 }

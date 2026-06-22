@@ -81,7 +81,7 @@ class UserManagementController extends Controller
 
     public function edit(User $user): View
     {
-        $user->load(['rank', 'team', 'sponsor', 'roles', 'profile']);
+        $user->load(['rank', 'team', 'sponsor', 'roles', 'profile', 'messagingSuspendedBy']);
 
         return view('admin.users.edit', [
             'managedUser' => $user,
@@ -148,6 +148,44 @@ class UserManagementController extends Controller
         return redirect()
             ->route('admin.users.edit', $managedUser)
             ->with('status', 'user-restored');
+    }
+
+    public function suspendMessaging(Request $request, User $user): RedirectResponse
+    {
+        if ($request->user()->is($user)) {
+            return back()->withErrors(['messaging' => 'You cannot suspend your own messaging access.']);
+        }
+
+        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+            return back()->withErrors(['messaging' => 'Administrators cannot be suspended from messaging.']);
+        }
+
+        $validated = $request->validate([
+            'messaging_suspension_reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $user->forceFill([
+            'messaging_suspended_at' => now(),
+            'messaging_suspended_by' => $request->user()->id,
+            'messaging_suspension_reason' => $validated['messaging_suspension_reason'],
+        ])->save();
+
+        return redirect()
+            ->route('admin.users.edit', $user)
+            ->with('status', 'messaging-suspended');
+    }
+
+    public function restoreMessaging(Request $request, User $user): RedirectResponse
+    {
+        $user->forceFill([
+            'messaging_suspended_at' => null,
+            'messaging_suspended_by' => null,
+            'messaging_suspension_reason' => null,
+        ])->save();
+
+        return redirect()
+            ->route('admin.users.edit', $user)
+            ->with('status', 'messaging-restored');
     }
 
     private function validateUser(Request $request, ?User $user = null): array

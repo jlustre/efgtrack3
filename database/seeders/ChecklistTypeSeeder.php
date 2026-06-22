@@ -59,8 +59,9 @@ class ChecklistTypeSeeder extends Seeder
             'max_complete_days' => 45,
             'prerequisite_codes' => 
             [
-              0 => 'licensing',
-              1 => 'fap',
+              0 => 'onboarding',
+              1 => 'licensing',
+              2 => 'fap',
             ],
             'is_active' => true,
           ],

@@ -3,13 +3,22 @@
         title="Mentor Booking Dashboard"
         subtitle="Manage CFM availability, booking links, pending requests, and mentor session outcomes connected to Field Apprenticeship."
     >
-        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            @foreach ([['Upcoming', $upcomingBookings->count()], ['Pending Requests', $pendingRequests->count()], ['Event Types', $eventTypes->count()], ['Available Slots', 'Ready']] as [$label, $value])
-                <div class="rounded-lg border border-[#516070] bg-[#FFF9EA] p-4 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-500">{{ $label }}</p>
-                    <p class="mt-2 text-2xl font-semibold text-[#0B1F3A]">{{ $value }}</p>
-                </div>
-            @endforeach
+        <section class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+            <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach ([
+                    ['label' => 'Upcoming', 'value' => $upcomingBookings->count(), 'theme' => 'cyan', 'subtitle' => 'Scheduled mentor sessions'],
+                    ['label' => 'Pending Requests', 'value' => $pendingRequests->count(), 'theme' => 'amber', 'subtitle' => 'Awaiting approval'],
+                    ['label' => 'Event Types', 'value' => $eventTypes->count(), 'theme' => 'navy', 'subtitle' => 'Bookable session types'],
+                    ['label' => 'Available Slots', 'value' => $availabilitySchedules, 'theme' => 'gold', 'subtitle' => 'Availability schedules configured'],
+                ] as $card)
+                    <x-tracker-stat-card
+                        :label="$card['label']"
+                        :value="$card['value']"
+                        :subtitle="$card['subtitle']"
+                        :theme="$card['theme']"
+                    />
+                @endforeach
+            </div>
         </section>
 
         <section class="grid gap-4 xl:grid-cols-2">

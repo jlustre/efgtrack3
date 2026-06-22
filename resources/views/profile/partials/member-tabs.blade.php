@@ -43,6 +43,9 @@
         @if (session('licenses_feedback') || $hasLicenseValidationErrors)
             activeTab = 'licenses';
             $nextTick(() => document.getElementById('member-licenses-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+        @elseif (session('production_feedback') || collect($errors->keys())->intersect(['description', 'policy_reference', 'annual_premium', 'posted_at'])->isNotEmpty())
+            activeTab = 'annual-premium';
+            $nextTick(() => document.getElementById('member-production-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
         @elseif (session('profile_feedback') || $hasNonEfgValidationErrors)
             activeTab = 'profile';
             $nextTick(() => document.getElementById('member-profile-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
@@ -167,12 +170,26 @@
             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-[#0B1F3A]">Annual Premium</h2>
-                    <p class="mt-1 text-sm text-slate-600">Current-year production attributed to your milestones and team growth.</p>
+                    <p class="mt-1 text-sm text-slate-600">
+                        @if ($isOwnProfile)
+                            Current-year production attributed to your milestones, team growth, and recorded entries.
+                        @else
+                            Current-year production for this member, including milestones and recorded entries.
+                        @endif
+                    </p>
                 </div>
                 <div class="rounded-lg border border-[#C8A24A]/30 bg-[#FFF9EA] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">
                     YTD Total: ${{ number_format($memberTabs['annualPremiumTotal']) }}
                 </div>
             </div>
+
+            @if ($canEnterProduction ?? false)
+                @include('profile.partials.production-entry-form', [
+                    'user' => $user,
+                    'isOwnProfile' => $isOwnProfile,
+                ])
+            @endif
+
             @include('profile.partials.tab-table-filterable', [
                 'tableKey' => 'annual-premium',
                 'columns' => [
@@ -198,6 +215,7 @@
                             ['value' => 'Field Apprenticeship', 'label' => 'Field Apprenticeship'],
                             ['value' => 'CFM Training', 'label' => 'CFM Training'],
                             ['value' => 'Direct Recruit', 'label' => 'Direct Recruit'],
+                            ['value' => 'Manual Entry', 'label' => 'Manual Entry'],
                         ],
                     ],
                     [

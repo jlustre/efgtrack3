@@ -97,7 +97,12 @@
                                         @endif
                                         @if ($conversion->createdUser)
                                             @if ($conversion->policy_reference || $conversion->application_reference)<br>@endif
-                                            Member: {{ $conversion->createdUser->name }}
+                                            Member:
+                                            @can('view own team')
+                                                <a href="{{ route('team.member.profile', $conversion->createdUser) }}" class="font-semibold text-[#0B1F3A] hover:underline">{{ $conversion->createdUser->name }}</a>
+                                            @else
+                                                {{ $conversion->createdUser->name }}
+                                            @endcan
                                         @endif
                                         @if ($conversion->notes)
                                             @if ($conversion->policy_reference || $conversion->application_reference || $conversion->createdUser)<br>@endif

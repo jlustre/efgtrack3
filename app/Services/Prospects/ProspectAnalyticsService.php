@@ -31,6 +31,53 @@ class ProspectAnalyticsService
      *     recruiting_count: int
      * }
      */
+    /**
+     * @return array{
+     *     total: int,
+     *     hot: int,
+     *     followups_due: int,
+     *     appointments: int,
+     *     shared_with_me: int,
+     *     shared_by_me: int,
+     *     converted: int,
+     *     conversion_rate: int
+     * }
+     */
+    public function dashboardStatsFor(User $user): array
+    {
+        $ownProspects = Prospect::query()
+            ->where('owner_id', $user->id)
+            ->whereNull('deleted_at');
+
+        $activeProspects = (clone $ownProspects)
+            ->where('status', 'active')
+            ->where('is_archived', false);
+
+        $allOwned = (clone $ownProspects)->count();
+        $converted = (clone $ownProspects)->whereNotNull('converted_to')->count();
+
+        return [
+            'total' => $activeProspects->count(),
+            'hot' => (clone $activeProspects)->where('interest_level', 'hot')->count(),
+            'followups_due' => $this->followupsDueCount($user),
+            'appointments' => DB::table('prospect_appointments')
+                ->where('owner_id', $user->id)
+                ->where('status', 'scheduled')
+                ->where('scheduled_at', '>=', now())
+                ->whereNull('deleted_at')
+                ->count(),
+            'shared_with_me' => $this->activeSharesWithUserCount($user),
+            'shared_by_me' => DB::table('prospect_shares')
+                ->where('granted_by', $user->id)
+                ->where('status', 'active')
+                ->whereNull('revoked_at')
+                ->whereNull('deleted_at')
+                ->count(),
+            'converted' => $converted,
+            'conversion_rate' => $allOwned > 0 ? (int) round(($converted / $allOwned) * 100) : 0,
+        ];
+    }
+
     public function summaryFor(User $user): array
     {
         $active = $this->activeProspectsQuery($user);
@@ -422,6 +469,8 @@ class ProspectAnalyticsService
             'presentations' => $this->countPresentations($prospectIds, $user->id, $start, $end),
             'applications' => $this->countApplications($prospectIds, $start, $end),
             'recruits' => $this->countRecruits($prospectIds, $start, $end),
+            'registrations' => $this->countRegistrations($user, $prospectIds, $start, $end),
+            'invitations_sent' => $this->countInvitationsSent($user, $start, $end),
             'new_prospects' => $this->countNewProspects($user, $start, $end),
             default => 0,
         };
@@ -451,6 +500,18 @@ class ProspectAnalyticsService
             ->where('status', 'active')
             ->where('is_archived', false)
             ->whereNull('deleted_at');
+    }
+
+    private function activeSharesWithUserCount(User $user): int
+    {
+        return DB::table('prospect_shares')
+            ->where('shared_with', $user->id)
+            ->where('status', 'active')
+            ->whereNull('revoked_at')
+            ->where(function ($query): void {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->count();
     }
 
     /**
@@ -555,15 +616,23 @@ class ProspectAnalyticsService
             ->where('slug', 'application-submitted')
             ->value('id');
 
-        if (! $applicationStageId) {
-            return 0;
+        $stageCount = 0;
+
+        if ($applicationStageId) {
+            $stageCount = DB::table('prospect_stage_history')
+                ->whereIn('prospect_id', $prospectIds)
+                ->where('to_stage_id', $applicationStageId)
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
         }
 
-        return DB::table('prospect_stage_history')
+        $conversionCount = DB::table('prospect_conversions')
             ->whereIn('prospect_id', $prospectIds)
-            ->where('to_stage_id', $applicationStageId)
-            ->whereBetween('created_at', [$start, $end])
+            ->where('conversion_type', 'client')
+            ->whereBetween('converted_at', [$start, $end])
             ->count();
+
+        return $stageCount + $conversionCount;
     }
 
     /**
@@ -596,5 +665,32 @@ class ProspectAnalyticsService
         }
 
         return $conversionCount + $stageCount;
+    }
+
+    /**
+     * @param  Collection<int, string>  $prospectIds
+     */
+    private function countRegistrations(User $user, Collection $prospectIds, CarbonInterface $start, CarbonInterface $end): int
+    {
+        if ($prospectIds->isEmpty()) {
+            return 0;
+        }
+
+        return DB::table('prospect_conversions')
+            ->whereIn('prospect_id', $prospectIds)
+            ->where('conversion_type', 'associate')
+            ->whereNotNull('created_user_id')
+            ->whereBetween('converted_at', [$start, $end])
+            ->count();
+    }
+
+    private function countInvitationsSent(User $user, CarbonInterface $start, CarbonInterface $end): int
+    {
+        return DB::table('registration_invitations')
+            ->where('sponsor_id', $user->id)
+            ->whereNotNull('prospect_id')
+            ->whereBetween('created_at', [$start, $end])
+            ->whereNull('deleted_at')
+            ->count();
     }
 }

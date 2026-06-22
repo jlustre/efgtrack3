@@ -18,9 +18,9 @@ class NotificationManagementTest extends TestCase
     {
         $this->seed(NotificationConfigSeeder::class);
 
-        $this->assertDatabaseCount('notification_types', 5);
-        $this->assertDatabaseCount('notification_triggers', 7);
-        $this->assertDatabaseCount('notification_templates', 7);
+        $this->assertDatabaseCount('notification_types', 26);
+        $this->assertDatabaseCount('notification_triggers', 39);
+        $this->assertDatabaseCount('notification_templates', 39);
 
         $this->assertDatabaseHas('notification_types', [
             'code' => 'training',
@@ -92,8 +92,8 @@ class NotificationManagementTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('admin.management.store', 'notification-types'), [
-                'code' => 'recognition',
-                'name' => 'Recognition',
+                'code' => 'recognition_custom',
+                'name' => 'Recognition Custom',
                 'description' => 'Badge and recognition alerts.',
                 'icon' => 'trophy',
                 'color' => '#C8A24A',
@@ -102,7 +102,7 @@ class NotificationManagementTest extends TestCase
             ])
             ->assertRedirect();
 
-        $typeId = DB::table('notification_types')->where('code', 'recognition')->value('id');
+        $typeId = DB::table('notification_types')->where('code', 'recognition_custom')->value('id');
 
         $this->assertNotNull($typeId);
 

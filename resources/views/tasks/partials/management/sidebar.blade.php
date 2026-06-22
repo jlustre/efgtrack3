@@ -64,15 +64,35 @@
                         </div>
                     </template>
 
+                    <template x-if="selectedTask.source === 'database'">
+                        <form @submit.prevent="submitTaskComment()" class="mb-4 space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                            <label class="block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Add activity</label>
+                            <textarea
+                                x-model="commentBody"
+                                rows="3"
+                                placeholder="Log a call, note, or follow-up update..."
+                                class="block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"
+                            ></textarea>
+                            <p x-show="commentError" x-cloak class="text-xs text-red-600" x-text="commentError"></p>
+                            <button
+                                type="submit"
+                                class="w-full rounded-md bg-[#C8A24A] px-3 py-2 text-xs font-semibold text-[#0B1F3A] hover:bg-[#D8B75F] disabled:cursor-not-allowed disabled:opacity-60"
+                                :disabled="commentSubmitting"
+                                x-text="commentSubmitting ? 'Saving...' : 'Add Activity'"
+                            ></button>
+                        </form>
+                    </template>
+
                     <template x-if="selectedTask.reviewUrl">
-                        <form :action="selectedTask.reviewUrl" method="POST" class="mb-4 space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <form @submit.prevent="submitConfirmationReview($event)" class="mb-4 space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
                             @csrf
                             @method('PATCH')
                             <label class="block text-[10px] font-semibold uppercase tracking-wide text-slate-500">Confirmation review</label>
                             <textarea name="review_comments" rows="3" placeholder="Add confirmation notes..." class="block w-full rounded-md border-slate-300 text-xs shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]"></textarea>
+                            <p x-show="reviewError" x-cloak class="text-xs text-red-600" x-text="reviewError"></p>
                             <div class="grid grid-cols-2 gap-2">
-                                <button type="submit" name="decision" value="rejected" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">Reject</button>
-                                <button type="submit" name="decision" value="confirmed" class="rounded-md bg-[#C8A24A] px-3 py-2 text-xs font-semibold text-[#0B1F3A] hover:bg-[#D8B75F]">Confirm</button>
+                                <button type="submit" name="decision" value="rejected" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60" :disabled="reviewSubmitting">Reject</button>
+                                <button type="submit" name="decision" value="confirmed" class="rounded-md bg-[#C8A24A] px-3 py-2 text-xs font-semibold text-[#0B1F3A] hover:bg-[#D8B75F] disabled:cursor-not-allowed disabled:opacity-60" :disabled="reviewSubmitting" x-text="reviewSubmitting ? 'Saving...' : 'Confirm'"></button>
                             </div>
                         </form>
                     </template>

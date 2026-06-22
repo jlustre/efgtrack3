@@ -39,23 +39,19 @@
         </form>
     </div>
 
-    <div class="grid gap-4 p-4 sm:grid-cols-4">
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-[#0B1F3A]">{{ $preview['average_progress'] }}%</p>
-            <p class="text-xs uppercase text-slate-500">Avg progress</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-[#0B1F3A]">{{ $preview['goals']->count() }}</p>
-            <p class="text-xs uppercase text-slate-500">Goals</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-emerald-700">{{ $preview['completed_count'] }}</p>
-            <p class="text-xs uppercase text-slate-500">Completed</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-amber-700">{{ $preview['off_track_count'] }}</p>
-            <p class="text-xs uppercase text-slate-500">Off track</p>
-        </div>
+    <div class="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+        @foreach ([
+            ['label' => 'Avg progress', 'value' => $preview['average_progress'].'%', 'theme' => 'navy'],
+            ['label' => 'Goals', 'value' => $preview['goals']->count(), 'theme' => 'gold'],
+            ['label' => 'Completed', 'value' => $preview['completed_count'], 'theme' => 'emerald'],
+            ['label' => 'Off track', 'value' => $preview['off_track_count'], 'theme' => 'amber'],
+        ] as $card)
+            <x-tracker-stat-card
+                :label="$card['label']"
+                :value="$card['value']"
+                :theme="$card['theme']"
+            />
+        @endforeach
     </div>
 
     <div class="border-t border-slate-100 p-4">

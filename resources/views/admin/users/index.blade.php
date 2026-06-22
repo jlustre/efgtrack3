@@ -113,6 +113,9 @@
                                     @if ($user->is_online && ! $user->trashed())
                                         <span class="ml-1 rounded-full bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white">Online</span>
                                     @endif
+                                    @if ($user->isMessagingSuspended() && ! $user->trashed())
+                                        <span class="ml-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">Messaging suspended</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3">{{ $user->last_login_at?->diffForHumans() ?? 'Never' }}</td>
                                 <td class="px-4 py-3 text-right">

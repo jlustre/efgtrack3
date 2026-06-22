@@ -48,16 +48,8 @@ class UpdateProfilePhotoRequest extends FormRequest
                 ?? 'Please choose a valid profile photo (JPEG, PNG, or WebP, up to 2 MB).',
         ]);
 
-        if ($this->input('redirect_to') === 'dashboard') {
-            session()->flash('show_profile_completion_modal', true);
-        }
-
         throw (new ValidationException($validator))
             ->errorBag($this->errorBag)
-            ->redirectTo(
-                $this->input('redirect_to') === 'dashboard'
-                    ? route('dashboard')
-                    : route('profile.edit', ['tab' => 'profile'])
-            );
+            ->redirectTo(route('profile.edit', ['tab' => 'profile']));
     }
 }

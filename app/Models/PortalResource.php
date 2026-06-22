@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\ResourceUrl;
+use App\Support\VideoEmbed;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -54,6 +55,30 @@ class PortalResource extends Model
     public function isDocumentLibraryItem(): bool
     {
         return in_array($this->type, ['document', 'file'], true);
+    }
+
+    public function isVideoLibraryItem(): bool
+    {
+        return $this->type === 'video' && $this->is_published;
+    }
+
+    public function resolvedVideoSource(): ?string
+    {
+        if (filled($this->url)) {
+            return $this->url;
+        }
+
+        return $this->publicFileUrl();
+    }
+
+    public function videoThumbnailUrl(): ?string
+    {
+        return VideoEmbed::thumbnailUrl($this->resolvedVideoSource());
+    }
+
+    public function videoEmbedUrl(): ?string
+    {
+        return VideoEmbed::embedUrl($this->resolvedVideoSource());
     }
 
     public function resolvedFormat(): string

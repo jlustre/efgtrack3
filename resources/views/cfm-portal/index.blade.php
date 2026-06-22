@@ -118,26 +118,30 @@
         @include('cfm-portal.partials.pending-assignments')
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Active Trainees</p>
-                <p class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ $profile['activeApprentices'] }}/{{ $profile['maxApprentices'] }}</p>
-                <p class="mt-1 text-xs text-slate-500">{{ $profile['pendingApprentices'] }} pending approval</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">FAP Completion Rate</p>
-                <p class="mt-2 text-2xl font-bold text-emerald-700">{{ $profile['fapCompletionRate'] }}%</p>
-                <p class="mt-1 text-xs text-slate-500">{{ $profile['completedApprentices'] }} graduates</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recommendation Score</p>
-                <p class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ $profile['recommendationScore'] }}/100</p>
-                <p class="mt-1 text-xs font-medium" style="color: {{ $profile['recommendationColor'] }}">{{ $profile['recommendationBand'] }}</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Upcoming Sessions</p>
-                <p class="mt-2 text-2xl font-bold text-[#0B1F3A]">{{ $profile['upcomingSessions'] }}</p>
-                <p class="mt-1 text-xs text-slate-500">Next: {{ $profile['nextSlot'] }}</p>
-            </div>
+            <x-tracker-stat-card
+                label="Active Trainees"
+                :value="$profile['activeApprentices'].'/'.$profile['maxApprentices']"
+                theme="navy"
+                :subtitle="$profile['pendingApprentices'].' pending approval'"
+            />
+            <x-tracker-stat-card
+                label="FAP Completion Rate"
+                :value="$profile['fapCompletionRate'].'%'"
+                theme="emerald"
+                :subtitle="$profile['completedApprentices'].' graduates'"
+            />
+            <x-tracker-stat-card
+                label="Recommendation Score"
+                :value="$profile['recommendationScore'].'/100'"
+                theme="gold"
+                :subtitle="$profile['recommendationBand']"
+            />
+            <x-tracker-stat-card
+                label="Upcoming Sessions"
+                :value="$profile['upcomingSessions']"
+                theme="cyan"
+                :subtitle="'Next: '.$profile['nextSlot']"
+            />
         </div>
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">

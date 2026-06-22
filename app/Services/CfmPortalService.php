@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\CfmMentorProfile;
+use App\Models\MentorAssignment;
 use App\Models\User;
 use App\Support\LocationOptions;
+use Illuminate\Support\Facades\DB;
 
 class CfmPortalService
 {
@@ -16,6 +18,7 @@ class CfmPortalService
     public function payloadFor(User $viewer, ?int $cfmUserId = null): array
     {
         $cfmUser = $this->resolveCfmUser($viewer, $cfmUserId);
+        $this->repairSelfTraineeAssignment($cfmUser);
         $profile = $this->cfmManagement->profileFor($viewer, $cfmUser);
         $training = $this->trainingProgressFor($cfmUser);
         $rankStructure = $this->cfmManagement->rankStructureFor();
@@ -73,11 +76,27 @@ class CfmPortalService
                 'mentor_bio' => $data['mentor_bio'] ?? null,
                 'languages' => $this->parseList($data['languages'] ?? ''),
                 'specialties' => $this->parseList($data['specialties'] ?? ''),
-                'licensed_jurisdictions' => $data['licensed_jurisdictions'] ?? [],
                 'manual_unavailable' => (bool) ($data['manual_unavailable'] ?? false),
                 'last_mentor_activity_at' => now(),
             ]);
+
+            $this->cfmManagement->syncLicensedJurisdictions(
+                $cfm,
+                $data['licensed_jurisdictions'] ?? []
+            );
         });
+    }
+
+    private function repairSelfTraineeAssignment(User $cfmUser): void
+    {
+        MentorAssignment::query()
+            ->where('mentor_id', $cfmUser->id)
+            ->where('apprentice_id', $cfmUser->id)
+            ->delete();
+
+        if ((int) $cfmUser->mentor_id === (int) $cfmUser->id) {
+            $cfmUser->forceFill(['mentor_id' => null])->save();
+        }
     }
 
     private function editFormFor(User $cfmUser, array $profile): array
@@ -94,7 +113,7 @@ class CfmPortalService
             'manual_unavailable' => old('manual_unavailable', $cfmUser->cfmMentorProfile?->manual_unavailable ?? false),
             'licensed_jurisdictions' => old(
                 'licensed_jurisdictions',
-                $cfmUser->cfmMentorProfile?->licensed_jurisdictions ?? []
+                $this->cfmManagement->licensedJurisdictionKeysFor($cfmUser)
             ),
         ];
     }

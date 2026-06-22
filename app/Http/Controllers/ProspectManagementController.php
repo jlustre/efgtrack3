@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Prospect;
+use App\Models\ProspectFunnel;
 use App\Services\Prospects\ProspectExportService;
 use App\Services\Prospects\ProspectFunnelService;
 use App\Services\Prospects\ProspectShareService;
+use App\Services\Prospects\ProspectAnalyticsService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +20,7 @@ class ProspectManagementController extends Controller
     public function __construct(
         private ProspectFunnelService $funnels,
         private ProspectShareService $shares,
+        private ProspectAnalyticsService $analytics,
     ) {}
     public function index(Request $request): View
     {
@@ -25,35 +28,10 @@ class ProspectManagementController extends Controller
 
         $ownProspects = Prospect::query()->where('owner_id', $user->id);
         $activeProspects = (clone $ownProspects)->where('status', 'active')->where('is_archived', false);
-        $sharedProspectIds = DB::table('prospect_shares')
-            ->where('shared_with', $user->id)
-            ->where('status', 'active')
-            ->whereNull('revoked_at')
-            ->where(function ($query): void {
-                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            })
-            ->pluck('prospect_id');
-
-        $pipelineSummary = DB::table('pipeline_stages')
-            ->leftJoin('prospects', function ($join) use ($user): void {
-                $join->on('prospects.pipeline_stage_id', '=', 'pipeline_stages.id')
-                    ->where('prospects.owner_id', '=', $user->id)
-                    ->where('prospects.status', '=', 'active')
-                    ->where('prospects.is_archived', '=', false)
-                    ->whereNull('prospects.deleted_at');
-            })
-            ->whereNull('pipeline_stages.user_id')
-            ->where('pipeline_stages.is_active', true)
-            ->select([
-                'pipeline_stages.id',
-                'pipeline_stages.name',
-                'pipeline_stages.slug',
-                'pipeline_stages.sort_order',
-                DB::raw('COUNT(prospects.id) as prospect_count'),
-            ])
-            ->groupBy('pipeline_stages.id', 'pipeline_stages.name', 'pipeline_stages.slug', 'pipeline_stages.sort_order')
-            ->orderBy('pipeline_stages.sort_order')
-            ->get();
+        $stats = $this->analytics->dashboardStatsFor($user);
+        $pipelineFunnelId = $this->funnels->primaryFunnelIdFor($user);
+        $pipelineSummary = $this->funnels->pipelineSummaryFor($user, $pipelineFunnelId);
+        $pipelineSummaryFunnel = ProspectFunnel::query()->find($pipelineFunnelId)?->name;
 
         $followUpsDueToday = DB::table('prospect_followups')
             ->join('prospects', 'prospects.id', '=', 'prospect_followups.prospect_id')
@@ -70,6 +48,7 @@ class ProspectManagementController extends Controller
                 'prospect_followups.priority',
                 'prospect_followups.status',
                 'prospect_followups.due_at',
+                'prospects.id as prospect_id',
                 'prospects.first_name',
                 'prospects.last_name',
                 'prospects.interest_level',
@@ -93,6 +72,7 @@ class ProspectManagementController extends Controller
                 'prospect_appointments.location_or_link',
                 'appointment_types.name as appointment_type',
                 'helpers.name as helper_name',
+                'prospects.id as prospect_id',
                 'prospects.first_name',
                 'prospects.last_name',
             ]);
@@ -120,6 +100,7 @@ class ProspectManagementController extends Controller
                 'prospect_communications.next_action',
                 'prospect_communications.contacted_at',
                 'communication_types.name as communication_type',
+                'prospects.id as prospect_id',
                 'prospects.first_name',
                 'prospects.last_name',
             ]);
@@ -150,6 +131,7 @@ class ProspectManagementController extends Controller
                 'prospect_followups.status',
                 'prospect_followups.due_at',
                 'prospect_followups.notes',
+                'prospects.id as prospect_id',
                 'prospects.first_name',
                 'prospects.last_name',
                 'prospects.email',
@@ -173,6 +155,7 @@ class ProspectManagementController extends Controller
                 'prospect_appointments.location_or_link',
                 'appointment_types.name as appointment_type',
                 'helpers.name as helper_name',
+                'prospects.id as prospect_id',
                 'prospects.first_name',
                 'prospects.last_name',
             ]);
@@ -195,6 +178,7 @@ class ProspectManagementController extends Controller
                 'prospect_shares.id',
                 'prospect_shares.granted_at',
                 'prospect_shares.expires_at',
+                'prospects.id as prospect_id',
                 'prospects.first_name',
                 'prospects.last_name',
                 'owners.name as owner_name',
@@ -216,6 +200,7 @@ class ProspectManagementController extends Controller
                 'prospect_shares.id',
                 'prospect_shares.granted_at',
                 'prospect_shares.expires_at',
+                'prospects.id as prospect_id',
                 'prospects.first_name',
                 'prospects.last_name',
                 'collaborators.name as collaborator_name',
@@ -248,8 +233,6 @@ class ProspectManagementController extends Controller
             ->limit(5)
             ->get();
 
-        $totalProspects = (clone $ownProspects)->count();
-        $convertedProspects = (clone $ownProspects)->whereNotNull('converted_to')->count();
         $allProspects = Prospect::query()
             ->with(['source:id,name', 'stage:id,name'])
             ->where('owner_id', $user->id)
@@ -274,28 +257,10 @@ class ProspectManagementController extends Controller
             ->withQueryString();
 
         return view('team.prospects', [
-            'stats' => [
-                'total' => $totalProspects,
-                'hot' => (clone $activeProspects)->where('interest_level', 'hot')->count(),
-                'followups_due' => DB::table('prospect_followups')
-                    ->where('assigned_user_id', $user->id)
-                    ->whereIn('status', ['pending', 'overdue'])
-                    ->whereDate('due_at', '<=', now()->toDateString())
-                    ->whereNull('deleted_at')
-                    ->count(),
-                'shared_with_me' => $sharedProspectIds->count(),
-                'appointments' => DB::table('prospect_appointments')
-                    ->where('owner_id', $user->id)
-                    ->where('status', 'scheduled')
-                    ->where('scheduled_at', '>=', now())
-                    ->count(),
-                'pipeline_stages' => DB::table('pipeline_stages')->whereNull('user_id')->where('is_active', true)->count(),
-                'converted' => $convertedProspects,
-                'conversion_rate' => $totalProspects > 0 ? round(($convertedProspects / $totalProspects) * 100) : 0,
-                'shared_by_me' => DB::table('prospect_shares')->where('granted_by', $user->id)->where('status', 'active')->whereNull('revoked_at')->whereNull('deleted_at')->count(),
-            ],
+            'stats' => $stats,
             'pipelineStages' => DB::table('pipeline_stages')->whereNull('user_id')->where('is_active', true)->orderBy('sort_order')->get(),
             'pipelineSummary' => $pipelineSummary,
+            'pipelineSummaryFunnel' => $pipelineSummaryFunnel,
             'allProspects' => $allProspects,
             'prospectStatuses' => (clone $ownProspects)->select('status')->distinct()->orderBy('status')->pluck('status'),
             'prospectSources' => DB::table('prospect_sources')->where('is_active', true)->orderBy('sort_order')->get(),
@@ -463,9 +428,7 @@ class ProspectManagementController extends Controller
             'funnelTypes' => config('prospects.funnel_types'),
             'fnaStatuses' => config('prospects.fna_statuses'),
             'sources' => DB::table('prospect_sources')->where('is_active', true)->orderBy('sort_order')->get(),
-            'stages' => $prospectFunnelId
-                ? $this->funnels->stagesForFunnel($prospectFunnelId)
-                : DB::table('pipeline_stages')->whereNull('user_id')->where('is_active', true)->orderBy('sort_order')->get(),
+            'stages' => $this->funnels->numberedStagesForFunnel($prospectFunnelId),
         ]);
     }
 

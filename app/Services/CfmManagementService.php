@@ -44,6 +44,7 @@ class CfmManagementService
     {
         $cfms = $this->accessibleCfms($viewer);
         $fapQueue = $this->fapQueueFor($viewer);
+        $cfms = $this->cfmsIncludingAssociateUplines($viewer, $cfms, $fapQueue);
         $recommendationsByAssociate = $this->recommendations->recommendForAssociates($fapQueue, $cfms);
 
         return [
@@ -59,6 +60,7 @@ class CfmManagementService
                 'locationLabel' => filled($row['province'] ?? null) && filled($row['country'] ?? null)
                     ? LocationOptions::formatJurisdictionLabel($row['country'], $row['province'])
                     : '',
+                'uplineCfmIds' => $row['uplineCfmIds'] ?? [],
             ])->values()->all(),
             'fapQueue' => $fapQueue,
             'cfmCandidates' => $this->cfmCandidatesFor($viewer),
@@ -89,6 +91,41 @@ class CfmManagementService
 
         $keys = LocationOptions::normalizeLicensedJurisdictionKeys($licensedJurisdictions);
 
+        $this->syncLicensedJurisdictions($cfm, $keys);
+
+        return [
+            'message' => 'Licensed jurisdictions updated for '.$cfm->name.'.',
+            'licensedJurisdictions' => $keys,
+            'licensedJurisdictionsLabel' => $this->licensedJurisdictionsLabel($keys),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function licensedJurisdictionKeysFor(User $cfm): array
+    {
+        $cfm->loadMissing(['profile', 'cfmMentorProfile']);
+
+        return LocationOptions::mergeLicensedJurisdictionKeys(
+            $cfm->cfmMentorProfile?->licensed_jurisdictions,
+            $cfm->profile?->insurance_licenses,
+        );
+    }
+
+    /**
+     * Keep CFM mentor profile and member profile insurance licenses aligned.
+     *
+     * @param  list<string>  $keys
+     */
+    public function syncLicensedJurisdictions(User $cfm, array $keys): void
+    {
+        if (! $cfm->hasRole('certified-field-mentor')) {
+            return;
+        }
+
+        $keys = LocationOptions::normalizeLicensedJurisdictionKeys($keys);
+
         CfmMentorProfile::updateOrCreate(
             ['user_id' => $cfm->id],
             [
@@ -100,11 +137,10 @@ class CfmManagementService
             ]
         );
 
-        return [
-            'message' => 'Licensed jurisdictions updated for '.$cfm->name.'.',
-            'licensedJurisdictions' => $keys,
-            'licensedJurisdictionsLabel' => $this->licensedJurisdictionsLabel($keys),
-        ];
+        $cfm->profile()->updateOrCreate(
+            ['user_id' => $cfm->id],
+            ['insurance_licenses' => $keys]
+        );
     }
 
     private function canManageCfm(User $viewer, User $cfm): bool
@@ -132,10 +168,7 @@ class CfmManagementService
     {
         $cfm->loadMissing(['profile', 'rank', 'team', 'sponsor', 'cfmMentorProfile']);
 
-        $myHierarchyIds = $this->hierarchy->descendantsQuery($viewer)->pluck('users.id');
-        $inMyHierarchy = $cfm->id === $viewer->id || $myHierarchyIds->contains($cfm->id);
-
-        return $this->enrichCfm($cfm, $inMyHierarchy);
+        return $this->enrichCfm($cfm, $this->cfmIsInViewerHierarchy($viewer, $cfm));
     }
 
     public function addCfm(User $viewer, array $data): array
@@ -213,8 +246,17 @@ class CfmManagementService
             ]);
         }
 
+        if ($associate->id === $cfm->id) {
+            throw ValidationException::withMessages([
+                'cfm_id' => 'A CFM cannot be assigned as their own trainee.',
+            ]);
+        }
+
         $accessibleCfmIds = $this->accessibleCfmIds($viewer);
-        if (! $accessibleCfmIds->contains($cfm->id)) {
+        $cfmIsAssignable = $accessibleCfmIds->contains($cfm->id)
+            || $this->hierarchy->isUplineOf($cfm, $associate);
+
+        if (! $cfmIsAssignable) {
             throw ValidationException::withMessages([
                 'cfm_id' => 'You do not have permission to assign to this CFM.',
             ]);
@@ -222,22 +264,23 @@ class CfmManagementService
 
         $this->assertCfmLicensedForAssociate($associate, $cfm);
 
-        $status = 'pending';
+        $requireCfmApproval = (bool) ($data['require_cfm_approval'] ?? true);
 
         $startedAt = ! empty($data['start_date']) ? Carbon::parse($data['start_date']) : now();
         $notifyCfm = (bool) ($data['notify_cfm'] ?? true);
 
-        return DB::transaction(function () use ($viewer, $associate, $cfm, $data, $status, $startedAt, $notifyCfm): array {
+        return DB::transaction(function () use ($viewer, $associate, $cfm, $data, $startedAt, $notifyCfm, $requireCfmApproval): array {
             $assignment = MentorAssignment::updateOrCreate(
                 [
                     'mentor_id' => $cfm->id,
                     'apprentice_id' => $associate->id,
-                    'status' => $status,
+                    'status' => 'pending',
                 ],
                 [
                     'assigned_by' => $viewer->id,
                     'started_at' => $startedAt->toDateString(),
                     'completed_at' => ! empty($data['end_date']) ? Carbon::parse($data['end_date'])->toDateString() : null,
+                    'confirmed_at' => null,
                 ]
             );
 
@@ -263,9 +306,19 @@ class CfmManagementService
                 $cfmProfile->update(['last_mentor_activity_at' => now()]);
             }
 
-            $this->assignmentWorkflow->sendConfirmationRequest($assignment, $notifyCfm);
+            if ($requireCfmApproval) {
+                $this->assignmentWorkflow->sendConfirmationRequest($assignment, $notifyCfm);
 
-            $message = "{$associate->name} was submitted to {$cfm->name}. A confirmation email was sent to the CFM. The trainee will appear once the assignment is confirmed.";
+                $message = "{$associate->name} was submitted to {$cfm->name}. A confirmation email was sent to the CFM. The trainee will appear once the assignment is confirmed.";
+
+                $status = 'pending';
+            } else {
+                $assignment = $this->assignmentWorkflow->activateAssignment($assignment->fresh(['mentor', 'apprentice.sponsor', 'assignedBy']));
+
+                $message = "{$associate->name} was assigned to {$cfm->name} and is now an active trainee.";
+
+                $status = 'active';
+            }
 
             return [
                 'message' => $message,
@@ -297,7 +350,7 @@ class CfmManagementService
             ->filter(function (User $cfm) use ($viewer, $myHierarchyIds, $sharedIds): bool {
                 return $this->viewerCanAccessCfm($viewer, $cfm, $myHierarchyIds, $sharedIds);
             })
-            ->map(fn (User $cfm) => $this->enrichCfm($cfm, $myHierarchyIds->contains($cfm->id)))
+            ->map(fn (User $cfm) => $this->enrichCfm($cfm, $this->cfmIsInViewerHierarchy($viewer, $cfm)))
             ->sortByDesc('recommendationScore')
             ->values();
     }
@@ -324,6 +377,10 @@ class CfmManagementService
 
     private function cfmIsInViewerHierarchy(User $viewer, User $cfm): bool
     {
+        if ($cfm->id === $viewer->id) {
+            return true;
+        }
+
         return $this->hierarchy->descendantsQuery($viewer)->where('users.id', $cfm->id)->exists();
     }
 
@@ -352,18 +409,17 @@ class CfmManagementService
             'max_apprentices' => 6,
         ]);
 
-        $activeApprentices = User::query()
-            ->where('mentor_id', $cfm->id)
+        $activeApprentices = $this->apprenticesOfCfmQuery($cfm->id)
             ->where('is_active', true)
             ->count();
 
-        $pendingApprentices = MentorAssignment::query()
-            ->where('mentor_id', $cfm->id)
+        $licensedJurisdictions = $this->licensedJurisdictionKeysFor($cfm);
+
+        $pendingApprentices = $this->mentorAssignmentsForCfmQuery($cfm->id)
             ->where('status', 'pending')
             ->count();
 
-        $completedApprentices = MentorAssignment::query()
-            ->where('mentor_id', $cfm->id)
+        $completedApprentices = $this->mentorAssignmentsForCfmQuery($cfm->id)
             ->where('status', 'completed')
             ->count();
 
@@ -404,14 +460,12 @@ class CfmManagementService
             $calendarBusyness
         );
 
-        $apprenticeUsers = User::query()
-            ->where('mentor_id', $cfm->id)
+        $apprenticeUsers = $this->apprenticesOfCfmQuery($cfm->id)
             ->with(['rank', 'apprenticeshipAssignments' => fn ($q) => $q->where('mentor_id', $cfm->id)->latest()->limit(1)])
             ->limit(8)
             ->get();
 
-        $activeAssignments = MentorAssignment::query()
-            ->where('mentor_id', $cfm->id)
+        $activeAssignments = $this->mentorAssignmentsForCfmQuery($cfm->id)
             ->whereIn('apprentice_id', $apprenticeUsers->pluck('id'))
             ->where('status', 'active')
             ->latest('id')
@@ -437,12 +491,12 @@ class CfmManagementService
             ];
         });
 
-        $pendingAssignmentRows = MentorAssignment::query()
-            ->where('mentor_id', $cfm->id)
+        $pendingAssignmentRows = $this->mentorAssignmentsForCfmQuery($cfm->id)
             ->where('status', 'pending')
             ->with(['apprentice.rank', 'assignedBy'])
             ->latest('id')
             ->get()
+            ->filter(fn (MentorAssignment $assignment) => $assignment->apprentice_id !== $cfm->id)
             ->map(fn (MentorAssignment $assignment) => [
                 'id' => $assignment->id,
                 'name' => $assignment->apprentice->name,
@@ -493,8 +547,8 @@ class CfmManagementService
             'recommendationColor' => $recommendation['color'],
             'languages' => $profile->languages ?? [],
             'specialties' => $profile->specialties ?? [],
-            'licensedJurisdictions' => $profile->licensed_jurisdictions ?? [],
-            'licensedJurisdictionsLabel' => $this->licensedJurisdictionsLabel($profile->licensed_jurisdictions ?? []),
+            'licensedJurisdictions' => $licensedJurisdictions,
+            'licensedJurisdictionsLabel' => $this->licensedJurisdictionsLabel($licensedJurisdictions),
             'bio' => $profile->mentor_bio,
             'lastActivity' => $profile->last_mentor_activity_at?->diffForHumans() ?? '—',
             'inMyHierarchy' => $inMyHierarchy,
@@ -506,8 +560,7 @@ class CfmManagementService
             'shareCalendarWithApprentices' => (bool) ($profile->share_calendar_with_apprentices ?? true),
             'shareCalendarWithAgencyOwner' => (bool) ($profile->share_calendar_with_agency_owner ?? false),
             'activityTimeline' => $this->activityTimeline($cfm),
-            'assignmentHistory' => MentorAssignment::query()
-                ->where('mentor_id', $cfm->id)
+            'assignmentHistory' => $this->mentorAssignmentsForCfmQuery($cfm->id)
                 ->with('apprentice:id,name')
                 ->latest()
                 ->limit(5)
@@ -580,6 +633,7 @@ class CfmManagementService
                     ? LocationOptions::jurisdictionKey($user->profile->country, $user->profile->province)
                     : '',
                 'timezone' => $user->profile?->timezone ?? '—',
+                'uplineCfmIds' => $this->uplineCfmIdsFor($user)->values()->all(),
                 'profileUrl' => route('team.member', $user),
             ])
             ->values()
@@ -607,22 +661,33 @@ class CfmManagementService
             ->all();
     }
 
+    private function apprenticesOfCfmQuery(int $cfmId): Builder
+    {
+        return User::query()
+            ->where('mentor_id', $cfmId)
+            ->whereKeyNot($cfmId);
+    }
+
+    private function mentorAssignmentsForCfmQuery(int $cfmId): Builder
+    {
+        return MentorAssignment::query()
+            ->where('mentor_id', $cfmId)
+            ->where('apprentice_id', '!=', $cfmId);
+    }
+
     private function apprenticeBreakdownFor(int $cfmId): array
     {
-        $activeIds = User::query()
-            ->where('mentor_id', $cfmId)
+        $activeIds = $this->apprenticesOfCfmQuery($cfmId)
             ->where('is_active', true)
             ->pluck('id');
 
         $activeCount = $activeIds->count();
 
-        $newThisMonth = MentorAssignment::query()
-            ->where('mentor_id', $cfmId)
+        $newThisMonth = $this->mentorAssignmentsForCfmQuery($cfmId)
             ->where('started_at', '>=', now()->startOfMonth())
             ->count();
 
-        $nearingCompletion = MentorAssignment::query()
-            ->where('mentor_id', $cfmId)
+        $nearingCompletion = $this->mentorAssignmentsForCfmQuery($cfmId)
             ->where('status', 'active')
             ->where('started_at', '<=', now()->subDays(75))
             ->count();
@@ -648,8 +713,7 @@ class CfmManagementService
             ->where('updated_at', '<', now()->subDays(14))
             ->count();
 
-        $awaitingApproval = MentorAssignment::query()
-            ->where('mentor_id', $cfmId)
+        $awaitingApproval = $this->mentorAssignmentsForCfmQuery($cfmId)
             ->where('status', 'pending')
             ->count();
 
@@ -665,13 +729,11 @@ class CfmManagementService
 
     private function fapCompletionRateFor(int $cfmId): float
     {
-        $completed = MentorAssignment::query()
-            ->where('mentor_id', $cfmId)
+        $completed = $this->mentorAssignmentsForCfmQuery($cfmId)
             ->where('status', 'completed')
             ->count();
 
-        $active = MentorAssignment::query()
-            ->where('mentor_id', $cfmId)
+        $active = $this->mentorAssignmentsForCfmQuery($cfmId)
             ->where('status', 'active')
             ->count();
 
@@ -686,7 +748,7 @@ class CfmManagementService
 
     private function avgApprenticeProgressFor(int $cfmId): int
     {
-        $apprenticeIds = User::query()->where('mentor_id', $cfmId)->pluck('id');
+        $apprenticeIds = $this->apprenticesOfCfmQuery($cfmId)->pluck('id');
 
         if ($apprenticeIds->isEmpty()) {
             return 0;
@@ -833,6 +895,84 @@ class CfmManagementService
         return $items;
     }
 
+    private function uplineCfmIdsFor(User $associate): Collection
+    {
+        $ancestorIds = $this->hierarchy->uplineUserIds($associate);
+
+        if ($ancestorIds->isEmpty()) {
+            return collect();
+        }
+
+        return User::query()
+            ->role('certified-field-mentor')
+            ->whereIn('id', $ancestorIds)
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $fapQueue
+     */
+    private function cfmsIncludingAssociateUplines(User $viewer, Collection $cfms, array $fapQueue): Collection
+    {
+        $existingIds = $cfms->pluck('id');
+        $uplineIds = collect($fapQueue)
+            ->flatMap(fn (array $row) => $row['uplineCfmIds'] ?? [])
+            ->unique()
+            ->reject(fn ($id) => $existingIds->contains((int) $id));
+
+        if ($uplineIds->isEmpty()) {
+            return $this->annotateTraineeUplineCfms($cfms, $fapQueue);
+        }
+
+        $merged = $cfms->merge(
+            User::query()
+                ->role('certified-field-mentor')
+                ->whereIn('id', $uplineIds)
+                ->with(['profile', 'rank', 'team', 'sponsor', 'cfmMentorProfile'])
+                ->where('is_active', true)
+                ->whereNull('deleted_at')
+                ->get()
+                ->map(fn (User $cfm) => $this->enrichCfm($cfm, $this->cfmIsInViewerHierarchy($viewer, $cfm)))
+        );
+
+        return $this->annotateTraineeUplineCfms($merged->unique('id')->values(), $fapQueue);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $fapQueue
+     */
+    private function annotateTraineeUplineCfms(Collection $cfms, array $fapQueue): Collection
+    {
+        $uplineMap = [];
+
+        foreach ($fapQueue as $associate) {
+            foreach ($associate['uplineCfmIds'] ?? [] as $cfmId) {
+                $uplineMap[(int) $cfmId][] = (int) $associate['id'];
+            }
+        }
+
+        return $cfms->map(function (array $cfm) use ($uplineMap): array {
+            $traineeIds = $uplineMap[(int) $cfm['id']] ?? [];
+
+            if ($traineeIds === []) {
+                return $cfm;
+            }
+
+            $cfm['isTraineeUpline'] = true;
+            $cfm['traineeUplineForAssociateIds'] = array_values(array_unique($traineeIds));
+
+            if (! ($cfm['inMyHierarchy'] ?? false)) {
+                $cfm['hierarchySource'] = 'Trainee Upline';
+                $cfm['hierarchyNotice'] = 'Licensed upline mentor in the trainee\'s sponsorship branch.';
+            }
+
+            return $cfm;
+        });
+    }
+
     private function agencyOwnerFor(User $cfm): string
     {
         return $this->resolveAgencyOwnerUpline($cfm)?->name ?? '—';
@@ -885,7 +1025,7 @@ class CfmManagementService
             ]);
         }
 
-        $licensed = $cfm->cfmMentorProfile?->licensed_jurisdictions ?? [];
+        $licensed = $this->licensedJurisdictionKeysFor($cfm);
 
         if (! LocationOptions::cfmCoversJurisdiction($licensed, $country, $province)) {
             $location = LocationOptions::formatJurisdictionLabel($country, $province);

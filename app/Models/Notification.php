@@ -20,11 +20,19 @@ class Notification extends DatabaseNotification
         'recipients',
         'notification_template',
         'action_link',
+        'priority',
+        'module',
+        'related_type',
+        'related_id',
+        'related_user_id',
+        'metadata',
         'type',
         'notifiable_type',
         'notifiable_id',
         'data',
         'read_at',
+        'snoozed_until',
+        'archived_at',
     ];
 
     protected function casts(): array
@@ -33,9 +41,14 @@ class Notification extends DatabaseNotification
             'notification_type_id' => 'integer',
             'trigger_id' => 'integer',
             'sender_user_id' => 'integer',
+            'related_id' => 'integer',
+            'related_user_id' => 'integer',
             'recipients' => 'array',
             'notification_template' => 'array',
             'action_link' => 'array',
+            'metadata' => 'array',
+            'snoozed_until' => 'datetime',
+            'archived_at' => 'datetime',
         ]);
     }
 

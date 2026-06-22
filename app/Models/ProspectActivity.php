@@ -20,6 +20,12 @@ class ProspectActivity extends Model
         'other' => 'Other',
     ];
 
+    /** @return array<string, string> */
+    public static function activityTypes(): array
+    {
+        return config('prospects.activity_types', self::TYPES);
+    }
+
     protected $guarded = [];
 
     protected function casts(): array

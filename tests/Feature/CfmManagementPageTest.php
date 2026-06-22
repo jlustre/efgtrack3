@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CfmMentorProfile;
 use App\Models\User;
 use App\Services\CfmManagementService;
 use Database\Seeders\CfmManagementSeeder;
@@ -112,5 +113,85 @@ class CfmManagementPageTest extends TestCase
             ->assertSee('Smart Recommendations', false)
             ->assertSee('Maria Santos', false)
             ->assertSee('Owen Taylor', false);
+    }
+
+    public function test_cfm_viewing_own_profile_is_listed_as_my_hierarchy(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+        ]);
+
+        $cfmUser = User::factory()->create(['name' => 'Joey Sponsor CFM']);
+        $cfmUser->assignRole(['super-admin', 'certified-field-mentor']);
+
+        CfmMentorProfile::updateOrCreate(
+            ['user_id' => $cfmUser->id],
+            [
+                'certification_status' => 'certified',
+                'hierarchy_access' => 'my_hierarchy',
+                'max_apprentices' => 6,
+            ]
+        );
+
+        $self = app(CfmManagementService::class)
+            ->accessibleCfms($cfmUser)
+            ->firstWhere('id', $cfmUser->id);
+
+        $this->assertNotNull($self);
+        $this->assertTrue($self['inMyHierarchy']);
+        $this->assertSame('My Hierarchy', $self['hierarchySource']);
+        $this->assertNull($self['hierarchyNotice']);
+    }
+
+    public function test_cfm_assignment_uses_profile_insurance_licenses_when_cfm_mentor_profile_is_empty(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            \Database\Seeders\CountrySeeder::class,
+            \Database\Seeders\StateProvinceSeeder::class,
+        ]);
+
+        $owner = User::factory()->create();
+        $owner->assignRole('agency-owner');
+
+        $cfm = User::factory()->create(['name' => 'Licensed CFM', 'sponsor_id' => $owner->id]);
+        $cfm->assignRole('certified-field-mentor');
+
+        $associate = User::factory()->create([
+            'name' => 'California Recruit',
+            'sponsor_id' => $owner->id,
+            'mentor_id' => null,
+            'is_active' => true,
+        ]);
+        $associate->assignRole('member');
+        $associate->profile()->create(
+            \App\Support\LocationOptions::profileLocationIds('United States', 'California')
+        );
+
+        $cfm->profile()->create([
+            'insurance_licenses' => ['United States|California'],
+        ]);
+
+        app(\App\Services\DownlineHierarchyService::class)->rebuild();
+
+        $payload = app(CfmManagementService::class)->payloadFor($owner);
+        $cfmRow = collect($payload['cfms'])->firstWhere('id', $cfm->id);
+
+        $this->assertNotNull($cfmRow);
+        $this->assertContains('United States|California', $cfmRow['licensedJurisdictions']);
+
+        $associateRow = collect($payload['assignableAssociates'])->firstWhere('id', $associate->id);
+        $this->assertSame('United States|California', $associateRow['jurisdictionKey']);
+
+        $this->actingAs($owner)
+            ->postJson(route('team.cfms.assign'), [
+                'associate_id' => $associate->id,
+                'cfm_id' => $cfm->id,
+                'notify_cfm' => false,
+                'notify_associate' => false,
+            ])
+            ->assertOk();
     }
 }

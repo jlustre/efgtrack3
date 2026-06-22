@@ -27,18 +27,28 @@ class RegistrationTest extends TestCase
 
         $this->seed([
             CountrySeeder::class,
+            StateProvinceSeeder::class,
             TimezoneSeeder::class,
         ]);
     }
 
     /**
-     * @return array{country_id: int|null, timezone_id: int|null}
+     * @return array{country_id: int, state_province_id: int, timezone_id: int}
      */
     private function registrationLocationIds(): array
     {
+        $countryId = LocationOptions::resolveCountryId('Canada');
+        $stateProvinceId = LocationOptions::resolveStateProvinceId('Canada', 'British Columbia');
+        $timezoneId = LocationOptions::resolveTimezoneId('Canada Pacific Time');
+
+        $this->assertNotNull($countryId);
+        $this->assertNotNull($stateProvinceId);
+        $this->assertNotNull($timezoneId);
+
         return [
-            'country_id' => LocationOptions::resolveCountryId('Canada'),
-            'timezone_id' => LocationOptions::resolveTimezoneId('Canada Pacific Time'),
+            'country_id' => $countryId,
+            'state_province_id' => $stateProvinceId,
+            'timezone_id' => $timezoneId,
         ];
     }
 
@@ -109,9 +119,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1001',
             'city' => 'Vancouver',
-            'province' => 'British Columbia',
-            'country' => 'Canada',
-            'timezone' => 'Canada Pacific Time',
+            ...$this->registrationLocationIds(),
             'sponsor_confirmed' => '1',
             'active_associate_confirmed' => '1',
             'password' => 'password',
@@ -136,6 +144,12 @@ class RegistrationTest extends TestCase
         $newUser->load('profile.countryRecord', 'profile.stateProvince', 'profile.timezoneRecord');
         $this->assertSame('British Columbia', $newUser->profile->province);
         $this->assertSame('Canada', $newUser->profile->country);
+        $this->assertNotNull($newUser->profile->country_id);
+        $this->assertNotNull($newUser->profile->state_province_id);
+        $this->assertSame('Canada|British Columbia', \App\Support\LocationOptions::jurisdictionKey(
+            $newUser->profile->country,
+            $newUser->profile->province,
+        ));
         $this->assertSame('Canada Pacific Time', $newUser->profile->timezone);
         $this->assertTrue($newUser->profile->is_efg_active_associate);
         $this->assertDatabaseHas('registration_invitations', [
@@ -169,9 +183,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1002',
             'city' => 'Vancouver',
-            'province' => 'British Columbia',
-            'country' => 'Canada',
-            'timezone' => 'Canada Pacific Time',
+            ...$this->registrationLocationIds(),
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
@@ -198,9 +210,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'efg_associate_id' => 'EFG-1003',
             'city' => 'Vancouver',
-            'province' => 'British Columbia',
-            'country' => 'Canada',
-            'timezone' => 'Canada Pacific Time',
+            ...$this->registrationLocationIds(),
             'sponsor_confirmed' => '1',
             'active_associate_confirmed' => '1',
             'password' => 'password',
@@ -211,5 +221,34 @@ class RegistrationTest extends TestCase
             ->assertSessionHasErrors('registration_code');
 
         $this->assertGuest();
+    }
+
+    public function test_registration_requires_country_and_state_province(): void
+    {
+        $invitation = RegistrationInvitation::factory()->create();
+
+        $response = $this->post('/register', [
+            'registration_code' => $invitation->code,
+            'first_name' => 'Test',
+            'last_name' => 'User',
+            'email' => 'missing-location@example.com',
+            'efg_associate_id' => 'EFG-1004',
+            'city' => 'Vancouver',
+            'sponsor_confirmed' => '1',
+            'active_associate_confirmed' => '1',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertSessionHasErrors([
+            'country_id',
+            'state_province_id',
+            'timezone_id',
+        ]);
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', [
+            'email' => 'missing-location@example.com',
+        ]);
     }
 }

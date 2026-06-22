@@ -135,6 +135,8 @@ export function initPageChrome() {
         }
     });
 
+    document.addEventListener('livewire:navigated', hideWhenReady);
+
     document.addEventListener('click', (event) => {
         const link = event.target.closest('a[href]');
 
@@ -156,11 +158,17 @@ export function initPageChrome() {
             return;
         }
 
-        if (form.hasAttribute('data-no-page-loader')) {
+        if (event.defaultPrevented || form.hasAttribute('data-no-page-loader')) {
+            return;
+        }
+
+        // Livewire submits in-place; do not show the full-page loader.
+        if (form.closest('[wire\\:id]') || Array.from(form.attributes).some((attribute) => attribute.name.startsWith('wire:'))) {
             return;
         }
 
         showLoading();
+        window.setTimeout(hideLoading, 15000);
     });
 
     window.addEventListener('beforeunload', showLoading);

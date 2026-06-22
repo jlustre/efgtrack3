@@ -26,6 +26,10 @@ class BookingController extends Controller
                 ->orderBy('starts_at')
                 ->limit(6)
                 ->get(),
+            'availabilitySchedules' => AvailabilitySchedule::query()
+                ->where('user_id', $request->user()->id)
+                ->whereNull('deleted_at')
+                ->count(),
         ]);
     }
 

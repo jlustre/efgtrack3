@@ -8,6 +8,7 @@ use App\Models\UserTask;
 use App\Services\ChecklistService;
 use App\Support\ProfileLocationQuery;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -137,6 +138,50 @@ class TaskController extends Controller
         ]);
     }
 
+    public function storeComment(Request $request, UserTask $task): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($this->userCanAccessTask($user, $task), 403);
+
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $comment = $task->comments()->create([
+            'user_id' => $user->id,
+            'body' => $validated['body'],
+        ]);
+
+        $comment->load('author:id,name');
+
+        return response()->json([
+            'comment' => [
+                'id' => $comment->id,
+                'author' => $comment->author?->name ?? $user->name,
+                'initials' => $this->initialsFor($comment->author?->name ?? $user->name),
+                'avatarRing' => $this->avatarRingFor('bg-slate-500'),
+                'time' => $comment->created_at?->diffForHumans() ?? 'Recently',
+                'text' => $comment->body,
+            ],
+        ], 201);
+    }
+
+    private function userCanAccessTask(User $user, UserTask $task): bool
+    {
+        if ((int) $task->assigned_to_user_id === $user->id) {
+            return true;
+        }
+
+        $task->loadMissing('assignee:id,team_id');
+
+        if ($user->team_id && (int) $task->assignee?->team_id === (int) $user->team_id) {
+            return true;
+        }
+
+        return $user->hasAnyRole(['super-admin', 'admin', 'agency-owner', 'team-leader']);
+    }
+
     private function storedTasksFor(User $user): Collection
     {
         return UserTask::query()
@@ -173,6 +218,7 @@ class TaskController extends Controller
 
         return [
             'id' => 'task-'.$task->id,
+            'databaseId' => $task->id,
             'source' => 'database',
             'title' => $task->title,
             'desc' => (string) $task->description,

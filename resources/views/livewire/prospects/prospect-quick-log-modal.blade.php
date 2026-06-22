@@ -72,6 +72,15 @@
                             @error('activity_occurred_at') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </label>
                         <label class="block">
+                            <span class="text-sm font-semibold text-slate-700">Pipeline Stage</span>
+                            <select wire:model="pipeline_stage_id" class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
+                                @foreach ($stages as $stage)
+                                    <option value="{{ $stage['id'] }}">{{ $stage['label'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('pipeline_stage_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </label>
+                        <label class="block">
                             <span class="text-sm font-semibold text-slate-700">Outcome</span>
                             <input wire:model="activity_outcome" class="mt-1 block w-full rounded-lg border-slate-300 text-sm" placeholder="Connected, left voicemail…">
                         </label>
@@ -169,7 +178,7 @@
                             <select wire:model="pipeline_stage_id" class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
                                 <option value="">Keep current stage</option>
                                 @foreach ($stages as $stage)
-                                    <option value="{{ $stage->pipeline_stage_id ?? $stage->id }}">{{ $stage->name }}</option>
+                                    <option value="{{ $stage['id'] }}">{{ $stage['label'] }}</option>
                                 @endforeach
                             </select>
                         </label>

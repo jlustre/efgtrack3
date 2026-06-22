@@ -20,7 +20,8 @@ class GoalProductionService
         $sum = MemberProductionEntry::query()
             ->where('user_id', $user->id)
             ->where('status', 'posted')
-            ->whereBetween('posted_at', [$start->toDateString(), $end->toDateString()])
+            ->whereDate('posted_at', '>=', $start)
+            ->whereDate('posted_at', '<=', $end)
             ->sum('annual_premium');
 
         if ($sum > 0) {
@@ -41,7 +42,8 @@ class GoalProductionService
         $sum = MemberProductionEntry::query()
             ->whereIn('user_id', $memberIds)
             ->where('status', 'posted')
-            ->whereBetween('posted_at', [$start->toDateString(), $end->toDateString()])
+            ->whereDate('posted_at', '>=', $start)
+            ->whereDate('posted_at', '<=', $end)
             ->sum('annual_premium');
 
         if ($sum > 0) {
@@ -60,7 +62,8 @@ class GoalProductionService
         $count = MemberProductionEntry::query()
             ->where('user_id', $user->id)
             ->where('status', 'posted')
-            ->whereBetween('posted_at', [$start->toDateString(), $end->toDateString()])
+            ->whereDate('posted_at', '>=', $start)
+            ->whereDate('posted_at', '<=', $end)
             ->count();
 
         if ($count > 0) {

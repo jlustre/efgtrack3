@@ -372,7 +372,10 @@ class AdminManagementTest extends TestCase
 
     public function test_admin_can_list_email_templates_page(): void
     {
-        $this->seed(RolePermissionSeeder::class);
+        $this->seed([
+            RolePermissionSeeder::class,
+            \Database\Seeders\EmailTemplateTokenSeeder::class,
+        ]);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
@@ -383,7 +386,9 @@ class AdminManagementTest extends TestCase
             ->assertSee('Email Templates')
             ->assertSee('Update Seeder')
             ->assertSee('Available merge tokens')
-            ->assertSee('{{ member_name }}');
+            ->assertSee('Manage tokens')
+            ->assertSee('{{ member_name }}')
+            ->assertSee('Member Name');
     }
 
     public function test_admin_can_update_email_template_seeder_from_list(): void
@@ -425,7 +430,10 @@ class AdminManagementTest extends TestCase
 
     public function test_admin_can_create_update_toggle_archive_and_restore_email_template(): void
     {
-        $this->seed(RolePermissionSeeder::class);
+        $this->seed([
+            RolePermissionSeeder::class,
+            \Database\Seeders\EmailTemplateTokenSeeder::class,
+        ]);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
@@ -449,8 +457,12 @@ class AdminManagementTest extends TestCase
                 'key' => 'test_welcome',
                 'name' => 'Test Welcome Updated',
                 'subject' => 'Welcome aboard, {{ member_name }}',
-                'body' => '<p>Hi {{ member_name }},</p><p>Glad you joined {{ app_name }}.</p>',
+                'body' => '<p>Hi {{ member_name }},</p><p>Visit {{ base_url }}{{ path }}</p>',
                 'is_active' => 0,
+                'token_values' => [
+                    'path' => '/dashboard',
+                    'base_url' => 'https://portal.example.com',
+                ],
             ])
             ->assertRedirect(route('admin.management.edit', ['email-templates', $templateId]));
 
@@ -459,6 +471,23 @@ class AdminManagementTest extends TestCase
             'name' => 'Test Welcome Updated',
             'is_active' => false,
         ]);
+
+        $storedTokenValues = json_decode(
+            (string) DB::table('email_templates')->where('id', $templateId)->value('token_values'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+
+        $this->assertSame('/dashboard', $storedTokenValues['path']);
+        $this->assertSame('https://portal.example.com', $storedTokenValues['base_url']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.edit', ['email-templates', $templateId]))
+            ->assertOk()
+            ->assertSee('Token values for this template', false)
+            ->assertSee('value="/dashboard"', false)
+            ->assertSee('value="https://portal.example.com"', false);
 
         $this->actingAs($admin)
             ->patch(route('admin.management.status', ['email-templates', $templateId]))
@@ -488,6 +517,122 @@ class AdminManagementTest extends TestCase
 
         $this->actingAs($agencyOwner)
             ->get(route('admin.management.resource.index', 'email-templates'))
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_crud_email_template_tokens(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            \Database\Seeders\EmailTemplateTokenSeeder::class,
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.resource.index', 'email-template-tokens'))
+            ->assertOk()
+            ->assertSee('Email Template Tokens')
+            ->assertSee('member_name');
+
+        $this->actingAs($admin)
+            ->post(route('admin.management.store', 'email-template-tokens'), [
+                'key' => 'custom_token',
+                'name' => 'Custom Token',
+                'description' => 'A token created from admin.',
+                'sample_value' => 'Sample text',
+                'sort_order' => 500,
+                'is_active' => 1,
+            ])
+            ->assertRedirect();
+
+        $tokenId = DB::table('email_template_tokens')->where('key', 'custom_token')->value('id');
+        $this->assertNotNull($tokenId);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.management.update', ['email-template-tokens', $tokenId]), [
+                'key' => 'custom_token',
+                'name' => 'Custom Token Updated',
+                'description' => 'Updated description.',
+                'sample_value' => 'Updated sample',
+                'sort_order' => 510,
+                'is_active' => 0,
+            ])
+            ->assertRedirect(route('admin.management.edit', ['email-template-tokens', $tokenId]));
+
+        $this->assertDatabaseHas('email_template_tokens', [
+            'id' => $tokenId,
+            'name' => 'Custom Token Updated',
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.management.resource.index', 'email-templates'))
+            ->assertOk()
+            ->assertDontSee('Custom Token Updated');
+
+        $this->actingAs($admin)
+            ->delete(route('admin.management.destroy', ['email-template-tokens', $tokenId]))
+            ->assertRedirect();
+
+        $this->assertNotNull(DB::table('email_template_tokens')->where('id', $tokenId)->value('deleted_at'));
+
+        $this->actingAs($admin)
+            ->patch(route('admin.management.restore', ['email-template-tokens', $tokenId]))
+            ->assertRedirect(route('admin.management.edit', ['email-template-tokens', $tokenId]));
+
+        $this->assertNull(DB::table('email_template_tokens')->where('id', $tokenId)->value('deleted_at'));
+    }
+
+    public function test_admin_can_update_email_template_token_seeder_from_list(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            \Database\Seeders\EmailTemplateTokenSeeder::class,
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $seederPath = database_path('seeders/EmailTemplateTokenSeeder.php');
+        $originalSeeder = file_get_contents($seederPath);
+
+        DB::table('email_template_tokens')->insert([
+            'key' => 'seed_export_token',
+            'name' => 'Seed Export Token',
+            'description' => 'Exported from admin.',
+            'sample_value' => 'Example',
+            'sort_order' => 999,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $this->actingAs($admin)
+                ->post(route('admin.management.update-seeder', 'email-template-tokens'))
+                ->assertRedirect(route('admin.management.resource.index', 'email-template-tokens'))
+                ->assertSessionHas('status', 'seeder-updated');
+
+            $seeder = file_get_contents($seederPath);
+
+            $this->assertStringContainsString('seed_export_token', $seeder);
+            $this->assertStringContainsString('EmailTemplateToken::updateOrCreate', $seeder);
+        } finally {
+            file_put_contents($seederPath, $originalSeeder);
+        }
+    }
+
+    public function test_agency_owner_cannot_access_email_template_tokens(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $agencyOwner = User::factory()->create();
+        $agencyOwner->assignRole('agency-owner');
+
+        $this->actingAs($agencyOwner)
+            ->get(route('admin.management.resource.index', 'email-template-tokens'))
             ->assertForbidden();
     }
 }

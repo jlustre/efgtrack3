@@ -29,7 +29,7 @@ export default function cfmManagement(initial = {}) {
             notes: '',
             notifyCfm: true,
             notifyAssociate: true,
-            requireApproval: false,
+            requireApproval: true,
         },
         compareCfms: ['', '', ''],
         hierarchyFilter: 'All Accessible',
@@ -271,6 +271,12 @@ export default function cfmManagement(initial = {}) {
             );
         },
 
+        cfmIsTraineeUplineForAssociate(cfm, associate) {
+            const uplineIds = (associate?.uplineCfmIds ?? []).map((id) => String(id));
+
+            return uplineIds.includes(String(cfm.id));
+        },
+
         get canSubmitAssignment() {
             if (! this.assignAssociateId || ! this.assignCfmId) {
                 return false;
@@ -305,6 +311,10 @@ export default function cfmManagement(initial = {}) {
             }
 
             if (this.cfmCoversAssociateJurisdiction(cfm, associate) === true) {
+                if (this.cfmIsTraineeUplineForAssociate(cfm, associate)) {
+                    return `${cfm.name} is licensed in ${associate.locationLabel || 'the associate\'s jurisdiction'} and is upline in the trainee's hierarchy.`;
+                }
+
                 return `${cfm.name} is licensed in ${associate.locationLabel || 'the associate\'s jurisdiction'}.`;
             }
 

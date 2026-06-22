@@ -6,7 +6,7 @@ use App\Models\FnaClientInvite;
 use App\Models\FnaRecord;
 use App\Models\Prospect;
 use App\Models\User;
-use App\Notifications\Fna\FnaClientPortalSubmittedNotification;
+use App\Services\Notifications\NotificationOrchestrator;
 use App\Support\FnaClientPortalHasher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -15,6 +15,7 @@ class FnaClientInviteService
 {
     public function __construct(
         private FnaRecordService $records,
+        private NotificationOrchestrator $notifications,
     ) {}
 
     public function agentCanSendInvites(User $user): bool
@@ -207,7 +208,29 @@ class FnaClientInviteService
                 ['invite_id' => $invite->id],
             );
 
-            $invite->sender?->notify(new FnaClientPortalSubmittedNotification($invite));
+            if ($invite->sender) {
+                $fna = $invite->fnaRecord;
+                $clientName = $invite->recipient_name ?: $fna?->client_name ?: 'Your client';
+
+                $this->notifications->dispatch('fna_client_portal_submitted', [
+                    'queue' => true,
+                    'recipients' => [$invite->sender->id],
+                    'module' => 'fna',
+                    'priority' => 'medium',
+                    'related' => $fna ? ['type' => FnaRecord::class, 'id' => $fna->id] : null,
+                    'title' => 'Client FNA submitted',
+                    'message' => "{$clientName} completed their FNA via the client portal.",
+                    'action_link' => $fna ? [
+                        'route' => 'team.fna.show',
+                        'params' => ['fnaRecord' => $fna->id],
+                        'label' => 'View FNA',
+                    ] : null,
+                    'payload' => [
+                        'fna_record_id' => $fna?->id,
+                        'invite_id' => $invite->id,
+                    ],
+                ]);
+            }
 
             return $invite->fresh(['fnaRecord', 'sender']);
         });

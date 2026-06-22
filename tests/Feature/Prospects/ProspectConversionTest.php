@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Prospects\ProspectConversionService;
 use Database\Seeders\CountrySeeder;
 use Database\Seeders\EmailTemplateSeeder;
+use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\ProspectFunnelSeeder;
 use Database\Seeders\ProspectLookupSeeder;
 use Database\Seeders\RankSeeder;
@@ -36,6 +37,7 @@ class ProspectConversionTest extends TestCase
             ProspectFunnelSeeder::class,
             RankSeeder::class,
             EmailTemplateSeeder::class,
+            NotificationConfigSeeder::class,
             CountrySeeder::class,
             StateProvinceSeeder::class,
             TimezoneSeeder::class,

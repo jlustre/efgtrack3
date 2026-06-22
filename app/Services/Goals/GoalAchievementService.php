@@ -5,7 +5,7 @@ namespace App\Services\Goals;
 use App\Models\GoalAchievement;
 use App\Models\GoalBadge;
 use App\Models\User;
-use App\Notifications\Goals\GoalAchievementNotification;
+use App\Services\Notifications\NotificationOrchestrator;
 use Carbon\Carbon;
 
 class GoalAchievementService
@@ -13,6 +13,7 @@ class GoalAchievementService
     public function __construct(
         private readonly GoalMetricResolver $metricResolver,
         private readonly GoalProductionService $production,
+        private readonly NotificationOrchestrator $notifications,
     ) {}
 
     public function evaluateForUser(User $user): void
@@ -61,7 +62,23 @@ class GoalAchievementService
             'metadata' => ['criteria' => $criteria],
         ]);
 
-        $user->notify(new GoalAchievementNotification($badge));
+        $this->notifications->dispatch('goal_achievement', [
+            'queue' => true,
+            'recipients' => [$user->id],
+            'module' => 'goal',
+            'priority' => 'medium',
+            'title' => 'Achievement unlocked: '.$badge->name,
+            'message' => $badge->description,
+            'action_link' => [
+                'route' => 'goals.index',
+                'params' => [],
+                'label' => 'View goals',
+            ],
+            'payload' => [
+                'badge_slug' => $badge->slug,
+                'badge_level' => $badge->level,
+            ],
+        ]);
     }
 
     private function hasAchievement(User $user, int $badgeId): bool

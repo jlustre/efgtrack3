@@ -6,14 +6,15 @@ use App\Livewire\Fna\FnaReviewPanel;
 use App\Livewire\Fna\FnaSubmitForReviewModal;
 use App\Models\FnaRecord;
 use App\Models\MentorAssignment;
+use App\Models\Notification;
 use App\Models\User;
 use App\Services\Fna\FnaCompletenessService;
 use App\Services\Fna\FnaRecordService;
 use App\Services\Fna\FnaReviewService;
 use App\Services\Fna\FnaWorkflowService;
+use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -71,8 +72,7 @@ class FnaReviewWorkflowTest extends TestCase
 
     public function test_full_submit_approve_workflow_with_notifications(): void
     {
-        Notification::fake();
-        $this->seed(RolePermissionSeeder::class);
+        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class]);
 
         [$trainee, $cfm] = $this->createTraineeWithCfm();
 
@@ -85,7 +85,12 @@ class FnaReviewWorkflowTest extends TestCase
         $this->assertSame($cfm->id, $submitted->cfm_user_id);
         $this->assertNotNull($submitted->submitted_at);
 
-        Notification::assertSentTo($cfm, \App\Notifications\Fna\FnaSubmittedNotification::class);
+        $this->assertTrue(
+            Notification::query()
+                ->where('notifiable_id', $cfm->id)
+                ->where('data->trigger', 'fna_submitted')
+                ->exists()
+        );
 
         $approved = app(FnaReviewService::class)->approve(
             $submitted->fresh(),
@@ -96,7 +101,12 @@ class FnaReviewWorkflowTest extends TestCase
         $this->assertSame('approved_by_cfm', $approved->status);
         $this->assertNotNull($approved->approved_at);
 
-        Notification::assertSentTo($trainee, \App\Notifications\Fna\FnaApprovedNotification::class);
+        $this->assertTrue(
+            Notification::query()
+                ->where('notifiable_id', $trainee->id)
+                ->where('data->trigger', 'fna_approved')
+                ->exists()
+        );
 
         $this->assertDatabaseHas('fna_review_comments', [
             'fna_record_id' => $fna->id,
@@ -111,8 +121,7 @@ class FnaReviewWorkflowTest extends TestCase
 
     public function test_cfm_can_request_revision_with_required_comment(): void
     {
-        Notification::fake();
-        $this->seed(RolePermissionSeeder::class);
+        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class]);
 
         [$trainee, $cfm] = $this->createTraineeWithCfm();
 
@@ -129,7 +138,12 @@ class FnaReviewWorkflowTest extends TestCase
 
         $this->assertSame('revision_requested', $revised->status);
 
-        Notification::assertSentTo($trainee, \App\Notifications\Fna\FnaRevisionRequestedNotification::class);
+        $this->assertTrue(
+            Notification::query()
+                ->where('notifiable_id', $trainee->id)
+                ->where('data->trigger', 'fna_revision_requested')
+                ->exists()
+        );
 
         $this->assertDatabaseHas('fna_review_comments', [
             'fna_record_id' => $fna->id,
@@ -157,8 +171,7 @@ class FnaReviewWorkflowTest extends TestCase
 
     public function test_cfm_review_panel_approves_via_livewire(): void
     {
-        Notification::fake();
-        $this->seed(RolePermissionSeeder::class);
+        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class]);
 
         [$trainee, $cfm] = $this->createTraineeWithCfm();
 
@@ -179,7 +192,7 @@ class FnaReviewWorkflowTest extends TestCase
 
     public function test_status_history_records_full_workflow(): void
     {
-        $this->seed(RolePermissionSeeder::class);
+        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class]);
 
         [$trainee, $cfm] = $this->createTraineeWithCfm();
 

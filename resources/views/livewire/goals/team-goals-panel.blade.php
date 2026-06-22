@@ -1,17 +1,18 @@
 <div class="space-y-6">
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         @foreach ([
-            ['label' => 'Members with goals', 'value' => $summary['member_count'], 'accent' => 'text-[#0B1F3A]'],
-            ['label' => 'Total goals', 'value' => $summary['total_goals'], 'accent' => 'text-slate-700'],
-            ['label' => 'Active', 'value' => $summary['active'], 'accent' => 'text-sky-700'],
-            ['label' => 'Completed', 'value' => $summary['completed'], 'accent' => 'text-emerald-700'],
-            ['label' => 'Off track', 'value' => $summary['off_track'], 'accent' => 'text-amber-700'],
-            ['label' => 'Avg progress', 'value' => $summary['avg_progress'].'%', 'accent' => 'text-[#8A6A1F]'],
+            ['label' => 'Members with goals', 'value' => $summary['member_count'], 'theme' => 'navy'],
+            ['label' => 'Total goals', 'value' => $summary['total_goals'], 'theme' => 'slate'],
+            ['label' => 'Active', 'value' => $summary['active'], 'theme' => 'cyan'],
+            ['label' => 'Completed', 'value' => $summary['completed'], 'theme' => 'emerald'],
+            ['label' => 'Off track', 'value' => $summary['off_track'], 'theme' => 'amber'],
+            ['label' => 'Avg progress', 'value' => $summary['avg_progress'].'%', 'theme' => 'gold'],
         ] as $card)
-            <div class="rounded-xl border border-white/60 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $card['label'] }}</p>
-                <p class="mt-2 text-2xl font-bold {{ $card['accent'] }}">{{ $card['value'] }}</p>
-            </div>
+            <x-tracker-stat-card
+                :label="$card['label']"
+                :value="$card['value']"
+                :theme="$card['theme']"
+            />
         @endforeach
     </div>
 

@@ -19,8 +19,11 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FnaManagementController;
 use App\Http\Controllers\ProspectActivityController;
 use App\Http\Controllers\ProspectManagementController;
+use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\ResourceDocumentsController;
+use App\Http\Controllers\ResourceHubController;
 use App\Http\Controllers\ResourceLinksController;
+use App\Http\Controllers\ResourceVideosController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TrackerChecklistController;
@@ -74,29 +77,54 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
         ->name('dashboard.stat-details');
 
 
-    Route::view('/messages', 'messages.index')->name('messages.index');
+    Route::get('/messages', \App\Livewire\Messaging\MessageCenter::class)->middleware('permission:view conversations')->name('messages.index');
 
-    Route::view('/search', 'search.index')->name('search.index');
+    Route::get('/search', [GlobalSearchController::class, 'index'])->name('search.index');
+    Route::get('/search/suggest', [GlobalSearchController::class, 'suggest'])->name('search.suggest');
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding.index');
     Route::patch('/onboarding/{step}', [OnboardingController::class, 'update'])->name('onboarding.update');
     Route::patch('/onboarding-progress/{progress}/review', [OnboardingController::class, 'review'])->name('onboarding.review');
     Route::get('/licensing', [TrackerChecklistController::class, 'licensing'])->name('licensing.index');
     Route::patch('/licensing/{step}', [TrackerChecklistController::class, 'updateLicensing'])->name('licensing.update');
     Route::patch('/licensing-progress/{progress}/review', [TrackerChecklistController::class, 'reviewLicensing'])->name('licensing.review');
+    Route::view('/compliance', 'compliance.index')->name('compliance.index');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+    Route::post('/tasks/{task}/comments', [TaskController::class, 'storeComment'])->name('tasks.comments.store');
     Route::get('/field-apprenticeship', [TrackerChecklistController::class, 'apprenticeship'])->name('apprenticeship.index');
     Route::patch('/field-apprenticeship/{step}', [TrackerChecklistController::class, 'updateApprenticeship'])->name('apprenticeship.update');
     Route::patch('/field-apprenticeship-progress/{progress}/review', [TrackerChecklistController::class, 'reviewApprenticeship'])->name('apprenticeship.review');
+    Route::post('/checklists/{typeCode}/start', [ChecklistTypeStartController::class, 'storeSelf'])->name('checklists.type.start');
     Route::get('/cfm-training', [TrackerChecklistController::class, 'cfmTraining'])->name('cfm-training.index');
     Route::patch('/cfm-training/{step}', [TrackerChecklistController::class, 'updateCfmTraining'])->name('cfm-training.update');
     Route::patch('/cfm-training-progress/{progress}/review', [TrackerChecklistController::class, 'reviewCfmTraining'])->name('cfm-training.review');
-    Route::get('/cfm/portal', [CfmPortalController::class, 'index'])->middleware('cfm.portal')->name('cfm.portal');
+    Route::get('/cfm/portal', \App\Livewire\Cfm\Portal::class)->middleware('cfm.portal')->name('cfm.portal');
+    Route::get('/cfm/portal/reports/{report}/download', [CfmPortalController::class, 'downloadReport'])->middleware('cfm.portal')->name('cfm.portal.reports.download');
+    Route::get('/cfm/portal/roster/export', [CfmPortalController::class, 'exportRoster'])->middleware('cfm.portal')->name('cfm.portal.roster.export');
     Route::patch('/cfm/portal/profile', [CfmPortalController::class, 'updateProfile'])->middleware('cfm.portal')->name('cfm.portal.profile.update');
     Route::patch('/cfm/portal/calendar-sharing', [CfmPortalController::class, 'updateCalendarSharing'])->middleware('cfm.portal')->name('cfm.portal.calendar-sharing.update');
     Route::post('/cfm/portal/assignments/{assignment}/confirm', [CfmPortalController::class, 'confirmAssignment'])->middleware('cfm.portal')->name('cfm.portal.assignments.confirm');
     Route::post('/cfm/portal/assignments/{assignment}/first-contact', [CfmPortalController::class, 'sendFirstContact'])->middleware('cfm.portal')->name('cfm.portal.assignments.first-contact');
     Route::get('/cfm/portal/trainees/{assignment}/checklist', [CfmTraineeChecklistController::class, 'show'])->middleware('cfm.portal')->name('cfm.portal.trainees.checklist');
     Route::patch('/cfm/portal/trainees/{assignment}/checklist/{item}', [CfmTraineeChecklistController::class, 'update'])->middleware('cfm.portal')->name('cfm.portal.trainees.checklist.update');
+
+    Route::prefix('cfm/effectiveness')->name('cfm.effectiveness.')->group(function () {
+        Route::view('/', 'cfm-effectiveness.index')->middleware('permission:view CFM effectiveness')->name('index');
+        Route::view('/reviews', 'cfm-effectiveness.reviews.index')->middleware('permission:view own mentor feedback requests')->name('reviews');
+        Route::get('/reviews/{review}', fn (\App\Models\CfmEffectiveness\CfmReview $review) => view('cfm-effectiveness.reviews.show', compact('review')))
+            ->middleware('permission:submit mentor feedback')
+            ->name('reviews.show');
+        Route::view('/evaluations', 'cfm-effectiveness.evaluations')->middleware('permission:manage CFM evaluations')->name('evaluations');
+        Route::view('/improvement', 'cfm-effectiveness.improvement')->middleware('permission:view CFM effectiveness')->name('improvement');
+        Route::view('/leaderboard', 'cfm-effectiveness.leaderboard')->middleware('permission:view CFM effectiveness')->name('leaderboard');
+        Route::view('/recognition', 'cfm-effectiveness.recognition')->middleware('permission:view CFM effectiveness')->name('recognition');
+        Route::view('/reports', 'cfm-effectiveness.reports')->middleware('permission:view CFM effectiveness|view CFM reports')->name('reports');
+        Route::get('/reports/{report}/download', [\App\Http\Controllers\CfmEffectivenessReportController::class, 'download'])
+            ->middleware('permission:view CFM effectiveness|view CFM reports')
+            ->name('reports.download');
+        Route::post('/reports/generate', [\App\Http\Controllers\CfmEffectivenessReportController::class, 'generate'])
+            ->middleware('permission:view CFM effectiveness|view CFM reports')
+            ->name('reports.generate');
+    });
     Route::view('/training', 'training.index')->name('training.index');
     Route::get('/training/courses/{module:slug}', [TrainingController::class, 'course'])->name('training.courses.show');
     Route::get('/training/courses/{module:slug}/lessons/{lesson}', [TrainingController::class, 'lesson'])->name('training.lessons.show');
@@ -132,6 +160,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/assessments/{assessment}/take', [AssessmentController::class, 'take'])->name('assessments.take');
     Route::get('/assessments/{assessment}/attempts/{attempt}', [AssessmentController::class, 'result'])->name('assessments.attempts.show');
     Route::view('/rank-advancement', 'rank-advancement.index')->name('rank-advancement.index');
+    Route::view('/team/production', 'team.production.index')->name('team.production');
     Route::get('/team', [DownlineController::class, 'index'])->middleware('permission:view own team')->name('team.index');
     Route::get('/team/tree', [DownlineController::class, 'tree'])->middleware('permission:view team tree')->name('team.tree');
     Route::get('/team/tree/search', [DownlineController::class, 'treeSearch'])->middleware('permission:view team tree')->name('team.tree.search');
@@ -141,6 +170,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/team/member/{user}', [DownlineController::class, 'member'])->middleware('permission:view own team')->name('team.member');
     Route::post('/team/member/{user}/checklist-types/{typeCode}/start', [ChecklistTypeStartController::class, 'store'])->middleware('permission:view own team')->name('team.member.checklist-type.start');
     Route::get('/team/member/{user}/profile', [ProfileController::class, 'showMember'])->middleware('permission:view own team')->name('team.member.profile');
+    Route::post('/team/member/{user}/production', [ProfileController::class, 'storeMemberProduction'])->middleware('permission:view own team')->name('team.member.production.store');
     Route::get('/team/member/{user}/tree', [DownlineController::class, 'tree'])->middleware('permission:view team tree')->name('team.member.tree');
     Route::get('/team/member/{user}/hierarchy', [DownlineController::class, 'hierarchyTable'])->middleware('permission:view team tree')->name('team.member.hierarchy');
     Route::get('/team/member/{user}/org-chart', [DownlineController::class, 'orgChart'])->middleware('permission:view org chart')->name('team.member.org-chart');
@@ -152,6 +182,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::post('/team/cfms/assign', [CfmManagementController::class, 'assign'])->middleware('cfm.management')->name('team.cfms.assign');
     Route::post('/team/cfms', [CfmManagementController::class, 'store'])->middleware('cfm.management')->name('team.cfms.store');
     Route::view('/team/downlines', 'team.downlines')->middleware('permission:view team')->name('team.downlines');
+    Route::view('/team/recruiting', 'team.recruiting.index')->middleware('permission:manage prospects')->name('team.recruiting.index');
     Route::get('/team/prospects', [ProspectManagementController::class, 'index'])->middleware('permission:manage prospects')->name('team.prospects');
     Route::get('/team/prospects/create', [ProspectManagementController::class, 'create'])->middleware('permission:manage prospects')->name('team.prospects.create');
     Route::get('/team/prospects/records/{prospect}', [ProspectManagementController::class, 'show'])->middleware('permission:manage prospects')->name('team.prospects.records.show');
@@ -207,7 +238,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
         ->middleware('permission:manage prospects')
         ->name('team.prospects.records.fna');
 
-    Route::view('/resources', 'resources.index')->name('resources.index');
+    Route::get('/resources', [ResourceHubController::class, 'index'])->name('resources.index');
     Route::get('/resources/documents', [ResourceDocumentsController::class, 'index'])->name('resources.documents');
     Route::get('/resources/documents/{portalResource}/preview', [ResourceDocumentsController::class, 'preview'])->name('resources.documents.preview');
     Route::get('/resources/documents/{portalResource}/view', [ResourceDocumentsController::class, 'view'])->name('resources.documents.view');
@@ -217,7 +248,9 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/resources/forms/associate-participation-agreement', [AssociateParticipationAgreementController::class, 'show'])->name('resources.forms.associate-participation-agreement');
     Route::post('/resources/forms/associate-participation-agreement', [AssociateParticipationAgreementController::class, 'store'])->name('resources.forms.associate-participation-agreement.store');
     Route::get('/resources/forms/associate-participation-agreement/download', [AssociateParticipationAgreementController::class, 'downloadPdf'])->name('resources.forms.associate-participation-agreement.download');
-    Route::view('/resources/videos', 'resources.videos')->name('resources.videos');
+    Route::get('/resources/videos', [ResourceVideosController::class, 'index'])->name('resources.videos');
+    Route::get('/resources/videos/{portalResource}/preview', [ResourceVideosController::class, 'preview'])->name('resources.videos.preview');
+    Route::post('/resources/videos/{portalResource}/favorite', [ResourceVideosController::class, 'toggleFavorite'])->name('resources.videos.favorite');
     Route::view('/resources/recorded-webinars', 'resources.recorded-webinars')->name('resources.recorded-webinars');
     Route::redirect('/resources/zoom-links', '/resources/links');
     Route::get('/resources/links', [ResourceLinksController::class, 'index'])->name('resources.links');
@@ -233,6 +266,12 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::patch('/calendar/categories/{category}', [CalendarController::class, 'updateCategory'])->middleware('permission:view calendar')->name('calendar.categories.update');
     Route::delete('/calendar/categories/{category}', [CalendarController::class, 'destroyCategory'])->middleware('permission:view calendar')->name('calendar.categories.destroy');
     Route::get('/calendar/settings', [CalendarController::class, 'settings'])->middleware('permission:view calendar')->name('calendar.settings');
+    Route::post('/calendar/schedule-blocks', [CalendarController::class, 'storeScheduleBlock'])->middleware('permission:view calendar')->name('calendar.schedule-blocks.store');
+    Route::patch('/calendar/schedule-blocks/{block}', [CalendarController::class, 'updateScheduleBlock'])->middleware('permission:view calendar')->name('calendar.schedule-blocks.update');
+    Route::delete('/calendar/schedule-blocks/{block}', [CalendarController::class, 'destroyScheduleBlock'])->middleware('permission:view calendar')->name('calendar.schedule-blocks.destroy');
+    Route::post('/calendar/schedule-block-overrides', [CalendarController::class, 'storeScheduleBlockOverride'])->middleware('permission:view calendar')->name('calendar.schedule-block-overrides.store');
+    Route::delete('/calendar/schedule-block-overrides/{override}', [CalendarController::class, 'destroyScheduleBlockOverride'])->middleware('permission:view calendar')->name('calendar.schedule-block-overrides.destroy');
+    Route::patch('/calendar/schedule-sharing', [CalendarController::class, 'updateScheduleSharing'])->middleware('permission:view calendar')->name('calendar.schedule-sharing.update');
     Route::get('/calendar/export', [CalendarController::class, 'export'])->middleware('permission:view calendar')->name('calendar.export');
     Route::get('/bookings', [BookingController::class, 'dashboard'])->middleware('permission:view booking dashboard')->name('bookings.dashboard');
     Route::get('/bookings/availability', [BookingController::class, 'availability'])->middleware('permission:manage own availability')->name('bookings.availability');
@@ -242,11 +281,38 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/bookings/my', [BookingController::class, 'myBookings'])->middleware('permission:view own bookings')->name('bookings.my');
     Route::get('/bookings/calendar', [BookingController::class, 'calendar'])->middleware('permission:view own bookings')->name('bookings.calendar');
     Route::get('/bookings/settings', [BookingController::class, 'settings'])->middleware('permission:manage booking settings')->name('bookings.settings');
-    Route::view('/recognition', 'recognition.index')->name('recognition.index');
-    Route::view('/announcements', 'announcements.index')->name('announcements.index');
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
+    Route::redirect('/recognition', '/communications/recognition')->name('recognition.index');
+    Route::redirect('/announcements', '/communications')->name('announcements.index');
+
+    Route::middleware('permission:view announcements|manage announcements')->prefix('communications')->name('communications.')->group(function (): void {
+        Route::get('/', \App\Livewire\Communication\CommunicationHub::class)->name('index');
+        Route::get('/bookmarks', \App\Livewire\Communication\AnnouncementBookmarks::class)->name('bookmarks');
+        Route::get('/archive', \App\Livewire\Communication\AnnouncementArchive::class)->name('archive');
+        Route::get('/recognition', \App\Livewire\Communication\RecognitionCenter::class)->name('recognition');
+        Route::get('/recognition/create', \App\Livewire\Communication\RecognitionComposer::class)
+            ->middleware('permission:manage recognition posts')
+            ->name('recognition.create');
+        Route::get('/leadership', \App\Livewire\Communication\LeadershipDesk::class)->name('leadership');
+        Route::get('/campaigns', \App\Livewire\Communication\CampaignCenter::class)->name('campaigns.index');
+        Route::get('/campaigns/create', \App\Livewire\Communication\CampaignComposer::class)
+            ->middleware('permission:manage campaigns')
+            ->name('campaigns.create');
+        Route::get('/campaigns/{campaign:slug}', \App\Livewire\Communication\CampaignShow::class)->name('campaigns.show');
+        Route::get('/events/create', \App\Livewire\Communication\EventAnnouncementComposer::class)
+            ->middleware('permission:create announcements|manage announcements')
+            ->name('events.create');
+        Route::get('/create', \App\Livewire\Communication\AnnouncementComposer::class)
+            ->middleware('permission:create announcements|manage announcements')
+            ->name('create');
+        Route::get('/{announcement:slug}', \App\Livewire\Communication\AnnouncementShow::class)->name('show');
+    });
+    Route::get('/notifications', \App\Livewire\Notifications\NotificationCenter::class)->middleware('permission:view notifications')->name('notifications.index');
+    Route::get('/notifications/preferences', \App\Livewire\Notifications\NotificationPreferences::class)->middleware('permission:manage own notification preferences')->name('notifications.preferences');
+    Route::get('/notifications/push/vapid-public-key', [\App\Http\Controllers\NotificationDeviceTokenController::class, 'vapidPublicKey'])->middleware('permission:manage own notification preferences')->name('notifications.push.vapid-public-key');
+    Route::post('/notifications/device-tokens', [\App\Http\Controllers\NotificationDeviceTokenController::class, 'store'])->middleware('permission:manage own notification preferences')->name('notifications.device-tokens.store');
+    Route::delete('/notifications/device-tokens', [\App\Http\Controllers\NotificationDeviceTokenController::class, 'destroy'])->middleware('permission:manage own notification preferences')->name('notifications.device-tokens.destroy');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->middleware('permission:view notifications')->name('notifications.mark-all-read');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->middleware('permission:view notifications')->name('notifications.mark-read');
 
     Route::prefix('support')->name('support.')->group(function (): void {
         Route::get('/', [SupportController::class, 'index'])
@@ -276,6 +342,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/production', [ProfileController::class, 'storeProduction'])->name('profile.production.store');
     Route::patch('/profile/licenses', [ProfileController::class, 'updateInsuranceLicenses'])->name('profile.licenses.update');
     Route::patch('/profile/invite-link', [ProfileController::class, 'updateInviteLink'])->name('profile.invite-link.update');
     Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
@@ -296,6 +363,8 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
                 Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
                 Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->withTrashed()->name('users.edit');
                 Route::patch('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
+                Route::patch('/users/{user}/messaging/suspend', [UserManagementController::class, 'suspendMessaging'])->name('users.messaging.suspend');
+                Route::patch('/users/{user}/messaging/restore', [UserManagementController::class, 'restoreMessaging'])->name('users.messaging.restore');
                 Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
                 Route::patch('/users/{user}/restore', [UserManagementController::class, 'restore'])->name('users.restore');
             });
@@ -324,6 +393,29 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
             Route::get('/training/paths', [\App\Http\Controllers\Admin\AdminTrainingController::class, 'paths'])->middleware('permission:manage training')->name('training.paths.index');
             Route::get('/training/paths/{path}', [\App\Http\Controllers\Admin\AdminTrainingController::class, 'path'])->middleware('permission:manage training')->name('training.paths.show');
             Route::view('/cfm-certification', 'admin.cfm.index')->middleware('permission:manage CFM certification')->name('cfm.index');
+            Route::prefix('notifications')
+                ->name('notifications.')
+                ->middleware('permission:view notification logs')
+                ->group(function (): void {
+                    Route::view('/', 'admin.notifications.index')->name('index');
+                    Route::view('/delivery-logs', 'admin.notifications.delivery-logs')->name('delivery-logs');
+                });
+            Route::prefix('communications')
+                ->name('communications.')
+                ->group(function (): void {
+                    Route::view('/', 'admin.communications.index')
+                        ->middleware('permission:view communication analytics')
+                        ->name('index');
+                    Route::view('/acknowledgements', 'admin.communications.acknowledgements')
+                        ->middleware('permission:view communication analytics')
+                        ->name('acknowledgements');
+                    Route::view('/broadcasts', 'admin.communications.broadcasts')
+                        ->middleware('permission:send broadcast')
+                        ->name('broadcasts');
+                    Route::view('/newsletters', 'admin.communications.newsletters')
+                        ->middleware('permission:manage newsletters')
+                        ->name('newsletters');
+                });
         });
 });
 

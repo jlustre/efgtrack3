@@ -177,15 +177,66 @@
             <div class="mb-4">
                 <div class="mb-2 flex items-center justify-between gap-2">
                     <h4 class="text-sm font-semibold text-[#0B1F3A]">Latest announcements</h4>
-                    @if (! empty($communications['team_route']))
-                        <a href="{{ route($communications['team_route']) }}" class="text-xs font-semibold text-[#C8A24A] hover:underline">View team</a>
+                    @if (! empty($communications['announcements_route']))
+                        <a href="{{ route($communications['announcements_route']) }}" class="text-xs font-semibold text-[#C8A24A] hover:underline">
+                            @if (($communications['announcements_unread_count'] ?? 0) > 0)
+                                {{ $communications['announcements_unread_count'] }} unread ·
+                            @endif
+                            View all
+                        </a>
                     @endif
                 </div>
+
+                @if (! empty($communications['announcements_featured']))
+                    <div class="mb-3">
+                        <livewire:communication.featured-announcements />
+                    </div>
+                @elseif (($communications['announcements_unread_count'] ?? 0) > 0)
+                    <div class="mb-3">
+                        <livewire:communication.featured-announcements />
+                    </div>
+                @endif
+
+                @if (! empty($communications['announcements_pending_critical']))
+                    <div class="mb-3 space-y-2">
+                        @foreach ($communications['announcements_pending_critical'] as $alert)
+                            <a
+                                href="{{ route('communications.show', $alert['slug']) }}"
+                                class="block rounded-md border border-red-200 bg-red-50 px-3 py-2 transition hover:border-red-300"
+                            >
+                                <div class="flex items-center gap-2">
+                                    <span class="rounded-full bg-red-600 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wide text-white">{{ ucfirst($alert['priority']) }}</span>
+                                    <span class="text-sm font-semibold text-red-900">{{ $alert['title'] }}</span>
+                                </div>
+                                @if (! empty($alert['summary']))
+                                    <p class="mt-1 text-xs text-red-700">{{ $alert['summary'] }}</p>
+                                @endif
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+
                 <ul class="space-y-2">
                     @forelse ($communications['announcements'] ?? [] as $announcement)
-                        <li class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2">
-                            <div class="text-sm font-semibold text-[#0B1F3A]">{{ $announcement['title'] }}</div>
-                            <p class="mt-0.5 text-xs text-slate-500">{{ $announcement['meta'] }}</p>
+                        <li @class([
+                            'rounded-md border px-3 py-2 transition hover:border-[#C8A24A]/40',
+                            'border-[#C8A24A]/30 bg-[#FFF9EA]' => $announcement['is_unread'] ?? false,
+                            'border-slate-100 bg-slate-50' => ! ($announcement['is_unread'] ?? false),
+                        ])>
+                            @if (! empty($announcement['slug']))
+                                <a href="{{ route('communications.show', $announcement['slug']) }}" class="block">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="text-sm font-semibold text-[#0B1F3A]">{{ $announcement['title'] }}</div>
+                                        @if ($announcement['is_unread'] ?? false)
+                                            <span class="shrink-0 rounded-full bg-[#C8A24A] px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wide text-[#0B1F3A]">New</span>
+                                        @endif
+                                    </div>
+                                    <p class="mt-0.5 text-xs text-slate-500">{{ $announcement['meta'] }}</p>
+                                </a>
+                            @else
+                                <div class="text-sm font-semibold text-[#0B1F3A]">{{ $announcement['title'] }}</div>
+                                <p class="mt-0.5 text-xs text-slate-500">{{ $announcement['meta'] }}</p>
+                            @endif
                         </li>
                     @empty
                         <li class="rounded-md border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">

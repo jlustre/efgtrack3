@@ -1,11 +1,23 @@
 @php
-    $linkClass = fn (bool $active) => 'flex items-center rounded-md px-3 py-2 text-sm font-medium transition '.($active
+    $linkClass = fn (bool $active) => 'efg-sidebar-top-link flex items-center rounded-md px-3 py-2 text-sm font-medium transition '.($active
         ? 'bg-[#C8A24A] text-[#0B1F3A]'
         : 'text-slate-200 hover:bg-white/10 hover:text-white');
 
-    $childLinkClass = fn (bool $active) => 'flex items-center rounded-md px-3 py-2 text-sm font-medium transition '.($active
+    $childLinkClass = fn (bool $active) => 'efg-sidebar-child-link flex items-center rounded-md px-3 py-2 text-sm font-medium transition '.($active
         ? 'bg-white text-[#0B1F3A]'
         : 'text-slate-300 hover:bg-white/10 hover:text-white');
+
+    $activeIsStrict = function (array $item): bool {
+        $patterns = $item['active'] ?? [$item['route']];
+
+        foreach ((array) $patterns as $pattern) {
+            if (str_contains($pattern, '*')) {
+                return false;
+            }
+        }
+
+        return true;
+    };
 
     $canSee = function (array $item): bool {
         if (! Route::has($item['route'])) {
@@ -59,10 +71,11 @@
     ];
 
     $topItems = array_merge($topItems, [
-        ['label' => 'My Messages', 'route' => 'messages.index', 'active' => ['messages.*']],
+        ['label' => 'My Messages', 'route' => 'messages.index', 'permissions' => ['view conversations'], 'active' => ['messages.*']],
         ['label' => 'Help & Support', 'route' => 'support.index', 'permissions' => ['submit support ticket'], 'active' => ['support.*']],
         ['label' => 'CFM Management', 'route' => 'team.cfms', 'access' => 'canAccessCfmManagement'],
         ['label' => 'CFM Portal', 'route' => 'cfm.portal', 'access' => 'canAccessCfmPortal'],
+        ['label' => 'CFM Effectiveness', 'route' => 'cfm.effectiveness.index', 'permissions' => ['view CFM effectiveness'], 'active' => ['cfm.effectiveness.*']],
     ]);
 
     $groups = [
@@ -72,9 +85,11 @@
                 ['label' => 'My Tasks', 'route' => 'tasks.index'],
                 ['label' => 'My Onboarding', 'route' => 'onboarding.index'],
                 ['label' => 'Licensing Tracker', 'route' => 'licensing.index'],
+                ['label' => 'Compliance & Renewals', 'route' => 'compliance.index'],
                 ['label' => 'Field Apprenticeship', 'route' => 'apprenticeship.index'],
                 ['label' => 'CFM Training', 'route' => 'cfm-training.index'],
                 ['label' => 'Training Center', 'route' => 'training.index'],
+                ['label' => 'Production Dashboard', 'route' => 'team.production', 'active' => ['team.production']],
                 ['label' => 'Goals & Performance', 'route' => 'goals.index', 'permissions' => ['manage goals'], 'active' => ['goals.*']],
                 ['label' => 'Assessments', 'route' => 'assessments.index'],
             ],
@@ -83,6 +98,7 @@
             'label' => 'My Team',
             'items' => [
                 ['label' => 'Downline Dashboard', 'route' => 'team.index', 'permissions' => ['view own team']],
+                ['label' => 'Agency Production', 'route' => 'team.production', 'permissions' => ['view own team'], 'active' => ['team.production']],
                 ['label' => 'Genealogy Tree', 'route' => 'team.tree', 'permissions' => ['view team tree']],
                 ['label' => 'Hierarchy Table', 'route' => 'team.hierarchy', 'permissions' => ['view team tree']],
                 ['label' => 'Org Chart', 'route' => 'team.org-chart', 'permissions' => ['view org chart']],
@@ -91,24 +107,28 @@
                 ['label' => 'My Trainees', 'route' => 'team.trainees', 'permissions' => ['view team']],
                 ['label' => 'All Downlines', 'route' => 'team.downlines', 'permissions' => ['view team']],
                 ['label' => 'Prospect Management', 'route' => 'team.prospects', 'permissions' => ['manage prospects']],
+                ['label' => 'Recruiting Pipeline', 'route' => 'team.recruiting.index', 'permissions' => ['manage prospects'], 'active' => ['team.recruiting.*']],
                 ['label' => 'FNA Management', 'route' => 'team.fna.dashboard', 'permissions' => ['manage fna records']],
             ],
         ],
         [
             'label' => 'Communications',
             'items' => [
-                ['label' => 'Announcements', 'route' => 'announcements.index'],
+                ['label' => 'Communication Hub', 'route' => 'communications.index'],
+                ['label' => 'Leadership Desk', 'route' => 'communications.leadership'],
                 ['label' => 'Events', 'route' => 'events.index'],
                 ['label' => 'Calendar', 'route' => 'calendar.index', 'active' => ['calendar.*']],
                 ['label' => 'Mentor Scheduling', 'route' => 'bookings.dashboard', 'active' => ['bookings.*'], 'permissions' => ['view booking dashboard']],
                 ['label' => 'Notifications', 'route' => 'notifications.index'],
                 ['label' => 'Rank Advancement', 'route' => 'rank-advancement.index'],
-                ['label' => 'Recognition', 'route' => 'recognition.index'],
+                ['label' => 'Recognition', 'route' => 'communications.recognition'],
+                ['label' => 'Campaigns', 'route' => 'communications.campaigns.index'],
             ],
         ],
         [
             'label' => 'Resources',
             'items' => [
+                ['label' => 'Library Home', 'route' => 'resources.index', 'active' => ['resources.index']],
                 ['label' => 'Documents', 'route' => 'resources.documents', 'active' => ['resources.documents']],
                 ['label' => 'Videos', 'route' => 'resources.videos', 'active' => ['resources.videos']],
                 ['label' => 'Recorded Webinars', 'route' => 'resources.recorded-webinars', 'active' => ['resources.recorded-webinars']],
@@ -134,6 +154,7 @@
                 ['label' => 'Booking Links', 'route' => 'admin.management.resource.index', 'params' => ['booking-links'], 'active_resource' => 'booking-links', 'roles' => ['super-admin', 'admin', 'agency-owner']],
                 ['label' => 'Bookings', 'route' => 'admin.management.resource.index', 'params' => ['bookings'], 'active_resource' => 'bookings', 'roles' => ['super-admin', 'admin', 'agency-owner']],
                 ['label' => 'Email Templates', 'route' => 'admin.management.resource.index', 'params' => ['email-templates'], 'active_resource' => 'email-templates', 'roles' => ['super-admin', 'admin']],
+                ['label' => 'Email Template Tokens', 'route' => 'admin.management.resource.index', 'params' => ['email-template-tokens'], 'active_resource' => 'email-template-tokens', 'roles' => ['super-admin', 'admin']],
                 ['label' => 'Training Setup', 'route' => 'admin.training.index', 'active' => ['admin.training.*'], 'permissions' => ['manage training']],
                 ['label' => 'CFM Certification', 'route' => 'admin.cfm.index', 'permissions' => ['manage CFM certification']],
                 ['label' => 'All Setup Tables', 'route' => 'admin.management.index', 'active' => ['admin.management.index'], 'roles' => ['super-admin', 'admin']],
@@ -173,10 +194,12 @@
 
         <a
             href="{{ route($item['route'], $item['params'] ?? []) }}"
+            wire:navigate
             class="{{ $linkClass($isActive($item)) }}"
             data-sidebar-link
             data-sidebar-group=""
             data-sidebar-item="{{ $itemKey }}"
+            data-active-strict="{{ $activeIsStrict($item) ? 'true' : 'false' }}"
             @if ($isActive($item)) data-server-active-item="{{ $itemKey }}" @endif
         >
             {{ $item['label'] }}
@@ -231,10 +254,12 @@
 
                         <a
                             href="{{ route($item['route'], $item['params'] ?? []) }}"
+                            wire:navigate
                             class="{{ $childLinkClass($isActive($item)) }}"
                             data-sidebar-link
                             data-sidebar-group="{{ $groupKey }}"
                             data-sidebar-item="{{ $itemKey }}"
+                            data-active-strict="{{ $activeIsStrict($item) ? 'true' : 'false' }}"
                             @if ($isActive($item)) data-server-active-item="{{ $itemKey }}" @endif
                         >
                             {{ $item['label'] }}
@@ -253,112 +278,4 @@
             </button>
         </form>
     @endauth
-
-    <script>
-        (() => {
-            const nav = document.getElementById('efg-sidebar-navigation');
-
-            if (! nav) {
-                return;
-            }
-
-            const openGroupsKey = 'efgtrack.sidebar.openGroups';
-            const buttons = [...nav.querySelectorAll('[data-sidebar-group-button]')];
-            const panels = [...nav.querySelectorAll('[data-sidebar-group-panel]')];
-
-            const readSavedOpenGroups = () => {
-                try {
-                    const raw = localStorage.getItem(openGroupsKey);
-
-                    return raw ? JSON.parse(raw) : null;
-                } catch {
-                    return null;
-                }
-            };
-
-            const persistOpenGroups = () => {
-                const open = buttons
-                    .filter((button) => button.dataset.open === 'true')
-                    .map((button) => button.dataset.sidebarGroup);
-
-                localStorage.setItem(openGroupsKey, JSON.stringify(open));
-            };
-
-            const setGroupOpen = (group, open) => {
-                const button = buttons.find((entry) => entry.dataset.sidebarGroup === group);
-                const panel = panels.find((entry) => entry.dataset.sidebarGroup === group);
-
-                if (! button || ! panel) {
-                    return;
-                }
-
-                button.dataset.open = open ? 'true' : 'false';
-                button.setAttribute('aria-expanded', open ? 'true' : 'false');
-                panel.hidden = ! open;
-            };
-
-            const toggleGroup = (group) => {
-                const button = buttons.find((entry) => entry.dataset.sidebarGroup === group);
-
-                if (! button) {
-                    return;
-                }
-
-                setGroupOpen(group, button.dataset.open !== 'true');
-                persistOpenGroups();
-            };
-
-            const serverActiveGroup = nav.dataset.serverActiveGroup || '';
-            const savedOpenGroups = readSavedOpenGroups();
-            let openGroups = savedOpenGroups ?? buttons
-                .filter((button) => button.dataset.open === 'true')
-                .map((button) => button.dataset.sidebarGroup);
-
-            if (serverActiveGroup && ! openGroups.includes(serverActiveGroup)) {
-                openGroups = [...openGroups, serverActiveGroup];
-            }
-
-            buttons.forEach((button) => {
-                setGroupOpen(button.dataset.sidebarGroup, openGroups.includes(button.dataset.sidebarGroup));
-            });
-
-            persistOpenGroups();
-
-            buttons.forEach((button) => {
-                button.addEventListener('click', () => {
-                    toggleGroup(button.dataset.sidebarGroup || '');
-                });
-            });
-
-            nav.querySelectorAll('[data-sidebar-link]').forEach((link) => {
-                link.addEventListener('pointerdown', () => {
-                    const group = link.dataset.sidebarGroup || '';
-
-                    if (! group) {
-                        return;
-                    }
-
-                    setGroupOpen(group, true);
-                    persistOpenGroups();
-                }, { capture: true });
-            });
-
-            window.addEventListener('pageshow', () => {
-                const restored = readSavedOpenGroups();
-
-                if (restored === null) {
-                    return;
-                }
-
-                buttons.forEach((button) => {
-                    setGroupOpen(button.dataset.sidebarGroup, restored.includes(button.dataset.sidebarGroup));
-                });
-
-                if (serverActiveGroup) {
-                    setGroupOpen(serverActiveGroup, true);
-                    persistOpenGroups();
-                }
-            });
-        })();
-    </script>
 </nav>

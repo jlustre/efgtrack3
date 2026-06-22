@@ -22,6 +22,24 @@ class ChecklistTypeStartController extends Controller
         abort_unless($this->checklists->canStartChecklistTypesFor($request->user(), $user), 403);
         abort_unless(in_array($typeCode, $this->checklists->memberFacingTypeCodes(), true), 404);
 
+        $redirectTo = back()->getTargetUrl();
+
+        return $this->startChecklist($request, $user, $typeCode, $redirectTo);
+    }
+
+    public function storeSelf(Request $request, string $typeCode): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless(in_array($typeCode, $this->checklists->memberFacingTypeCodes(), true), 404);
+        abort_unless($this->checklists->canStartChecklistTypesFor($user, $user), 403);
+
+        $redirectTo = route($this->checklists->indexRouteForType($typeCode));
+
+        return $this->startChecklist($request, $user, $typeCode, $redirectTo);
+    }
+
+    private function startChecklist(Request $request, User $user, string $typeCode, string $redirectTo): RedirectResponse
+    {
         $validated = $request->validate([
             'started_at' => ['required', 'date'],
         ]);
@@ -39,6 +57,8 @@ class ChecklistTypeStartController extends Controller
                 ->withInput();
         }
 
-        return back()->with('status', 'checklist-type-started');
+        return redirect()
+            ->to($redirectTo)
+            ->with('status', 'checklist-type-started');
     }
 }

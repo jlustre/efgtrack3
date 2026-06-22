@@ -10,9 +10,13 @@ use App\Models\CalendarEventNote;
 use App\Models\CalendarEventRecurrence;
 use App\Models\CalendarEventReminder;
 use App\Models\CalendarEventType;
+use App\Models\CalendarScheduleBlock;
+use App\Models\CalendarScheduleBlockOverride;
 use App\Models\User;
 use App\Models\UserCalendarPreference;
+use App\Services\CalendarScheduleBlockService;
 use App\Services\CalendarShareService;
+use App\Services\Notifications\NotificationOrchestrator;
 use App\Support\LocationOptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,7 +31,11 @@ use Illuminate\View\View;
 
 class CalendarController extends Controller
 {
-    public function __construct(private readonly CalendarShareService $calendarShare) {}
+    public function __construct(
+        private readonly CalendarShareService $calendarShare,
+        private readonly CalendarScheduleBlockService $scheduleBlocks,
+        private readonly NotificationOrchestrator $notifications,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -149,6 +157,33 @@ class CalendarController extends Controller
                 'attendee_type' => 'user',
                 'rsvp_status' => 'pending',
             ]));
+
+        $attendeeIds = collect($validated['attendee_user_ids'] ?? [])
+            ->unique()
+            ->reject(fn (int|string $userId): bool => (int) $userId === $request->user()->id)
+            ->map(fn (int|string $userId) => (int) $userId)
+            ->values()
+            ->all();
+
+        if ($validated['status'] === 'scheduled' && $attendeeIds !== []) {
+            $this->notifications->dispatch('calendar_event_invited', [
+                'queue' => true,
+                'sender' => $request->user(),
+                'recipients' => ['user_ids' => $attendeeIds],
+                'module' => 'calendar',
+                'priority' => 'medium',
+                'related' => ['type' => CalendarEvent::class, 'id' => $event->id],
+                'template_data' => [
+                    'event_title' => $event->title,
+                    'organizer_name' => $request->user()->name,
+                    'session_time' => $event->starts_at?->format('M j, Y g:i A') ?? '',
+                ],
+                'action_link' => [
+                    'route' => 'calendar.index',
+                    'label' => 'View calendar',
+                ],
+            ]);
+        }
 
         if (filled($validated['external_attendee_email'] ?? null) || filled($validated['external_attendee_name'] ?? null)) {
             CalendarEventAttendee::create([
@@ -296,15 +331,103 @@ class CalendarController extends Controller
 
     public function settings(Request $request): View
     {
+        $user = $request->user();
         $preference = UserCalendarPreference::firstOrCreate(
-            ['user_id' => $request->user()->id],
-            ['timezone' => $request->user()->profile?->timezone ?? config('app.timezone')]
+            ['user_id' => $user->id],
+            [
+                'timezone' => $user->profile?->timezone ?? config('app.timezone'),
+                'share_schedule_blocks_with_mentor' => true,
+            ]
         );
 
         return view('events.settings', [
             'preference' => $preference,
-            'categories' => $this->visibleCategories($request->user()),
+            'categories' => $this->visibleCategories($user),
+            'weeklyBlocks' => $this->scheduleBlocks->weeklyBlocksFor($user),
+            'blockOverrides' => $this->scheduleBlocks->overridesFor($user),
+            'blockTypes' => CalendarScheduleBlock::TYPES,
+            'weekdayLabels' => $this->weekdayLabels(),
         ]);
+    }
+
+    public function storeScheduleBlock(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->hasPermissionTo('view calendar'), 403);
+
+        $validated = $this->validateScheduleBlock($request);
+
+        $this->scheduleBlocks->storeWeeklyBlock($request->user(), $validated);
+
+        return redirect()
+            ->to($this->safeReturnUrl($validated['return_to'] ?? route('calendar.settings')))
+            ->with('status', 'Weekly schedule block saved.');
+    }
+
+    public function updateScheduleBlock(Request $request, CalendarScheduleBlock $block): RedirectResponse
+    {
+        abort_unless($block->user_id === $request->user()->id, 403);
+
+        $validated = $this->validateScheduleBlock($request);
+
+        $this->scheduleBlocks->updateWeeklyBlock($block, $validated);
+
+        return redirect()
+            ->to($this->safeReturnUrl($validated['return_to'] ?? route('calendar.settings')))
+            ->with('status', 'Schedule block updated.');
+    }
+
+    public function destroyScheduleBlock(Request $request, CalendarScheduleBlock $block): RedirectResponse
+    {
+        abort_unless($block->user_id === $request->user()->id, 403);
+
+        $block->delete();
+
+        return redirect()
+            ->to($this->safeReturnUrl($request->input('return_to', route('calendar.settings'))))
+            ->with('status', 'Schedule block removed.');
+    }
+
+    public function storeScheduleBlockOverride(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->hasPermissionTo('view calendar'), 403);
+
+        $validated = $this->validateScheduleBlockOverride($request);
+
+        $this->scheduleBlocks->storeOverride($request->user(), $validated);
+
+        return redirect()
+            ->to($this->safeReturnUrl($validated['return_to'] ?? route('calendar.settings')))
+            ->with('status', 'Date block saved.');
+    }
+
+    public function destroyScheduleBlockOverride(Request $request, CalendarScheduleBlockOverride $override): RedirectResponse
+    {
+        abort_unless($override->user_id === $request->user()->id, 403);
+
+        $override->delete();
+
+        return redirect()
+            ->to($this->safeReturnUrl($request->input('return_to', route('calendar.settings'))))
+            ->with('status', 'Date block removed.');
+    }
+
+    public function updateScheduleSharing(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->hasPermissionTo('view calendar'), 403);
+
+        $validated = $request->validate([
+            'share_schedule_blocks_with_mentor' => ['nullable', 'boolean'],
+            'return_to' => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        $this->scheduleBlocks->updateSharingPreference(
+            $request->user(),
+            (bool) ($validated['share_schedule_blocks_with_mentor'] ?? false)
+        );
+
+        return redirect()
+            ->to($this->safeReturnUrl($validated['return_to'] ?? route('calendar.settings')))
+            ->with('status', 'Availability sharing updated.');
     }
 
     public function export(Request $request): Response
@@ -369,6 +492,10 @@ class CalendarController extends Controller
             ->limit(8)
             ->get();
 
+        $user = $request->user();
+        $ownScheduleBlocksByDate = $this->scheduleBlocks->expandedBlocksByDate($user, $rangeStart, $rangeEnd);
+        $sharedScheduleBlocksByDate = $this->scheduleBlocks->sharedExpandedBlocksByDate($user, $rangeStart, $rangeEnd);
+
         return view('events.index', [
             'viewMode' => $viewMode,
             'currentDate' => $currentDate,
@@ -388,6 +515,9 @@ class CalendarController extends Controller
             'eventTimezones' => LocationOptions::timezones(),
             'selectedCalendarIds' => $selectedCalendarIds,
             'sharedMentorCalendars' => $sharedMentorCalendars,
+            'sharedScheduleBlockOwners' => $this->calendarShare->sharedScheduleBlockOwnersFor($request->user()),
+            'ownScheduleBlocksByDate' => $ownScheduleBlocksByDate,
+            'sharedScheduleBlocksByDate' => $sharedScheduleBlocksByDate,
             'stats' => $this->stats($events, $upcomingEvents),
             'filters' => $request->only(['q', 'category', 'category_ids', 'calendars_filter', 'type', 'status', 'visibility']),
             'previousDate' => $this->shiftedDate($currentDate, $viewMode, -1),
@@ -694,6 +824,50 @@ class CalendarController extends Controller
         }
 
         return $days;
+    }
+
+    private function validateScheduleBlock(Request $request): array
+    {
+        return $request->validate([
+            'block_type' => ['required', Rule::in(array_keys(CalendarScheduleBlock::TYPES))],
+            'label' => ['nullable', 'string', 'max:120'],
+            'weekday' => ['required', 'integer', 'min:1', 'max:7'],
+            'starts_at' => ['required', 'date_format:H:i'],
+            'ends_at' => ['required', 'date_format:H:i', 'after:starts_at'],
+            'is_shared' => ['nullable', 'boolean'],
+            'return_to' => ['nullable', 'string', 'max:2048'],
+        ]);
+    }
+
+    private function validateScheduleBlockOverride(Request $request): array
+    {
+        return $request->validate([
+            'block_date' => ['required', 'date', 'after_or_equal:today'],
+            'block_type' => ['required', Rule::in(array_keys(CalendarScheduleBlock::TYPES))],
+            'label' => ['nullable', 'string', 'max:120'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'is_all_day' => ['nullable', 'boolean'],
+            'starts_at' => ['nullable', 'required_unless:is_all_day,1', 'date_format:H:i'],
+            'ends_at' => ['nullable', 'required_unless:is_all_day,1', 'date_format:H:i', 'after:starts_at'],
+            'is_shared' => ['nullable', 'boolean'],
+            'return_to' => ['nullable', 'string', 'max:2048'],
+        ]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function weekdayLabels(): array
+    {
+        return [
+            1 => 'Monday',
+            2 => 'Tuesday',
+            3 => 'Wednesday',
+            4 => 'Thursday',
+            5 => 'Friday',
+            6 => 'Saturday',
+            7 => 'Sunday',
+        ];
     }
 
     private function stats(Collection $events, Collection $upcomingEvents): array

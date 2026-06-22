@@ -13,7 +13,7 @@ export default defineConfig({
         }),
     ],
     server: {
-        host: '127.0.0.1',
+        host: 'efgtrack.test',
         port: 5173,
     },
 });

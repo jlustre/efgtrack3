@@ -269,3 +269,10 @@
         @enderror
     </div>
 @endforeach
+
+@if (($resource ?? null) === 'email-templates')
+    @include('admin.management.partials.email-template-token-values', [
+        'config' => $config,
+        'record' => $record ?? null,
+    ])
+@endif

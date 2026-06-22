@@ -58,8 +58,6 @@
                 <header class="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 shadow-sm lg:px-8">
                     @php
                         $user = auth()->user();
-                        $topbarUnreadNotificationCount = $user?->unreadNotifications()->count() ?? 0;
-                        $topbarNotifications = $user?->notifications()->latest()->limit(3)->get() ?? collect();
                         $openTaskCount = $user ? app(\App\Http\Controllers\TaskController::class)->openTaskCountFor($user) : 0;
                         $user?->loadMissing(['profile', 'rank']);
                     @endphp
@@ -77,25 +75,94 @@
                             <span class="mt-1 block h-0.5 w-5 bg-current"></span>
                         </button>
 
-                        <form method="GET" action="{{ route('search.index') }}" class="order-3 w-full sm:order-none sm:min-w-72 sm:max-w-md sm:flex-1 lg:max-w-xl">
-                            <label for="topbar-search" class="sr-only">Search EFGTrack</label>
-                            <div class="relative">
-                                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
-                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <circle cx="11" cy="11" r="7"></circle>
-                                        <path d="m20 20-3.5-3.5"></path>
-                                    </svg>
-                                </span>
-                                <input
-                                    id="topbar-search"
-                                    name="q"
-                                    value="{{ request('q') }}"
-                                    type="search"
-                                    placeholder="Search members, training, resources..."
-                                    class="h-10 w-full rounded-full border-slate-200 bg-slate-50 pl-10 pr-4 text-sm shadow-sm transition focus:border-[#C8A24A] focus:bg-white focus:ring-[#C8A24A]"
-                                >
-                            </div>
-                        </form>
+                        @auth
+                            <form
+                                method="GET"
+                                action="{{ route('search.index') }}"
+                                class="order-3 w-full sm:order-none sm:min-w-72 sm:max-w-md sm:flex-1 lg:max-w-xl"
+                                x-data="globalSearch()"
+                                x-on:keydown.escape.window="open = false"
+                            >
+                                <label for="topbar-search" class="sr-only">Search EFGTrack</label>
+                                <div class="relative">
+                                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <circle cx="11" cy="11" r="7"></circle>
+                                            <path d="m20 20-3.5-3.5"></path>
+                                        </svg>
+                                    </span>
+                                    <input
+                                        id="topbar-search"
+                                        x-ref="searchInput"
+                                        name="q"
+                                        x-model="query"
+                                        x-on:input="onInput()"
+                                        x-on:focus="query.trim().length >= 2 && (open = true)"
+                                        x-on:blur="closeSuggestions()"
+                                        value="{{ request('q') }}"
+                                        type="search"
+                                        placeholder="Search members, training, resources..."
+                                        autocomplete="off"
+                                        class="h-10 w-full rounded-full border-slate-200 bg-slate-50 pl-10 pr-4 text-sm shadow-sm transition focus:border-[#C8A24A] focus:bg-white focus:ring-[#C8A24A]"
+                                    >
+
+                                    <div
+                                        x-show="open && (loading || results.length > 0 || query.trim().length >= 2)"
+                                        x-cloak
+                                        class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+                                    >
+                                        <template x-if="loading">
+                                            <div class="px-4 py-3 text-sm text-slate-500">Searching...</div>
+                                        </template>
+                                        <template x-if="! loading && results.length === 0 && query.trim().length >= 2">
+                                            <div class="px-4 py-3 text-sm text-slate-500">No quick matches. Press Enter for full results.</div>
+                                        </template>
+                                        <ul x-show="results.length > 0" class="max-h-80 divide-y divide-slate-100 overflow-y-auto">
+                                            <template x-for="result in results" :key="result.url">
+                                                <li>
+                                                    <a
+                                                        :href="result.url"
+                                                        class="block px-4 py-3 transition hover:bg-[#FFF9EA]"
+                                                    >
+                                                        <p class="text-sm font-semibold text-[#0B1F3A]" x-text="result.title"></p>
+                                                        <p class="mt-0.5 text-xs text-slate-500">
+                                                            <span x-text="result.type"></span>
+                                                            <span x-show="result.subtitle"> · </span>
+                                                            <span x-text="result.subtitle"></span>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                        <div class="border-t border-slate-100 bg-slate-50 px-4 py-2">
+                                            <button type="submit" class="text-xs font-semibold text-[#8A6A1F] hover:underline">
+                                                View all results
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        @else
+                            <form method="GET" action="{{ route('search.index') }}" class="order-3 w-full sm:order-none sm:min-w-72 sm:max-w-md sm:flex-1 lg:max-w-xl">
+                                <label for="topbar-search" class="sr-only">Search EFGTrack</label>
+                                <div class="relative">
+                                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <circle cx="11" cy="11" r="7"></circle>
+                                            <path d="m20 20-3.5-3.5"></path>
+                                        </svg>
+                                    </span>
+                                    <input
+                                        id="topbar-search"
+                                        name="q"
+                                        value="{{ request('q') }}"
+                                        type="search"
+                                        placeholder="Search members, training, resources..."
+                                        class="h-10 w-full rounded-full border-slate-200 bg-slate-50 pl-10 pr-4 text-sm shadow-sm transition focus:border-[#C8A24A] focus:bg-white focus:ring-[#C8A24A]"
+                                    >
+                                </div>
+                            </form>
+                        @endauth
 
                         <div class="ml-auto flex items-center gap-2 sm:gap-3">
                             @auth
@@ -116,69 +183,7 @@
                                     @endif
                                 </a>
 
-                                <x-dropdown align="right" width="80" contentClasses="bg-white p-0">
-                                    <x-slot name="trigger">
-                                        <button type="button" title="{{ $topbarUnreadNotificationCount > 0 ? $topbarUnreadNotificationCount.' unread notifications' : 'Notifications' }}" class="efg-icon-btn-lg relative">
-                                            <span class="sr-only">Open notifications</span>
-                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-                                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                                            </svg>
-                                            @if ($topbarUnreadNotificationCount > 0)
-                                            <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#C8A24A] px-1 text-[0.65rem] font-bold text-[#0B1F3A]">
-                                                {{ $topbarUnreadNotificationCount }}
-                                            </span>
-                                            @endif
-                                        </button>
-                                    </x-slot>
-
-                                    <x-slot name="content">
-                                        <div class="w-80 max-w-[calc(100vw-2rem)]">
-                                            <div class="border-b border-slate-100 px-4 py-3">
-                                                <div class="text-sm font-semibold text-[#0B1F3A]">Notifications</div>
-                                                <div class="text-xs text-slate-500">{{ $topbarUnreadNotificationCount }} unread update{{ $topbarUnreadNotificationCount === 1 ? '' : 's' }}</div>
-                                            </div>
-
-                                            <div class="max-h-72 overflow-y-auto py-1">
-                                                @forelse ($topbarNotifications as $notification)
-                                                    <div class="flex gap-2 px-4 py-3 transition hover:bg-slate-50">
-                                                        <a href="{{ route('notifications.index') }}" class="min-w-0 flex-1">
-                                                            <div class="text-sm font-medium text-[#0B1F3A]">
-                                                                {{ data_get($notification->data, 'title', 'Portal notification') }}
-                                                            </div>
-                                                            <div class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-                                                                {{ data_get($notification->data, 'message', 'Open notifications to review the latest portal activity.') }}
-                                                            </div>
-                                                        </a>
-                                                        @unless ($notification->read())
-                                                            <form method="POST" action="{{ route('notifications.mark-read', $notification->id) }}">
-                                                                @csrf
-                                                                <button type="submit" title="Mark as read" class="efg-icon-btn mt-0.5">
-                                                                    <span class="sr-only">Mark as read</span>
-                                                                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                                        <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.25 7.32a1 1 0 0 1-1.42.002L3.29 9.776a1 1 0 1 1 1.334-1.49l4.04 3.617 6.62-6.688a1 1 0 0 1 1.414-.006Z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                </button>
-                                                            </form>
-                                                        @endunless
-                                                    </div>
-                                                @empty
-                                                    <div class="px-4 py-6 text-sm text-slate-500">
-                                                        No notifications yet.
-                                                    </div>
-                                                @endforelse
-                                            </div>
-
-                                            <div class="grid grid-cols-2 border-t border-slate-100">
-                                                <a href="{{ route('notifications.index') }}" class="px-4 py-3 text-center text-sm font-semibold text-[#0B1F3A] hover:bg-slate-50">View All</a>
-                                                <form method="POST" action="{{ route('notifications.mark-all-read') }}" class="border-l border-slate-100">
-                                                    @csrf
-                                                    <button type="submit" class="block w-full px-4 py-3 text-center text-sm font-semibold text-[#0B1F3A] hover:bg-slate-50">Mark All Read</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </x-slot>
-                                </x-dropdown>
+                                <livewire:notifications.notification-bell />
 
                                 <x-dropdown align="right" width="64" contentClasses="bg-white p-0">
                                     <x-slot name="trigger">
@@ -229,6 +234,11 @@
                         </div>
                     </div>
                 </header>
+
+                @auth
+                    <livewire:notifications.critical-alert-banner />
+                    <livewire:communication.communication-critical-banner />
+                @endauth
 
                 <main class="flex-1 px-4 py-6 lg:px-8">
                     {{ $slot ?? '' }}

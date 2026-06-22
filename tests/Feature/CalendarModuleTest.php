@@ -150,7 +150,9 @@ class CalendarModuleTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('name="category_ids[]"', false)
-            ->assertSee('New Associate Fast Start', false)
+            ->assertSee('New Associate Fast Start', false);
+
+        $this->assertSame(
             [$training->id],
             UserCalendarPreference::where('user_id', $user->id)->firstOrFail()->visible_calendar_categories
         );

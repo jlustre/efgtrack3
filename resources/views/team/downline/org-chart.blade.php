@@ -19,20 +19,24 @@
             </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-            @foreach ([
-                'Total Members' => $branchSummary['total_team'],
-                'Direct Recruits' => $branchSummary['direct_recruits'],
-                'Active Members' => $branchSummary['active_associates'],
-                'Licensed' => $branchSummary['licensed_associates'],
-                'New This Month' => $branchSummary['new_this_month'],
-                'Training Avg' => $branchSummary['training_average'].'%',
-            ] as $label => $value)
-                <div class="rounded-lg border border-slate-400 bg-gradient-to-br from-white via-[#F8FAFC] to-[#FFF9EA] p-4 shadow-sm">
-                    <div class="text-xs font-bold uppercase tracking-wide text-slate-500">{{ $label }}</div>
-                    <div class="mt-2 text-xl font-semibold text-[#0B1F3A]">{{ $value }}</div>
-                </div>
-            @endforeach
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+            <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+                @foreach ([
+                    ['label' => 'Total Members', 'value' => $branchSummary['total_team'], 'theme' => 'navy', 'subtitle' => 'Across this branch'],
+                    ['label' => 'Direct Recruits', 'value' => $branchSummary['direct_recruits'], 'theme' => 'cyan', 'subtitle' => 'First-level recruits'],
+                    ['label' => 'Active Members', 'value' => $branchSummary['active_associates'], 'theme' => 'emerald', 'subtitle' => 'Currently active'],
+                    ['label' => 'Licensed', 'value' => $branchSummary['licensed_associates'], 'theme' => 'gold', 'subtitle' => 'Licensed associates'],
+                    ['label' => 'New This Month', 'value' => $branchSummary['new_this_month'], 'theme' => 'violet', 'subtitle' => 'Recent additions'],
+                    ['label' => 'Training Avg', 'value' => $branchSummary['training_average'].'%', 'theme' => 'slate', 'subtitle' => 'Team training completion'],
+                ] as $card)
+                    <x-tracker-stat-card
+                        :label="$card['label']"
+                        :value="$card['value']"
+                        :subtitle="$card['subtitle']"
+                        :theme="$card['theme']"
+                    />
+                @endforeach
+            </div>
         </div>
 
         <div

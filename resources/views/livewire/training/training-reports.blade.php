@@ -50,38 +50,22 @@
     </div>
 
     <div class="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-[#0B1F3A]">{{ $preview['summary']['lessons_completed'] }}</p>
-            <p class="text-xs uppercase text-slate-500">Lessons completed</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-emerald-700">{{ $preview['summary']['courses_completed'] }}</p>
-            <p class="text-xs uppercase text-slate-500">Courses completed</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-sky-700">{{ $preview['summary']['assessments_passed'] }}</p>
-            <p class="text-xs uppercase text-slate-500">Assessments passed</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-[#8A6A1F]">{{ $preview['summary']['certifications_issued'] }}</p>
-            <p class="text-xs uppercase text-slate-500">Certifications issued</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-violet-700">{{ $preview['summary']['training_hours'] }}h</p>
-            <p class="text-xs uppercase text-slate-500">Training hours</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-[#0B1F3A]">{{ $preview['summary']['avg_course_progress'] }}%</p>
-            <p class="text-xs uppercase text-slate-500">Avg course progress</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-red-700">{{ $preview['summary']['assignments_overdue'] }}</p>
-            <p class="text-xs uppercase text-slate-500">Overdue assignments</p>
-        </div>
-        <div class="rounded-lg bg-slate-50 p-4 text-center">
-            <p class="text-2xl font-bold text-[#0B1F3A]">{{ $preview['summary']['active_learners'] }}</p>
-            <p class="text-xs uppercase text-slate-500">Active learners</p>
-        </div>
+        @foreach ([
+            ['label' => 'Lessons completed', 'value' => $preview['summary']['lessons_completed'], 'theme' => 'navy'],
+            ['label' => 'Courses completed', 'value' => $preview['summary']['courses_completed'], 'theme' => 'emerald'],
+            ['label' => 'Assessments passed', 'value' => $preview['summary']['assessments_passed'], 'theme' => 'cyan'],
+            ['label' => 'Certifications issued', 'value' => $preview['summary']['certifications_issued'], 'theme' => 'gold'],
+            ['label' => 'Training hours', 'value' => $preview['summary']['training_hours'].'h', 'theme' => 'violet'],
+            ['label' => 'Avg course progress', 'value' => $preview['summary']['avg_course_progress'].'%', 'theme' => 'slate'],
+            ['label' => 'Overdue assignments', 'value' => $preview['summary']['assignments_overdue'], 'theme' => 'red'],
+            ['label' => 'Active learners', 'value' => $preview['summary']['active_learners'], 'theme' => 'navy'],
+        ] as $card)
+            <x-tracker-stat-card
+                :label="$card['label']"
+                :value="$card['value']"
+                :theme="$card['theme']"
+            />
+        @endforeach
     </div>
 
     <div class="grid gap-6 border-t border-slate-100 p-4 lg:grid-cols-2">

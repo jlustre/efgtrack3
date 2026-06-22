@@ -18,9 +18,12 @@ export default function prospectActivitiesModal() {
         return local.toISOString().slice(0, 16);
     };
 
-    const defaultForm = () => ({
+    const defaultForm = (pipelineStageId = '') => ({
         id: null,
-        activity_type: 'call',
+        activity_type: 'phone_call',
+        pipeline_stage_id: pipelineStageId !== null && pipelineStageId !== undefined && pipelineStageId !== ''
+            ? String(pipelineStageId)
+            : '',
         subject: '',
         notes: '',
         occurred_at: toLocalInput(new Date().toISOString()),
@@ -35,6 +38,8 @@ export default function prospectActivitiesModal() {
         saving: false,
         prospect: null,
         activities: [],
+        pipelineStages: [],
+        currentPipelineStageId: '',
         formMode: 'create',
         form: defaultForm(),
         error: null,
@@ -50,6 +55,8 @@ export default function prospectActivitiesModal() {
             this.prospect = prospect;
             this.open = true;
             this.error = null;
+            this.pipelineStages = [];
+            this.currentPipelineStageId = '';
             this.resetForm();
             this.loadActivities();
         },
@@ -58,6 +65,8 @@ export default function prospectActivitiesModal() {
             this.open = false;
             this.prospect = null;
             this.activities = [];
+            this.pipelineStages = [];
+            this.currentPipelineStageId = '';
             this.error = null;
             this.resetForm();
         },
@@ -84,6 +93,14 @@ export default function prospectActivitiesModal() {
 
                 const data = await response.json();
                 this.activities = data.activities ?? [];
+                this.pipelineStages = data.pipeline_stages ?? [];
+                this.currentPipelineStageId = data.current_pipeline_stage_id
+                    ? String(data.current_pipeline_stage_id)
+                    : '';
+
+                if (this.formMode === 'create') {
+                    this.form.pipeline_stage_id = this.currentPipelineStageId;
+                }
             } catch (error) {
                 this.error = error.message || 'Could not load activities.';
             } finally {
@@ -93,7 +110,7 @@ export default function prospectActivitiesModal() {
 
         resetForm() {
             this.formMode = 'create';
-            this.form = defaultForm();
+            this.form = defaultForm(this.currentPipelineStageId);
         },
 
         editActivity(activity) {
@@ -101,6 +118,9 @@ export default function prospectActivitiesModal() {
             this.form = {
                 id: activity.id,
                 activity_type: activity.activity_type,
+                pipeline_stage_id: activity.pipeline_stage_id
+                    ? String(activity.pipeline_stage_id)
+                    : this.currentPipelineStageId,
                 subject: activity.subject ?? '',
                 notes: activity.notes ?? '',
                 occurred_at: toLocalInput(activity.occurred_at),
@@ -108,6 +128,17 @@ export default function prospectActivitiesModal() {
                 next_action: activity.next_action ?? '',
                 next_follow_up_at: toLocalInput(activity.next_follow_up_at),
             };
+        },
+
+        buildPayload() {
+            const payload = {
+                ...this.form,
+                pipeline_stage_id: this.form.pipeline_stage_id
+                    ? Number(this.form.pipeline_stage_id)
+                    : null,
+            };
+
+            return payload;
         },
 
         async saveActivity() {
@@ -133,7 +164,7 @@ export default function prospectActivitiesModal() {
                         'X-CSRF-TOKEN': csrfToken,
                         'X-Requested-With': 'XMLHttpRequest',
                     },
-                    body: JSON.stringify(this.form),
+                    body: JSON.stringify(this.buildPayload()),
                 });
 
                 const data = await response.json().catch(() => ({}));
@@ -154,6 +185,10 @@ export default function prospectActivitiesModal() {
                     }
                 } else {
                     this.activities.unshift(data.activity);
+                }
+
+                if (data.current_pipeline_stage_id) {
+                    this.currentPipelineStageId = String(data.current_pipeline_stage_id);
                 }
 
                 this.resetForm();

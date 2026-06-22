@@ -110,6 +110,70 @@ class CalendarShareService
         ]);
     }
 
+    /**
+     * @return Collection<int, User>
+     */
+    public function sharedScheduleBlockOwnersFor(User $viewer): Collection
+    {
+        $owners = collect();
+
+        if ($viewer->mentor_id) {
+            $mentor = User::query()->with('cfmMentorProfile')->find($viewer->mentor_id);
+            if ($mentor && $this->cfmSharesScheduleBlocksWithApprentices($mentor)) {
+                $owners->push($mentor);
+            }
+        }
+
+        $assignedMentors = User::query()
+            ->role('certified-field-mentor')
+            ->whereIn('id', MentorAssignment::query()
+                ->where('apprentice_id', $viewer->id)
+                ->where('status', 'active')
+                ->pluck('mentor_id'))
+            ->with('cfmMentorProfile')
+            ->get()
+            ->filter(fn (User $cfm): bool => $this->cfmSharesScheduleBlocksWithApprentices($cfm));
+
+        $owners = $owners->merge($assignedMentors)->unique('id');
+
+        if ($viewer->hasRole('certified-field-mentor')) {
+            $apprenticeIds = MentorAssignment::query()
+                ->where('mentor_id', $viewer->id)
+                ->where('status', 'active')
+                ->pluck('apprentice_id');
+
+            $apprentices = User::query()
+                ->whereIn('id', $apprenticeIds)
+                ->with('calendarPreference')
+                ->get()
+                ->filter(fn (User $apprentice): bool => $this->apprenticeSharesScheduleBlocksWithMentor($apprentice));
+
+            $owners = $owners->merge($apprentices)->unique('id');
+        }
+
+        return $owners
+            ->reject(fn (User $owner): bool => $owner->id === $viewer->id)
+            ->values();
+    }
+
+    public function cfmSharesScheduleBlocksWithApprentices(User $cfm): bool
+    {
+        if (! $cfm->hasRole('certified-field-mentor')) {
+            return false;
+        }
+
+        $profile = $cfm->cfmMentorProfile;
+
+        return $profile?->share_calendar_with_apprentices ?? true;
+    }
+
+    public function apprenticeSharesScheduleBlocksWithMentor(User $apprentice): bool
+    {
+        $preference = $apprentice->calendarPreference;
+
+        return $preference?->share_schedule_blocks_with_mentor ?? true;
+    }
+
     private function mentorProfile(User $cfm): CfmMentorProfile
     {
         return CfmMentorProfile::firstOrCreate(

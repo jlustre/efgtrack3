@@ -13,8 +13,10 @@ class DatabaseSeeder extends Seeder
      */
     protected array $requiredSeeders = [
         RankSeeder::class,
+        RankRequirementSeeder::class,
         RolePermissionSeeder::class,
         EmailTemplateSeeder::class,
+        EmailTemplateTokenSeeder::class,
         CountrySeeder::class,
         StateProvinceSeeder::class,
         TimezoneSeeder::class,
@@ -23,14 +25,21 @@ class DatabaseSeeder extends Seeder
         ChecklistInstructionSeeder::class,
         ChecklistSeeder::class,
         ProspectLookupSeeder::class,
+        ProspectFunnelSeeder::class,
         UsersSeeder::class,
         ProfileCompletionFieldSeeder::class,
         GoalCategorySeeder::class,
         GoalTemplateSeeder::class,
         GoalBadgeSeeder::class,
+        CfmEffectivenessSeeder::class,
+        ComplianceLifecycleSeeder::class,
         SupportModuleSeeder::class,
         NotificationConfigSeeder::class,
+        AnnouncementCategorySeeder::class,
+        AnnouncementTemplateSeeder::class,
+        RecognitionBadgeSeeder::class,
         ResourceDocumentSeeder::class,
+        ResourceVideoSeeder::class,
         TrainingAcademySeeder::class,
     ];
 
@@ -46,9 +55,11 @@ class DatabaseSeeder extends Seeder
         CfmManagementSeeder::class,
         ProspectDemoSeeder::class,
         CalendarModuleSeeder::class,
+        MessagingModuleSeeder::class,
         UserCalendarPreferenceSeeder::class,
         BookingSchedulingSeeder::class,
-        NotificationDemoSeeder::class,
+        NotificationsSeeder::class,
+        CommunicationHubDemoSeeder::class,
     ];
 
     public function run(): void

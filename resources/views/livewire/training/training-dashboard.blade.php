@@ -1,36 +1,42 @@
 <div class="space-y-6">
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
-        @foreach ($data['cards'] as $card)
-            <div class="rounded-xl border border-white/60 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
-                <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">{{ $card['label'] }}</p>
-                <p class="mt-2 text-xl font-bold {{ $card['accent'] }}">{{ $card['value'] }}</p>
-            </div>
-        @endforeach
+    @php
+        $cardThemes = [
+            'assigned' => ['theme' => 'navy', 'subtitle' => 'Open course assignments'],
+            'completed' => ['theme' => 'emerald', 'subtitle' => 'Fully finished courses'],
+            'certifications' => ['theme' => 'gold', 'subtitle' => 'Credentials issued'],
+            'in_progress' => ['theme' => 'cyan', 'subtitle' => 'Lessons & paths underway'],
+            'overdue' => ['theme' => 'amber', 'subtitle' => 'Past due assignments'],
+            'hours' => ['theme' => 'violet', 'subtitle' => 'Time invested learning'],
+            'fap' => ['theme' => 'amber', 'subtitle' => 'Field apprenticeship tracker'],
+            'licensing' => ['theme' => 'slate', 'subtitle' => 'Licensing checklist progress'],
+        ];
+    @endphp
+
+    <div class="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#F8F3E7] shadow-sm">
+        <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+            @foreach ($data['cards'] as $card)
+                @php($meta = $cardThemes[$card['key']] ?? ['theme' => 'gold', 'subtitle' => null])
+                <x-tracker-stat-card
+                    :label="$card['label']"
+                    :value="$card['value']"
+                    :subtitle="$meta['subtitle']"
+                    :theme="$meta['theme']"
+                />
+            @endforeach
+        </div>
     </div>
 
     <div class="rounded-xl border border-[#C8A24A]/30 bg-gradient-to-r from-[#FFF9EA] to-white p-5 shadow-sm">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex flex-wrap gap-6">
-                <div>
-                    <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-[#8A6A1F]">Academy Points</p>
-                    <p class="mt-1 text-2xl font-bold text-[#0B1F3A]">{{ number_format($data['gamification']['points']) }}</p>
-                </div>
-                <div>
-                    <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-[#8A6A1F]">Learning Streak</p>
-                    <p class="mt-1 text-2xl font-bold text-orange-600">{{ $data['gamification']['streak'] }}<span class="ml-1 text-sm font-semibold text-slate-500">days</span></p>
-                </div>
-                <div>
-                    <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-[#8A6A1F]">Badges</p>
-                    <p class="mt-1 text-2xl font-bold text-emerald-700">{{ $data['gamification']['badge_count'] }}</p>
-                </div>
+            <div class="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <x-tracker-stat-card label="Academy Points" :value="number_format($data['gamification']['points'])" theme="gold" />
+                <x-tracker-stat-card label="Learning Streak" :value="$data['gamification']['streak'].' days'" theme="amber" />
+                <x-tracker-stat-card label="Badges" :value="$data['gamification']['badge_count']" theme="emerald" />
                 @if ($data['gamification']['rank'])
-                    <div>
-                        <p class="text-[0.68rem] font-semibold uppercase tracking-wide text-[#8A6A1F]">Rank</p>
-                        <p class="mt-1 text-2xl font-bold text-[#0B1F3A]">#{{ $data['gamification']['rank'] }}</p>
-                    </div>
+                    <x-tracker-stat-card label="Rank" :value="'#'.$data['gamification']['rank']" theme="violet" />
                 @endif
             </div>
-            <a href="{{ route('training.achievements.index') }}" class="inline-flex rounded-md bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#132F55]">
+            <a href="{{ route('training.achievements.index') }}" class="inline-flex shrink-0 rounded-md bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#132F55]">
                 View achievements
             </a>
         </div>
@@ -220,20 +226,16 @@
         </div>
         <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             @forelse ($courseCatalog as $entry)
-                @php
-                    $course = $entry['module'];
-                    $percent = $entry['progress_percent'];
-                @endphp
-                <a href="{{ route('training.courses.show', $course) }}" class="rounded-lg border border-slate-100 bg-slate-50/80 p-4 transition hover:border-[#C8A24A]/40 hover:bg-[#FFF9EA]">
+                <a href="{{ route('training.courses.show', $entry['module']) }}" class="rounded-lg border border-slate-100 bg-slate-50/80 p-4 transition hover:border-[#C8A24A]/40 hover:bg-[#FFF9EA]">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <p class="font-semibold text-[#0B1F3A]">{{ $course->title }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ $course->category?->name }} · {{ $course->lessons->count() }} lessons</p>
+                            <p class="font-semibold text-[#0B1F3A]">{{ $entry['module']->title }}</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ $entry['module']->category?->name }} · {{ $entry['module']->lessons->count() }} lessons</p>
                         </div>
-                        <span class="rounded-full bg-[#0B1F3A] px-2 py-0.5 text-[0.65rem] font-bold text-[#C8A24A]">{{ $percent }}%</span>
+                        <span class="rounded-full bg-[#0B1F3A] px-2 py-0.5 text-[0.65rem] font-bold text-[#C8A24A]">{{ $entry['progress_percent'] }}%</span>
                     </div>
                     <div class="mt-3 h-1.5 rounded-full bg-slate-200">
-                        <div class="h-1.5 rounded-full bg-[#C8A24A]" style="width: {{ $percent }}%"></div>
+                        <div class="h-1.5 rounded-full bg-[#C8A24A]" style="width: {{ $entry['progress_percent'] }}%"></div>
                     </div>
                 </a>
             @empty

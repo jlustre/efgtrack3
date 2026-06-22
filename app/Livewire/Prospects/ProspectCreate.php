@@ -60,16 +60,20 @@ class ProspectCreate extends Component
     {
         $this->authorize('create', Prospect::class);
 
+        if (request()->query('funnel_type') === 'recruiting') {
+            $this->funnel_type = 'recruiting';
+        }
+
         $defaultFunnel = $funnels->resolveFunnel($this->funnel_type);
         $this->prospect_funnel_id = $defaultFunnel->id;
-        $this->pipeline_stage_id = $funnels->stagesForFunnel($defaultFunnel->id)->first()?->pipeline_stage_id;
+        $this->pipeline_stage_id = $funnels->numberedStagesForFunnel($defaultFunnel->id)[0]['id'] ?? null;
     }
 
     public function updatedFunnelType(string $value, ProspectFunnelService $funnels): void
     {
         $funnel = $funnels->resolveFunnel($value);
         $this->prospect_funnel_id = $funnel->id;
-        $this->pipeline_stage_id = $funnels->stagesForFunnel($funnel->id)->first()?->pipeline_stage_id;
+        $this->pipeline_stage_id = $funnels->numberedStagesForFunnel($funnel->id)[0]['id'] ?? null;
     }
 
     public function save(ProspectFunnelService $funnels): void
@@ -90,7 +94,7 @@ class ProspectCreate extends Component
         return view('livewire.prospects.prospect-create', [
             'funnels' => $funnels->funnelsForSelect(),
             'sources' => DB::table('prospect_sources')->where('is_active', true)->orderBy('sort_order')->get(),
-            'stages' => $funnels->stagesForFunnel($this->prospect_funnel_id),
+            'stages' => $funnels->numberedStagesForFunnel($this->prospect_funnel_id),
             'funnelTypes' => config('prospects.funnel_types'),
             'fnaStatuses' => config('prospects.fna_statuses'),
         ]);

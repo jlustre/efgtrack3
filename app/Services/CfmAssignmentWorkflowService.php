@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
-use App\Mail\TemplatedMail;
-use App\Models\EmailTemplate;
+use App\Mail\TemplatedMail;use App\Models\EmailTemplate;
 use App\Models\MentorAssignment;
 use App\Models\User;
+use App\Services\CfmEffectiveness\CfmMilestoneReviewTriggerService;
+use App\Services\Notifications\NotificationOrchestrator;
+use App\Support\EmailTemplateTokens;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -17,6 +19,8 @@ class CfmAssignmentWorkflowService
 {
     public function __construct(
         private readonly MemberUplineService $memberUpline,
+        private readonly NotificationOrchestrator $notifications,
+        private readonly CfmMilestoneReviewTriggerService $milestoneReviews,
     ) {}
 
     public function sendConfirmationRequest(MentorAssignment $assignment, bool $notifyCfm = true): void
@@ -35,6 +39,23 @@ class CfmAssignmentWorkflowService
                 'cfm_portal_url' => route('cfm.portal', [], false),
             ]),
         );
+
+        $this->notifications->dispatch('cfm_assignment_pending_confirm', [
+            'queue' => true,
+            'recipients' => [$assignment->mentor_id],
+            'module' => 'cfm_assignment',
+            'priority' => 'high',
+            'related' => ['type' => MentorAssignment::class, 'id' => $assignment->id],
+            'related_user_id' => $assignment->apprentice_id,
+            'template_data' => [
+                'member_name' => $assignment->apprentice->name,
+                'cfm_name' => $assignment->mentor->name,
+            ],
+            'action_link' => [
+                'route' => 'cfm.portal',
+                'label' => 'Confirm assignment',
+            ],
+        ]);
     }
 
     public function confirmAssignment(MentorAssignment $assignment, User $actingCfm): MentorAssignment
@@ -59,6 +80,40 @@ class CfmAssignmentWorkflowService
             ]);
         }
 
+        return $this->activatePendingAssignment($assignment);
+    }
+
+    public function activateAssignment(MentorAssignment $assignment): MentorAssignment
+    {
+        $assignment->loadMissing(['mentor', 'apprentice.sponsor', 'assignedBy']);
+
+        if ($assignment->status === 'active') {
+            return $assignment;
+        }
+
+        if ($assignment->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'assignment' => 'This assignment cannot be activated.',
+            ]);
+        }
+
+        if ($assignment->apprentice->mentor_id) {
+            throw ValidationException::withMessages([
+                'assignment' => 'This associate already has an active CFM.',
+            ]);
+        }
+
+        return $this->activatePendingAssignment($assignment);
+    }
+
+    private function activatePendingAssignment(MentorAssignment $assignment): MentorAssignment
+    {
+        if ($assignment->apprentice_id === $assignment->mentor_id) {
+            throw ValidationException::withMessages([
+                'assignment' => 'A CFM cannot be assigned as their own trainee.',
+            ]);
+        }
+
         return DB::transaction(function () use ($assignment): MentorAssignment {
             $assignment->update([
                 'status' => 'active',
@@ -70,6 +125,8 @@ class CfmAssignmentWorkflowService
             ]);
 
             $this->sendConfirmationEmails($assignment->fresh(['mentor', 'apprentice.sponsor', 'assignedBy']));
+            $this->dispatchAssignmentActivatedNotifications($assignment->fresh(['mentor', 'apprentice.sponsor', 'assignedBy']));
+            $this->milestoneReviews->onAssignmentActivated($assignment->fresh(['mentor', 'apprentice']));
 
             return $assignment;
         });
@@ -125,6 +182,55 @@ class CfmAssignmentWorkflowService
         ]));
     }
 
+    private function dispatchAssignmentActivatedNotifications(MentorAssignment $assignment): void
+    {
+        $member = $assignment->apprentice;
+        $cfm = $assignment->mentor;
+        $sponsor = $member->sponsor;
+
+        $templateData = [
+            'member_name' => $member->name,
+            'mentor_name' => $cfm->name,
+            'cfm_name' => $cfm->name,
+        ];
+
+        $this->notifications->dispatch('mentor_assigned', [
+            'queue' => true,
+            'recipients' => [$member->id],
+            'module' => 'cfm_assignment',
+            'priority' => 'high',
+            'related' => ['type' => MentorAssignment::class, 'id' => $assignment->id],
+            'related_user_id' => $member->id,
+            'template_data' => $templateData,
+            'action_link' => [
+                'route' => 'dashboard',
+                'label' => 'View dashboard',
+            ],
+        ]);
+
+        $otherRecipients = array_values(array_filter([
+            $sponsor?->id,
+            $cfm->id,
+        ]));
+
+        if ($otherRecipients !== []) {
+            $this->notifications->dispatch('cfm_assignment_confirmed', [
+                'queue' => true,
+                'recipients' => ['user_ids' => $otherRecipients],
+                'module' => 'cfm_assignment',
+                'priority' => 'medium',
+                'related' => ['type' => MentorAssignment::class, 'id' => $assignment->id],
+                'related_user_id' => $member->id,
+                'template_data' => $templateData,
+                'action_link' => [
+                    'route' => 'cfm.portal',
+                    'params' => ['trainee' => $member->id],
+                    'label' => 'Open CFM portal',
+                ],
+            ]);
+        }
+    }
+
     public function confirmationUrl(MentorAssignment $assignment): string
     {
         return URL::signedRoute('cfm.assignments.confirm', [
@@ -135,20 +241,21 @@ class CfmAssignmentWorkflowService
     private function tokensFor(MentorAssignment $assignment, array $extra = []): array
     {
         $member = $assignment->apprentice;
+        $member->loadMissing('profile');
         $cfm = $assignment->mentor;
         $sponsor = $member->sponsor;
         $agencyOwner = $this->memberUpline->agencyOwner($member);
 
-        return array_merge([
+        return EmailTemplateTokens::merge(array_merge(
+            EmailTemplateTokens::forMember($member),
+            [
             'app_name' => config('app.name', 'EFGTrack'),
-            'member_name' => $member->name,
-            'member_email' => $member->email,
             'cfm_name' => $cfm->name,
             'cfm_email' => $cfm->email,
             'sponsor_name' => $sponsor?->name ?? 'the sponsor',
             'agency_owner_name' => $agencyOwner?->name ?? $this->memberUpline->agencyOwnerName($member),
             'assigned_by_name' => $assignment->assignedBy?->name ?? 'Agency leadership',
-        ], $extra);
+        ], $extra));
     }
 
     private function sendTemplatedEmail(string $templateKey, string $recipientEmail, array $tokens): void

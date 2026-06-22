@@ -6,18 +6,36 @@
                 <h1 class="mt-2 text-2xl font-semibold">Not started yet</h1>
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
                     @if ($canStartNow ?? false)
-                        This checklist has not been opened yet. Set Day 1 below to open the tracker and view checklist items.
+                        @if ($isSelfStart ?? false)
+                            This checklist has not been started yet. Choose your Day 1 below to open the tracker and begin working through your checklist items.
+                        @else
+                            This checklist has not been opened yet. Set Day 1 below to open the tracker and view checklist items.
+                        @endif
                     @else
-                        This checklist has not been opened for you yet. Your Agency Owner or Certified Field Mentor will start it and set your Day 1 schedule when you are ready to begin.
+                        @if ($isSelfStart ?? false)
+                            This checklist is not available to start yet. Complete the required prerequisites below, then return here to begin.
+                        @else
+                            This checklist has not been opened for you yet. Your Agency Owner or Certified Field Mentor will start it and set your Day 1 schedule when you are ready to begin.
+                        @endif
                     @endif
                 </p>
             </div>
             <div class="space-y-4 px-6 py-6 text-sm text-slate-600">
                 @if ($canStartNow ?? false)
-                    <form method="POST" action="{{ route('team.member.checklist-type.start', [$member, $typeCode]) }}" class="rounded-md border border-[#C8A24A]/40 bg-[#FFF9EA] p-4">
+                    <form
+                        method="POST"
+                        action="{{ ($isSelfStart ?? false) ? route('checklists.type.start', $typeCode) : route('team.member.checklist-type.start', [$member, $typeCode]) }}"
+                        class="rounded-md border border-[#C8A24A]/40 bg-[#FFF9EA] p-4"
+                    >
                         @csrf
                         <p class="font-semibold text-[#0B1F3A]">Start checklist schedule</p>
-                        <p class="mt-1 text-slate-600">Day 1 is the date you choose below — not the member join date.</p>
+                        <p class="mt-1 text-slate-600">
+                            @if ($isSelfStart ?? false)
+                                Day 1 is the date you choose below. Your expected due dates will be calculated from this start date.
+                            @else
+                                Day 1 is the date you choose below — not the member join date.
+                            @endif
+                        </p>
                         @if (! empty($unmetPrerequisites))
                             <p class="mt-2 text-xs text-amber-800">
                                 Note: typical prerequisites ({{ implode(', ', $unmetPrerequisites) }}) are not complete. Admins may still start this checklist for testing.
@@ -43,17 +61,21 @@
                         </div>
                     </form>
                 @else
-                    <p>Once started, this tracker will appear on your dashboard and in the navigation menu with your expected due dates.</p>
+                    @if (! ($isSelfStart ?? false))
+                        <p>Once started, this tracker will appear on your dashboard and in the navigation menu with your expected due dates.</p>
+                    @endif
                     @if (! empty($unmetPrerequisites))
                         <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
                             <p class="font-semibold">Prerequisites required</p>
                             <p class="mt-1">Complete these checklist types first: {{ implode(', ', $unmetPrerequisites) }}.</p>
                         </div>
                     @endif
-                    <div class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
-                        <p class="font-semibold text-[#0B1F3A]">Need help?</p>
-                        <p class="mt-1">Contact your sponsor, Agency Owner, or CFM if you believe this checklist should already be active.</p>
-                    </div>
+                    @if (! ($isSelfStart ?? false))
+                        <div class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p class="font-semibold text-[#0B1F3A]">Need help?</p>
+                            <p class="mt-1">Contact your sponsor, Agency Owner, or CFM if you believe this checklist should already be active.</p>
+                        </div>
+                    @endif
                 @endif
                 <a href="{{ route('dashboard') }}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:bg-slate-50">
                     Back to dashboard

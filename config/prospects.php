@@ -67,6 +67,59 @@ return [
         'new_prospects' => 'New Prospects',
     ],
 
+    'contacted_outcomes' => [
+        'Connected',
+        'Booked appointment',
+        'Contact made',
+        'Spoke with prospect',
+        'Registered',
+    ],
+
+    'activity_log_summary_metrics' => [
+        'phone_calls_attempted' => [
+            'label' => 'Phone Calls Attempted',
+            'short_label' => 'Calls Attempted',
+            'description' => 'Outbound phone call attempts logged on your prospects.',
+            'accent' => 'navy',
+        ],
+        'contacted' => [
+            'label' => 'Contacted',
+            'short_label' => 'Contacted',
+            'description' => 'Successful contacts where the prospect was reached.',
+            'accent' => 'gold',
+        ],
+        'invitation_success' => [
+            'label' => 'Invitation Success',
+            'short_label' => 'Invitations',
+            'description' => 'Prospects who reached invitation-sent or registration milestones.',
+            'accent' => 'cyan',
+        ],
+        'presentations' => [
+            'label' => 'Presentations',
+            'short_label' => 'Presentations',
+            'description' => 'Online or in-person presentations and meetings held.',
+            'accent' => 'violet',
+        ],
+        'fna_filled' => [
+            'label' => 'FNA Filled',
+            'short_label' => 'FNA Filled',
+            'description' => 'Financial needs analyses completed or marked complete.',
+            'accent' => 'emerald',
+        ],
+        'became_client' => [
+            'label' => 'Became Client',
+            'short_label' => 'Clients',
+            'description' => 'Prospects converted to clients.',
+            'accent' => 'amber',
+        ],
+        'became_associate' => [
+            'label' => 'Became Associate',
+            'short_label' => 'Associates',
+            'description' => 'Prospects converted to active associates.',
+            'accent' => 'slate',
+        ],
+    ],
+
     'analytics_chart_colors' => [
         'primary' => '#C8A24A',
         'secondary' => '#0B1F3A',

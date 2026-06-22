@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -34,6 +35,9 @@ class User extends Authenticatable
         'last_login_at',
         'last_login_ip',
         'is_online',
+        'messaging_suspended_at',
+        'messaging_suspended_by',
+        'messaging_suspension_reason',
     ];
 
     protected $hidden = [
@@ -50,6 +54,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'is_online' => 'boolean',
+            'messaging_suspended_at' => 'datetime',
         ];
     }
 
@@ -143,6 +148,16 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'mentor_id');
     }
 
+    public function messagingSuspendedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'messaging_suspended_by');
+    }
+
+    public function isMessagingSuspended(): bool
+    {
+        return $this->messaging_suspended_at !== null;
+    }
+
     public function mentorAssignments(): HasMany
     {
         return $this->hasMany(MentorAssignment::class, 'mentor_id');
@@ -198,6 +213,21 @@ class User extends Authenticatable
         return $this->hasMany(Booking::class, 'trainee_id');
     }
 
+    public function calendarPreference(): HasOne
+    {
+        return $this->hasOne(UserCalendarPreference::class);
+    }
+
+    public function calendarScheduleBlocks(): HasMany
+    {
+        return $this->hasMany(CalendarScheduleBlock::class);
+    }
+
+    public function calendarScheduleBlockOverrides(): HasMany
+    {
+        return $this->hasMany(CalendarScheduleBlockOverride::class);
+    }
+
     public function cfmMentorProfile(): HasOne
     {
         return $this->hasOne(CfmMentorProfile::class);
@@ -224,6 +254,11 @@ class User extends Authenticatable
         }
 
         return $this->hasRole('certified-field-mentor');
+    }
+
+    public function canViewAnnouncements(): bool
+    {
+        return $this->hasAnyPermission(['view announcements', 'manage announcements']);
     }
 
     public function canManageDocuments(): bool
@@ -278,5 +313,10 @@ class User extends Authenticatable
     public function profilePhotoUrl(): ?string
     {
         return UserAvatar::urlForUser($this);
+    }
+
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Notification::class, 'notifiable')->latest();
     }
 }

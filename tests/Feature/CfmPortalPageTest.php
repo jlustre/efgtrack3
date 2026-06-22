@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Cfm\Portal;
 use App\Models\User;
+use App\Services\CfmManagementService;
+use App\Services\CfmPortalService;
 use App\Support\LocationOptions;
 use Database\Seeders\CfmManagementSeeder;
 use Database\Seeders\ChecklistSeeder;
@@ -13,6 +16,7 @@ use Database\Seeders\StateProvinceSeeder;
 use Database\Seeders\TaskScenarioSeeder;
 use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class CfmPortalPageTest extends TestCase
@@ -44,6 +48,39 @@ class CfmPortalPageTest extends TestCase
             ->assertSee('Agency Owner', false)
             ->assertSee('Arielle Morgan', false)
             ->assertSee('Edit', false);
+    }
+
+    public function test_cfm_portal_excludes_cfm_from_own_trainee_list(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+            TaskScenarioSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+            CfmManagementSeeder::class,
+        ]);
+
+        $cfm = User::where('email', 'cfm@efgtrack.com')->firstOrFail();
+        $cfm->update(['mentor_id' => $cfm->id]);
+
+        app(CfmPortalService::class)->payloadFor($cfm);
+
+        $cfm->refresh();
+        $this->assertNull($cfm->mentor_id);
+
+        $profile = app(CfmManagementService::class)->profileFor($cfm, $cfm);
+
+        $this->assertFalse(
+            collect($profile['apprentices'])->contains(fn (array $trainee) => (int) $trainee['id'] === (int) $cfm->id)
+        );
+
+        $this->actingAs($cfm)
+            ->get(route('cfm.portal'))
+            ->assertOk()
+            ->assertSee('Celeste Navarro', false);
     }
 
     public function test_cfm_can_update_portal_profile(): void
@@ -255,5 +292,39 @@ class CfmPortalPageTest extends TestCase
         $this->actingAs($owner)
             ->get(route('cfm.portal'))
             ->assertForbidden();
+    }
+
+    public function test_cfm_trainee_360_quick_actions_open_modals_without_navigation(): void
+    {
+        $this->seed([
+            RolePermissionSeeder::class,
+            CountrySeeder::class,
+            StateProvinceSeeder::class,
+            TimezoneSeeder::class,
+            TaskScenarioSeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
+            CfmManagementSeeder::class,
+        ]);
+
+        $cfm = User::where('email', 'cfm@efgtrack.com')->firstOrFail();
+        $trainee = User::where('email', 'maya.fap@example.com')->firstOrFail();
+
+        Livewire::actingAs($cfm)
+            ->test(Portal::class, ['selectedTraineeId' => $trainee->id])
+            ->assertSee('Send Message', false)
+            ->assertDontSee('mailto:', false)
+            ->call('openTraineeQuickActionModal', 'message')
+            ->assertSet('traineeQuickActionModal', 'message')
+            ->assertSee('Message Maya Chen through EFGTrack messaging', false)
+            ->set('quickMessageBody', 'Great progress on your FAP checklist this week.')
+            ->call('sendQuickMessage')
+            ->assertSet('traineeQuickActionModal', null)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('messages', [
+            'user_id' => $cfm->id,
+            'body' => 'Great progress on your FAP checklist this week.',
+        ]);
     }
 }

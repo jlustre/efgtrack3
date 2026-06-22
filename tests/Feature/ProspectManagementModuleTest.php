@@ -49,10 +49,10 @@ class ProspectManagementModuleTest extends TestCase
         $this->actingAs($user)
             ->get(route('team.prospects'))
             ->assertOk()
-            ->assertSee('Prospect Management')
-            ->assertSee('Private CRM workspace')
-            ->assertSee('Pipeline Board')
-            ->assertSee('Privacy Rules');
+            ->assertSee('Prospect Management', false)
+            ->assertSee('Private CRM workspace', false)
+            ->assertSee('Pipeline Board', false)
+            ->assertSee('Privacy Rules', false);
     }
 
     public function test_prospect_demo_seeder_creates_sample_prospects_and_dashboard_modules(): void

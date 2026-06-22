@@ -80,9 +80,6 @@
                 @endif
 
                 <div class="grid gap-4 md:grid-cols-2">
-                    @include('dashboard.partials.profile-completion-photo-field', ['user' => $user])
-
-                    <div class="md:col-span-2 grid gap-4 md:grid-cols-2">
                     <div>
                         <x-input-label for="completion_name" :value="__('Name')" />
                         <x-text-input id="completion_name" name="name" type="text" class="mt-1 block w-full" x-model="form.name" required autocomplete="name" />
@@ -147,7 +144,6 @@
                         'provinceInputId' => 'completion_state_province_id',
                         'timezoneInputId' => 'completion_timezone_id',
                     ])
-                    </div>
                 </div>
 
                 <div>

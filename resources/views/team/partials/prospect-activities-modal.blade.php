@@ -53,6 +53,10 @@
                                     </div>
                                     <p class="mt-2 font-semibold text-[#0B1F3A]" x-show="activity.subject" x-text="activity.subject"></p>
                                     <p class="mt-1 text-sm text-slate-600" x-show="activity.notes" x-text="activity.notes"></p>
+                                    <p class="mt-2 text-xs text-slate-500" x-show="activity.pipeline_stage_name">
+                                        <span class="font-semibold text-slate-600">Pipeline stage:</span>
+                                        <span x-text="activity.pipeline_stage_name"></span>
+                                    </p>
                                     <p class="mt-2 text-xs text-slate-500" x-show="activity.outcome">
                                         <span class="font-semibold text-slate-600">Outcome:</span>
                                         <span x-text="activity.outcome"></span>
@@ -104,6 +108,16 @@
                                 <option :value="value" x-text="label"></option>
                             </template>
                         </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Pipeline Stage</label>
+                        <select x-model="form.pipeline_stage_id" class="mt-1 block w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                            <template x-for="stage in pipelineStages" :key="'stage-' + stage.id">
+                                <option :value="String(stage.id)" x-text="stage.label"></option>
+                            </template>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">Updates the prospect stage when this activity is saved.</p>
                     </div>
 
                     <div>

@@ -1,3 +1,3 @@
 <x-app-layout>
-    <x-page-placeholder title="My Messages" subtitle="Direct messages and conversation history with sponsors, mentors, and team leadership." />
+    <livewire:messaging.message-center />
 </x-app-layout>

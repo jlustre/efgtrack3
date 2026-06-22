@@ -43,6 +43,30 @@ class NotificationService
         }
 
         $templateSnapshot = $template?->snapshot();
+        $triggerCode = $trigger->code;
+        $priority = $options['priority'] ?? 'info';
+        $payload = $options['payload'] ?? [];
+
+        $data = array_merge([
+            'trigger' => $triggerCode,
+            'title' => $title,
+            'message' => $body,
+            'category' => $type->name,
+            'priority' => $priority,
+        ], $payload);
+
+        if ($actionLink) {
+            if (! empty($actionLink['route'])) {
+                $data['action_route'] = $actionLink['route'];
+                $data['action_route_params'] = $actionLink['params'] ?? [];
+            }
+
+            if (! empty($actionLink['url'])) {
+                $data['action_url'] = $actionLink['url'];
+            } elseif (! empty($actionLink['route'])) {
+                $data['action_url'] = route($actionLink['route'], $actionLink['params'] ?? [], false);
+            }
+        }
 
         return User::query()
             ->whereIn('id', $recipientIds)
@@ -54,8 +78,9 @@ class NotificationService
                 $recipientsSnapshot,
                 $templateSnapshot,
                 $actionLink,
-                $title,
-                $body,
+                $data,
+                $options,
+                $priority,
             ): Notification {
                 return Notification::query()->create([
                     'notification_type_id' => $type->id,
@@ -65,14 +90,16 @@ class NotificationService
                     'recipients' => $recipientsSnapshot,
                     'notification_template' => $templateSnapshot,
                     'action_link' => $actionLink,
+                    'priority' => $priority,
+                    'module' => $options['module'] ?? null,
+                    'related_type' => $options['related_type'] ?? null,
+                    'related_id' => $options['related_id'] ?? null,
+                    'related_user_id' => $options['related_user_id'] ?? null,
+                    'metadata' => $options['metadata'] ?? null,
                     'type' => 'database',
                     'notifiable_type' => User::class,
                     'notifiable_id' => $recipient->id,
-                    'data' => [
-                        'title' => $title,
-                        'message' => $body,
-                        'category' => $type->name,
-                    ],
+                    'data' => $data,
                 ]);
             });
     }
@@ -168,7 +195,7 @@ class NotificationService
         return $roles !== [] && $user->hasAnyRole($roles);
     }
 
-    private function userInboxQuery(User $user): Builder
+    protected function userInboxQuery(User $user): Builder
     {
         return Notification::query()
             ->where('notifiable_type', User::class)
@@ -178,7 +205,7 @@ class NotificationService
     /**
      * @return list<int>
      */
-    private function resolveRecipientUserIds(mixed $recipients): array
+    protected function resolveRecipientUserIds(mixed $recipients): array
     {
         if ($recipients instanceof User) {
             return [$recipients->id];
@@ -226,7 +253,7 @@ class NotificationService
      * @param  list<int>  $resolvedUserIds
      * @return array{user_ids: list<int>, roles: list<string>}
      */
-    private function buildRecipientsSnapshot(mixed $recipients, array $resolvedUserIds): array
+    protected function buildRecipientsSnapshot(mixed $recipients, array $resolvedUserIds): array
     {
         if (is_array($recipients) && (isset($recipients['user_ids']) || isset($recipients['roles']))) {
             return [
@@ -244,7 +271,7 @@ class NotificationService
     /**
      * @return array{type: string, user_id: int|null}
      */
-    private function resolveSender(array $options): array
+    protected function resolveSender(array $options): array
     {
         $sender = $options['sender'] ?? 'system';
 
@@ -274,7 +301,7 @@ class NotificationService
         ];
     }
 
-    private function resolveTrigger(array $options): NotificationTrigger
+    protected function resolveTrigger(array $options): NotificationTrigger
     {
         if (! empty($options['trigger']) && $options['trigger'] instanceof NotificationTrigger) {
             return $options['trigger'];
@@ -295,7 +322,7 @@ class NotificationService
         throw new InvalidArgumentException('A notification trigger is required.');
     }
 
-    private function resolveType(array $options, NotificationTrigger $trigger): NotificationType
+    protected function resolveType(array $options, NotificationTrigger $trigger): NotificationType
     {
         if (! empty($options['type']) && $options['type'] instanceof NotificationType) {
             return $options['type'];
@@ -314,7 +341,7 @@ class NotificationService
         return $trigger->type()->firstOrFail();
     }
 
-    private function resolveTemplate(NotificationTrigger $trigger, array $options): ?NotificationTemplate
+    protected function resolveTemplate(NotificationTrigger $trigger, array $options): ?NotificationTemplate
     {
         if (! empty($options['template']) && $options['template'] instanceof NotificationTemplate) {
             return $options['template'];
@@ -331,12 +358,12 @@ class NotificationService
             ->first();
     }
 
-    private function isListOfUsers(array $values): bool
+    protected function isListOfUsers(array $values): bool
     {
         return $values !== [] && collect($values)->every(fn ($value) => $value instanceof User);
     }
 
-    private function isListOfInts(array $values): bool
+    protected function isListOfInts(array $values): bool
     {
         return $values !== [] && collect($values)->every(fn ($value) => is_int($value));
     }
