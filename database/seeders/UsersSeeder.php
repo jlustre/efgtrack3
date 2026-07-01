@@ -18,7 +18,7 @@ class UsersSeeder extends Seeder
         $superAdmin = User::updateOrCreate(
             ['email' => 'super-admin@efgtrack.com'],
             [
-                'name' => 'EFG Super Admin',
+                'name' => 'JLustre',
                 'password' => Hash::make('Password123'),
                 'joined_at' => now(),
                 'sponsor_id' => null,

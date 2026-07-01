@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\TaskSuggestion;
+use App\Models\TaskUser;
 use App\Models\User;
-use App\Models\UserTask;
 use App\Services\ChecklistService;
+use App\Services\TaskCategoryService;
 use App\Support\ProfileLocationQuery;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +17,10 @@ use Illuminate\View\View;
 
 class TaskController extends Controller
 {
-    public function __construct(private readonly ChecklistService $checklists) {}
+    public function __construct(
+        private readonly ChecklistService $checklists,
+        private readonly TaskCategoryService $taskCategories,
+    ) {}
 
     public function openTaskCountFor(User $user): int
     {
@@ -24,7 +28,148 @@ class TaskController extends Controller
             + $this->cfmAssignmentTasksFor($user)->count()
             + $this->emailTasksFor($user)->count()
             + $this->promotionTasksFor($user)->count()
-            + UserTask::query()->openForUser($user)->count();
+            + TaskUser::query()->openForUser($user)->count();
+    }
+
+    /**
+     * @return array{count: int, items: list<array{title: string, subtitle: string|null, meta: string|null, url: string|null, badge: string|null, highlight: bool, type: string}>}
+     */
+    public function openTasksByPriorityFor(User $user): array
+    {
+        $workflowItems = collect()
+            ->merge($this->confirmationTasksFor($user))
+            ->merge($this->cfmAssignmentTasksFor($user))
+            ->merge($this->emailTasksFor($user))
+            ->merge($this->promotionTasksFor($user))
+            ->map(fn (array $task): array => $this->mapWorkflowTaskForModal($task));
+
+        $storedItems = TaskUser::query()
+            ->with(['taskCategory', 'task'])
+            ->openForUser($user)
+            ->orderByRaw("case when status = 'overdue' then 0 when status = 'in_progress' then 1 when status = 'waiting' then 2 when status = 'to_do' then 3 else 4 end")
+            ->orderBy('due_date')
+            ->get()
+            ->map(fn (TaskUser $task): array => $this->mapTaskUserForModal($task));
+
+        $items = $workflowItems
+            ->concat($storedItems)
+            ->sortBy([
+                ['priority_order', 'asc'],
+                ['sort_date', 'asc'],
+            ])
+            ->values()
+            ->map(fn (array $item): array => collect($item)->except(['priority_order', 'sort_date'])->all())
+            ->all();
+
+        return [
+            'count' => count($items),
+            'items' => $items,
+        ];
+    }
+
+    public function previewForDashboard(User $user, int $limit = 5): array
+    {
+        $workflowTasks = collect()
+            ->merge($this->confirmationTasksFor($user))
+            ->merge($this->cfmAssignmentTasksFor($user))
+            ->merge($this->emailTasksFor($user))
+            ->merge($this->promotionTasksFor($user))
+            ->sortBy([
+                ['priority_order', 'asc'],
+                ['created_at', 'asc'],
+            ])
+            ->take($limit)
+            ->map(fn (array $task): array => [
+                'title' => $task['title'],
+                'subtitle' => $task['subtitle'] ?? $task['type'] ?? null,
+                'meta' => $task['age'] ?? null,
+                'url' => $task['action_url'] ?? route('tasks.index'),
+                'badge' => $task['priority'] ?? null,
+                'highlight' => ($task['priority'] ?? '') === 'High',
+            ])
+            ->values();
+
+        $remaining = max(0, $limit - $workflowTasks->count());
+
+        $storedTasks = $remaining > 0
+            ? TaskUser::query()
+                ->with('taskCategory')
+                ->openForUser($user)
+                ->orderByRaw("case when status = 'overdue' then 0 when status = 'in_progress' then 1 when status = 'waiting' then 2 when status = 'to_do' then 3 else 4 end")
+                ->orderBy('due_date')
+                ->limit($remaining)
+                ->get()
+                ->map(fn (TaskUser $task): array => [
+                    'title' => $task->displayTitle(),
+                    'subtitle' => $task->categoryName(),
+                    'meta' => $task->due_date?->format('M j, Y') ?? 'No due date',
+                    'url' => route('tasks.index'),
+                    'badge' => $task->displayPriority(),
+                    'highlight' => $task->status === 'overdue',
+                ])
+            : collect();
+
+        return [
+            'count' => $this->openTaskCountFor($user),
+            'items' => $workflowTasks->merge($storedTasks)->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array{count: int, items: list<array{title: string, subtitle: string|null, meta: string|null, url: string|null, badge: string|null, highlight: bool}>}
+     */
+    public function previewDueTodayForDashboard(User $user, int $limit = 5): array
+    {
+        $today = now()->startOfDay();
+
+        $workflowTasks = collect()
+            ->merge($this->confirmationTasksFor($user))
+            ->merge($this->cfmAssignmentTasksFor($user))
+            ->merge($this->emailTasksFor($user))
+            ->merge($this->promotionTasksFor($user))
+            ->filter(fn (array $task): bool => $this->isDueToday($task))
+            ->sortBy([
+                ['priority_order', 'asc'],
+                ['created_at', 'asc'],
+            ])
+            ->map(fn (array $task): array => [
+                'title' => $task['title'],
+                'subtitle' => $task['subtitle'] ?? $task['type'] ?? null,
+                'meta' => $task['age'] ?? 'Due today',
+                'url' => $task['action_url'] ?? route('tasks.index'),
+                'badge' => $task['priority'] ?? 'Today',
+                'highlight' => ($task['priority'] ?? '') === 'High',
+            ])
+            ->values();
+
+        $storedTasks = TaskUser::query()
+            ->with('taskCategory')
+            ->openForUser($user)
+            ->where(function ($query) use ($today): void {
+                $query->whereDate('due_date', $today)
+                    ->orWhere('status', 'overdue');
+            })
+            ->orderByRaw("case when status = 'overdue' then 0 when status = 'in_progress' then 1 else 2 end")
+            ->orderBy('due_date')
+            ->get()
+            ->map(fn (TaskUser $task): array => [
+                'title' => $task->displayTitle(),
+                'subtitle' => $task->categoryName(),
+                'meta' => $task->status === 'overdue'
+                    ? 'Overdue · '.($task->due_date?->format('M j, Y') ?? 'No due date')
+                    : 'Due today',
+                'url' => route('tasks.index'),
+                'badge' => $task->status === 'overdue' ? 'Overdue' : 'Today',
+                'highlight' => $task->status === 'overdue',
+            ]);
+
+        $items = $workflowTasks->merge($storedTasks)->take($limit)->values()->all();
+        $count = $workflowTasks->count() + $storedTasks->count();
+
+        return [
+            'count' => $count,
+            'items' => $items,
+        ];
     }
 
     public function index(Request $request): View
@@ -35,8 +180,6 @@ class TaskController extends Controller
         $emailTasks = $this->emailTasksFor($user);
         $promotionTasks = $this->promotionTasksFor($user);
         $today = now();
-
-        $storedTasks = $this->storedTasksFor($user);
 
         $allTasks = collect()
             ->merge($confirmationTasks)
@@ -49,18 +192,13 @@ class TaskController extends Controller
             ])
             ->values();
 
-        $uiStoredTasks = $storedTasks
-            ->map(fn (UserTask $task): array => $this->formatStoredTaskForUi($task))
-            ->values();
-
         $stats = [
-            'total' => $allTasks->count() + $storedTasks->whereNotIn('status', ['completed', 'cancelled'])->count(),
+            'total' => $allTasks->count(),
             'confirmations' => $confirmationTasks->count(),
             'cfm_assignments' => $cfmAssignmentTasks->count(),
             'emails' => $emailTasks->count(),
             'promotions' => $promotionTasks->count(),
-            'high_priority' => $allTasks->where('priority', 'High')->count()
-                + $storedTasks->whereIn('priority', ['high', 'urgent'])->whereNotIn('status', ['completed', 'cancelled'])->count(),
+            'high_priority' => $allTasks->where('priority', 'High')->count(),
         ];
 
         $groupedTasks = [
@@ -75,7 +213,6 @@ class TaskController extends Controller
             ->values();
 
         $uiTasks = $uiWorkflowTasks
-            ->merge($uiStoredTasks)
             ->sortBy([
                 fn (array $task) => match ($task['priority']) {
                     'Urgent' => 1,
@@ -87,14 +224,7 @@ class TaskController extends Controller
             ])
             ->values();
 
-        $overdueCount = $uiTasks->where('status', 'Overdue')->count()
-            + $storedTasks->where('status', 'overdue')->count();
-
-        $completedThisWeek = UserTask::query()
-            ->where('assigned_to_user_id', $user->id)
-            ->where('status', 'completed')
-            ->where('completed_at', '>=', $today->copy()->startOfWeek())
-            ->count();
+        $overdueCount = $uiTasks->where('status', 'Overdue')->count();
 
         $aiSuggestions = TaskSuggestion::query()
             ->active()
@@ -106,6 +236,17 @@ class TaskController extends Controller
             ->values()
             ->all();
 
+        $filters = [
+            'q' => $request->string('q')->toString(),
+            'status' => $request->string('status')->toString(),
+            'priority' => $request->string('priority')->toString(),
+            'assignee' => $request->string('assignee')->toString(),
+            'category' => $request->string('category')->toString(),
+            'module' => $request->string('module')->toString(),
+            'due_date' => $request->string('due_date')->toString(),
+            'page' => max(1, (int) $request->input('page', 1)),
+        ];
+
         return view('tasks.index', [
             'user' => $user,
             'allTasks' => $allTasks,
@@ -115,19 +256,30 @@ class TaskController extends Controller
             'todayLabel' => $today->format('M j, Y'),
             'taskManagementPayload' => [
                 'currentUserName' => $user->name,
-                'tasks' => $uiTasks,
+                'tasks' => $uiTasks->values()->all(),
+                'assignees' => $uiTasks->pluck('assignee')->filter()->unique()->sort()->values()->all(),
+                'filters' => $filters,
+                'pageSize' => 10,
                 'teamMembers' => $this->teamMembersFromGroupedTasks($groupedTasks),
                 'stats' => [
                     'total' => $stats['total'],
-                    'dueToday' => $allTasks->filter(fn (array $task): bool => $this->isDueToday($task))->count()
-                        + $storedTasks->filter(fn (UserTask $task): bool => $task->due_date?->isToday() ?? false)->count(),
+                    'dueToday' => $allTasks->filter(fn (array $task): bool => $this->isDueToday($task))->count(),
                     'overdue' => $overdueCount,
-                    'completedWeek' => $completedThisWeek,
+                    'completedWeek' => 0,
                     'highPriority' => $stats['high_priority'],
-                    'assignedToMe' => $storedTasks->where('assigned_to_user_id', $user->id)->whereNotIn('status', ['completed', 'cancelled'])->count()
-                        + $allTasks->count(),
+                    'assignedToMe' => $allTasks->count(),
                 ],
-                'categories' => UserTask::CATEGORIES,
+                'categories' => $this->taskCategories->activeNames(),
+                'taskCategories' => $this->taskCategories->activeCategories()
+                    ->map(fn ($category): array => [
+                        'name' => $category->name,
+                        'description' => $category->description,
+                        'action_url' => $category->resolveActionUrl(),
+                        'action_label' => $category->action_label,
+                        'accent_class' => $category->accent_class,
+                    ])
+                    ->values()
+                    ->all(),
                 'aiSuggestions' => $aiSuggestions,
                 'calendarLabel' => $today->format('F Y'),
                 'calendarFirstDay' => (int) $today->copy()->startOfMonth()->dayOfWeek,
@@ -138,17 +290,17 @@ class TaskController extends Controller
         ]);
     }
 
-    public function storeComment(Request $request, UserTask $task): JsonResponse
+    public function storeComment(Request $request, TaskUser $taskUser): JsonResponse
     {
         $user = $request->user();
 
-        abort_unless($this->userCanAccessTask($user, $task), 403);
+        abort_unless($this->userCanAccessTask($user, $taskUser), 403);
 
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:5000'],
         ]);
 
-        $comment = $task->comments()->create([
+        $comment = $taskUser->comments()->create([
             'user_id' => $user->id,
             'body' => $validated['body'],
         ]);
@@ -167,9 +319,9 @@ class TaskController extends Controller
         ], 201);
     }
 
-    private function userCanAccessTask(User $user, UserTask $task): bool
+    private function userCanAccessTask(User $user, TaskUser $task): bool
     {
-        if ((int) $task->assigned_to_user_id === $user->id) {
+        if ((int) $task->assignee_id === $user->id) {
             return true;
         }
 
@@ -184,15 +336,17 @@ class TaskController extends Controller
 
     private function storedTasksFor(User $user): Collection
     {
-        return UserTask::query()
+        return TaskUser::query()
             ->with([
                 'assignee:id,name',
-                'creator:id,name',
+                'assignor:id,name',
+                'task',
+                'taskCategory',
                 'checklistItems',
                 'comments.author:id,name',
             ])
             ->where(function ($query) use ($user): void {
-                $query->where('assigned_to_user_id', $user->id);
+                $query->where('assignee_id', $user->id);
 
                 if ($user->team_id) {
                     $query->orWhereHas('assignee', fn ($assigneeQuery) => $assigneeQuery->where('team_id', $user->team_id));
@@ -203,11 +357,12 @@ class TaskController extends Controller
             ->get();
     }
 
-    private function formatStoredTaskForUi(UserTask $task): array
+    private function formatStoredTaskForUi(TaskUser $task): array
     {
         $assignee = $task->assignee;
         $assigneeName = $assignee?->name ?? 'Unassigned';
-        $tone = match ($task->category) {
+        $categoryName = $task->categoryName() ?? 'Admin';
+        $tone = match ($categoryName) {
             'Licensing' => 'bg-amber-500',
             'CFM Mentorship' => 'bg-violet-500',
             'Prospect Follow-Up' => 'bg-sky-500',
@@ -220,26 +375,27 @@ class TaskController extends Controller
             'id' => 'task-'.$task->id,
             'databaseId' => $task->id,
             'source' => 'database',
-            'title' => $task->title,
-            'desc' => (string) $task->description,
+            'title' => $task->displayTitle(),
+            'desc' => $task->displayBody(),
             'priority' => $task->displayPriority(),
             'status' => $task->displayStatus(),
-            'category' => $task->category,
+            'category' => $categoryName,
             'assignee' => $assigneeName,
             'initials' => $this->initialsFor($assigneeName),
             'avatarRing' => $this->avatarRingFor($tone),
             'due' => $task->due_date?->format('M j') ?? 'Soon',
             'dueDay' => $task->due_date?->day,
+            'dueDateIso' => $task->due_date?->toDateString(),
             'progress' => $task->progress,
             'module' => $task->related_module ?? 'Team',
             'related' => $task->related_person ?? '—',
-            'createdBy' => $task->creator?->name ?? $assigneeName,
+            'createdBy' => $task->displayAssignorName(),
             'actionUrl' => null,
             'actionLabel' => 'Open',
             'reviewUrl' => null,
             'type' => 'Task',
             'memberEmail' => null,
-            'meta' => $task->category,
+            'meta' => $categoryName,
             'age' => $task->created_at?->diffForHumans() ?? 'Recently',
             'checklistItems' => $task->checklistItems
                 ->map(fn ($item): array => [
@@ -301,6 +457,7 @@ class TaskController extends Controller
             'avatarRing' => $avatarRing,
             'due' => $dueDate?->format('M j') ?? 'Soon',
             'dueDay' => $dueDate?->day,
+            'dueDateIso' => $dueDate?->toDateString(),
             'progress' => match ($status) {
                 'In Progress' => 55,
                 'Waiting' => 40,
@@ -328,7 +485,7 @@ class TaskController extends Controller
         $meta = strtolower((string) ($task['meta'] ?? ''));
 
         return match ($task['type']) {
-            'CFM Assignment' => 'CFM Mentorship',
+            'CFM Assignment' => 'Assign a CFM',
             'Email Follow-Up' => 'Prospect Follow-Up',
             'Promotion Review' => 'Rank Advancement',
             'Confirmation' => match (true) {
@@ -775,5 +932,89 @@ class TaskController extends Controller
             'Normal' => 2,
             default => 3,
         };
+    }
+
+    /**
+     * @return array{title: string, subtitle: string|null, meta: string|null, url: string|null, badge: string|null, highlight: bool, type: string, priority_order: int, sort_date: string|null}
+     */
+    private function mapWorkflowTaskForModal(array $task): array
+    {
+        $priority = $task['priority'] ?? 'Normal';
+        $categoryName = $this->categoryForTask($task);
+        $actionLink = $this->categoryActionLinkForModal($categoryName);
+        $category = $this->taskCategories->findByName($categoryName);
+
+        return [
+            'title' => $task['title'],
+            'subtitle' => $task['subtitle'] ?? $task['type'] ?? null,
+            'category' => $categoryName,
+            'category_accent' => $category?->accent_class,
+            'meta' => $task['age'] ?? null,
+            'url' => $actionLink['url'],
+            'action_label' => $actionLink['action_label'],
+            'badge' => $priority,
+            'highlight' => $priority === 'High',
+            'type' => $task['type'] ?? 'Task',
+            'priority_order' => $task['priority_order'] ?? $this->priorityOrder($priority),
+            'sort_date' => isset($task['created_at']) ? (string) $task['created_at'] : null,
+        ];
+    }
+
+    /**
+     * @return array{title: string, subtitle: string|null, meta: string|null, url: string|null, badge: string|null, highlight: bool, type: string, priority_order: int, sort_date: string|null}
+     */
+    private function mapTaskUserForModal(TaskUser $task): array
+    {
+        $priorityOrder = match ($task->priority) {
+            'urgent' => 0,
+            'high' => 1,
+            'medium' => 3,
+            'low' => 4,
+            default => 3,
+        };
+
+        if ($task->status === 'overdue') {
+            $priorityOrder = 0;
+        }
+
+        $category = $task->taskCategory;
+        $actionLink = $this->categoryActionLinkForModal($category?->name);
+
+        return [
+            'title' => $task->displayTitle(),
+            'subtitle' => $category?->description,
+            'category' => $category?->name,
+            'category_accent' => $category?->accent_class,
+            'meta' => $task->status === 'overdue'
+                ? 'Overdue · '.($task->due_date?->format('M j, Y') ?? 'No due date')
+                : ($task->due_date?->format('M j, Y') ?? 'No due date'),
+            'url' => $actionLink['url'],
+            'action_label' => $actionLink['action_label'],
+            'badge' => $task->status === 'overdue' ? 'Overdue' : $task->displayPriority(),
+            'highlight' => $task->status === 'overdue' || in_array($task->priority, ['urgent', 'high'], true),
+            'type' => 'Task',
+            'priority_order' => $priorityOrder,
+            'sort_date' => $task->due_date?->toDateString() ?? $task->created_at?->toDateTimeString(),
+        ];
+    }
+
+    /**
+     * @return array{url: string|null, action_label: string|null}
+     */
+    private function categoryActionLinkForModal(?string $categoryName): array
+    {
+        $categoryAction = $this->taskCategories->actionForName($categoryName);
+
+        if (! filled($categoryAction['url'] ?? null)) {
+            return [
+                'url' => null,
+                'action_label' => null,
+            ];
+        }
+
+        return [
+            'url' => $categoryAction['url'],
+            'action_label' => 'Action Link',
+        ];
     }
 }

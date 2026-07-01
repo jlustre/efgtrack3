@@ -28,6 +28,7 @@ class ProspectDashboardDeepLinksTest extends TestCase
             $cards->get('hot_prospects')['url'],
         );
         $this->assertSame(route('team.prospects.follow-ups'), $cards->get('followups_due')['url']);
+        $this->assertSame(route('team.prospects'), $cards->get('activities')['url']);
         $this->assertSame(route('team.prospects.analytics'), $cards->get('prospect_conversion')['url']);
     }
 }

@@ -114,10 +114,13 @@ class NewMemberRegistrationWorkflowTest extends TestCase
 
         $this->post('/register', $this->registrationPayload($invitation));
 
-        Mail::assertSent(TemplatedMail::class, 3);
+        Mail::assertSent(TemplatedMail::class, 4);
         Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('new.recruit@example.com')
             && str_contains($mail->customSubject, 'Welcome to')
             && str_contains($mail->emailBody, 'New Recruit'));
+        Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('new.recruit@example.com')
+            && str_contains($mail->customSubject, 'Verify your email')
+            && str_contains($mail->emailBody, 'verify-email'));
         Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo($sponsor->email)
             && str_contains($mail->customSubject, 'joined')
             && str_contains($mail->emailBody, $sponsor->name));
@@ -181,8 +184,8 @@ class NewMemberRegistrationWorkflowTest extends TestCase
     {
         EmailTemplate::query()->where('key', 'new_member_welcome')->delete();
 
-        [$invitation, $sponsor] = $this->createInvitationContext();
-        $member = User::factory()->create([
+        [, $sponsor] = $this->createInvitationContext();
+        $member = User::factory()->unverified()->create([
             'email' => 'new.recruit@example.com',
             'sponsor_id' => $sponsor->id,
             'team_id' => $sponsor->team_id,
@@ -192,6 +195,45 @@ class NewMemberRegistrationWorkflowTest extends TestCase
         $this->expectExceptionMessage('new_member_welcome');
 
         app(NewMemberRegistrationService::class)->process($member);
+    }
+
+    public function test_email_verification_template_is_required_for_registration(): void
+    {
+        EmailTemplate::query()->where('key', 'new_member_email_verification')->delete();
+
+        [, $sponsor] = $this->createInvitationContext();
+        $member = User::factory()->unverified()->create([
+            'email' => 'verify-required@example.com',
+            'sponsor_id' => $sponsor->id,
+            'team_id' => $sponsor->team_id,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('new_member_email_verification');
+
+        $member->sendEmailVerificationNotification();
+    }
+
+    public function test_registration_service_skips_verification_email_for_verified_member(): void
+    {
+        Mail::fake();
+
+        [, $sponsor] = $this->createInvitationContext(withAgencyOwner: true);
+        $member = User::factory()->create([
+            'email' => 'verified@example.com',
+            'sponsor_id' => $sponsor->id,
+            'team_id' => $sponsor->team_id,
+            'email_verified_at' => now(),
+        ]);
+
+        app(NewMemberRegistrationService::class)->process($member);
+
+        Mail::assertSent(TemplatedMail::class, 3);
+        Mail::assertNotSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => str_contains($mail->customSubject, 'Verify your email'));
+
+        $member->sendEmailVerificationNotification();
+
+        Mail::assertSent(TemplatedMail::class, 3);
     }
 
     public function test_sponsor_who_is_agency_owner_receives_single_notification(): void
@@ -253,8 +295,10 @@ class NewMemberRegistrationWorkflowTest extends TestCase
 
         $this->post('/register', $this->registrationPayload($invitation, email: 'owner.recruit2@example.com', associateId: 'EFG-OWNER-2'));
 
-        Mail::assertSent(TemplatedMail::class, 3);
+        Mail::assertSent(TemplatedMail::class, 4);
         Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('owner.recruit2@example.com'));
+        Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('owner.recruit2@example.com')
+            && str_contains($mail->customSubject, 'Verify your email'));
         Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('ao-sponsor@example.com')
             && str_contains($mail->customSubject, 'joined'));
         Mail::assertSent(TemplatedMail::class, fn (TemplatedMail $mail): bool => $mail->hasTo('ao-sponsor@example.com')

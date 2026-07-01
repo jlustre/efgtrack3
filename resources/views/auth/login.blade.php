@@ -83,6 +83,11 @@
                                             Forgot your password?
                                         </a>
                                     @endif
+                                    @if (Route::has('verification.resend'))
+                                        <a class="text-sm font-semibold text-[#D4AF37] hover:text-[#F3D572] hover:underline" href="{{ route('verification.resend', ['email' => old('email')]) }}">
+                                            Resend verification email
+                                        </a>
+                                    @endif
                                 </div>
 
                                 <button type="submit" class="w-full rounded-full bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#F3D572] px-5 py-3 text-sm font-extrabold uppercase tracking-wider text-black shadow-lg transition hover:-translate-y-0.5 hover:shadow-[#D4AF37]/20">

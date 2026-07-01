@@ -5,7 +5,8 @@ namespace App\Services\Prospects;
 use App\Events\Prospects\ProspectConverted;
 use App\Models\MemberProductionEntry;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
+use App\Support\TaskUserAttributes;
 use App\Services\Goals\GoalBridgeService;
 use App\Services\MemberProductionService;
 
@@ -147,18 +148,20 @@ class ProspectMemberGoalsBridge
             return;
         }
 
-        UserTask::query()->create([
-            'assigned_to_user_id' => $owner->id,
-            'created_by_user_id' => $actor->id,
-            'title' => $title,
-            'description' => $template['description'] ?? null,
-            'priority' => $template['priority'] ?? 'medium',
-            'status' => 'to_do',
-            'category' => 'Prospect Conversion',
-            'related_module' => 'prospects',
-            'related_person' => $replacements['{prospect}'] ?? $replacements['{member}'] ?? null,
-            'related_prospect_id' => $prospectId,
-            'due_date' => now()->addDays((int) ($template['offset_days'] ?? 1))->toDateString(),
-        ]);
+        TaskUser::query()->create(TaskUserAttributes::forSystemTask(
+            'Prospect Follow-Up',
+            $title,
+            [
+                'assignee_id' => $owner->id,
+                'priority' => $template['priority'] ?? 'medium',
+                'status' => 'to_do',
+                'related_module' => 'prospects',
+                'related_person' => $replacements['{prospect}'] ?? $replacements['{member}'] ?? null,
+                'related_prospect_id' => $prospectId,
+                'due_date' => now()->addDays((int) ($template['offset_days'] ?? 1))->toDateString(),
+            ],
+            $template['description'] ?? null,
+            $template['priority'] ?? null,
+        ));
     }
 }

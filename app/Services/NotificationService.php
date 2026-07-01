@@ -170,6 +170,13 @@ class NotificationService
 
     public function markAllAsRead(User $user): int
     {
+        $sync = app(\App\Services\Communication\AnnouncementReadSyncService::class);
+
+        $this->userInboxQuery($user)
+            ->whereNull('read_at')
+            ->get()
+            ->each(fn (Notification $notification) => $sync->syncFromNotification($user, $notification));
+
         return $this->userInboxQuery($user)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);

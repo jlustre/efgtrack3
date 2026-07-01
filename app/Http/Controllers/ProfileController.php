@@ -170,6 +170,10 @@ class ProfileController extends Controller
             );
         }
 
+        if ($request->hasFile('photo')) {
+            $this->profilePhotos->update($user, $request->file('photo'));
+        }
+
         $redirectRoute = $request->input('redirect_to') === 'dashboard'
             ? route('dashboard')
             : route('profile.edit', ['tab' => 'profile']);

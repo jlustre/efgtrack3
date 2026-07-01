@@ -72,6 +72,17 @@ class TaskScenarioSeeder extends Seeder
         $cfmCandidate = $this->member('owen.cfm@example.com', 'Owen Patel', $teamId, $agencyOwner->id, null, $ranks['SFA'] ?? null);
         $needsMentor = $this->member('sofia.needsmentor@example.com', 'Sofia Reyes', $teamId, $agencyOwner->id, null);
         $usProspect = $this->member('aaron.us@example.com', 'Aaron Brooks', $teamId, $agencyOwner->id, null);
+        $jordan = $this->member('jordan.ellis@example.com', 'Jordan Ellis', $teamId, $sponsor->id, $cfm->id);
+        $dana = $this->member('dana.foster@example.com', 'Dana Foster', $teamId, $sponsor->id, $cfm->id);
+        $priya = $this->member('priya.sharma@example.com', 'Priya Sharma', $teamId, $sponsor->id, $cfm->id);
+        $taylor = $this->user(
+            'taylor.kim@example.com',
+            'Taylor Kim',
+            'new-recruit',
+            $ranks['FA'] ?? null,
+            $teamId,
+            ['sponsor_id' => $agencyOwner->id, 'joined_at' => now()->subDays(2)]
+        );
 
         $this->profile($cfm, [
             'city' => 'Toronto',
@@ -105,6 +116,26 @@ class TaskScenarioSeeder extends Seeder
             'country' => 'United States',
             'timezone' => 'CST',
         ]);
+        $this->profile($jordan, [
+            'city' => 'Edmonton',
+            'province' => 'Alberta',
+            'timezone' => 'Canada Mountain Time',
+        ]);
+        $this->profile($dana, [
+            'city' => 'Ottawa',
+            'province' => 'Ontario',
+            'timezone' => 'Canada Eastern Time',
+        ]);
+        $this->profile($priya, [
+            'city' => 'Winnipeg',
+            'province' => 'Manitoba',
+            'timezone' => 'Canada Central Time',
+        ]);
+        $this->profile($taylor, [
+            'city' => 'Halifax',
+            'province' => 'Nova Scotia',
+            'timezone' => 'Canada Atlantic Time',
+        ]);
 
         $this->pendingChecklist('onboarding', 'Complete Member Profile', $onboardingMember->id, now()->subDays(3));
         $this->pendingChecklist('licensing', 'Pass Licensing Exam', $licensingMember->id, now()->subDays(2));
@@ -122,6 +153,7 @@ class TaskScenarioSeeder extends Seeder
 
         $trainer->update(['mentor_id' => $cfm->id]);
         $sponsor->update(['mentor_id' => $cfm->id]);
+        $taylor->update(['joined_at' => now()->subDays(2), 'mentor_id' => null]);
     }
 
     private function teamId(): int

@@ -56,19 +56,10 @@
 
             @if ($currentStep === 1)
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2"><label class="{{ $labelClass }}">Client Name *</label><input wire:model.live.debounce.750ms="client_name" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Email</label><input type="email" wire:model.live.debounce.750ms="client_email" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Phone</label><input wire:model.live.debounce.750ms="client_phone" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Date of Birth</label><input type="date" wire:model.live.debounce.750ms="date_of_birth" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Gender</label><input wire:model.live.debounce.750ms="gender" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Marital Status</label><input wire:model.live.debounce.750ms="marital_status" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Occupation</label><input wire:model.live.debounce.750ms="occupation" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Employer / Business</label><input wire:model.live.debounce.750ms="employer_business" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">City</label><input wire:model.live.debounce.750ms="city" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">State / Province</label><input wire:model.live.debounce.750ms="state_province" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Country</label><input wire:model.live.debounce.750ms="country" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Preferred Contact</label><input wire:model.live.debounce.750ms="preferred_contact_method" class="{{ $inputClass }}"></div>
-                    <div><label class="{{ $labelClass }}">Best Contact Time</label><input wire:model.live.debounce.750ms="best_contact_time" class="{{ $inputClass }}"></div>
+                    @include('livewire.fna.partials.wizard-client-info-fields', array_merge($clientInfoFieldOptions, [
+                        'inputClass' => $inputClass,
+                        'labelClass' => $labelClass,
+                    ]))
                 </div>
             @elseif ($currentStep === 2)
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">

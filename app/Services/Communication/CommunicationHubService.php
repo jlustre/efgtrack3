@@ -106,6 +106,10 @@ class CommunicationHubService
                 ],
                 'priority' => $this->notificationPriority($announcement->priority),
                 'module' => 'announcement',
+                'related' => [
+                    'type' => MessageCenterAnnouncement::class,
+                    'id' => $announcement->id,
+                ],
                 'action_link' => [
                     'route' => 'communications.show',
                     'params' => ['announcement' => $announcement->slug],

@@ -7,7 +7,7 @@ use App\Models\NotificationEscalationLog;
 use App\Models\NotificationEscalationRule;
 use App\Models\ProspectFollowUp;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
 use App\Services\MemberUplineService;
 
 class NotificationEscalationService
@@ -189,7 +189,7 @@ class NotificationEscalationService
         $step = collect($rule->escalation_steps ?? [])->first() ?? [];
         $triggerCode = $step['trigger_code'] ?? 'task_overdue';
 
-        $tasks = UserTask::query()
+        $tasks = TaskUser::query()
             ->whereNull('completed_at')
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->whereDate('due_date', '<', now()->toDateString())
@@ -200,7 +200,7 @@ class NotificationEscalationService
                 continue;
             }
 
-            $assigneeId = $task->assigned_to_user_id;
+            $assigneeId = $task->assignee_id;
 
             if (! $assigneeId) {
                 continue;
@@ -211,13 +211,13 @@ class NotificationEscalationService
                 'recipients' => [$assigneeId],
                 'module' => 'task',
                 'priority' => $step['priority'] ?? 'high',
-                'related' => ['type' => UserTask::class, 'id' => $task->id],
+                'related' => ['type' => TaskUser::class, 'id' => $task->id],
                 'template_data' => [
-                    'task_name' => $task->title,
+                    'task_name' => $task->displayTitle(),
                     'deadline' => $task->due_date?->format('M j, Y') ?? '',
                 ],
-                'title' => "Task overdue: {$task->title}",
-                'message' => "The task \"{$task->title}\" is past its due date.",
+                'title' => "Task overdue: {$task->displayTitle()}",
+                'message' => "The task \"{$task->displayTitle()}\" is past its due date.",
                 'action_link' => [
                     'route' => 'tasks.index',
                     'label' => 'View tasks',
@@ -226,7 +226,7 @@ class NotificationEscalationService
 
             NotificationEscalationLog::query()->create([
                 'escalation_rule_id' => $rule->id,
-                'subject_type' => UserTask::class,
+                'subject_type' => TaskUser::class,
                 'subject_id' => $task->id,
                 'step_index' => 0,
                 'notified_user_ids' => [$assigneeId],

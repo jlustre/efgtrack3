@@ -7,7 +7,7 @@ use App\Models\Notification;
 use App\Models\NotificationDigestSetting;
 use App\Models\ProspectFollowUp;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
 use App\Services\Notifications\Channels\EmailChannel;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -200,8 +200,8 @@ class NotificationDigestService
      */
     private function taskLines(User $user): array
     {
-        return UserTask::query()
-            ->where('assigned_to_user_id', $user->id)
+        return TaskUser::query()
+            ->where('assignee_id', $user->id)
             ->whereNull('completed_at')
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->where(function ($query): void {
@@ -211,10 +211,10 @@ class NotificationDigestService
             ->orderBy('due_date')
             ->limit(10)
             ->get()
-            ->map(function (UserTask $task): string {
+            ->map(function (TaskUser $task): string {
                 $due = $task->due_date?->format('M j') ?? 'No date';
 
-                return "• {$task->title} (due {$due})";
+                return "• {$task->displayTitle()} (due {$due})";
             })
             ->all();
     }

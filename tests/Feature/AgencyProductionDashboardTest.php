@@ -41,7 +41,7 @@ class AgencyProductionDashboardTest extends TestCase
         $this->actingAs($member)
             ->get(route('team.production'))
             ->assertOk()
-            ->assertSee('Production & Agency Dashboard', false)
+            ->assertSee('Production Dashboard', false)
             ->assertSee('$12,000', false);
 
         Livewire::actingAs($member)

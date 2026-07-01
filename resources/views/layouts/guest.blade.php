@@ -22,7 +22,7 @@
             || request()->routeIs('password.request')
             || request()->routeIs('password.reset')
             || request()->routeIs('password.confirm')
-            || request()->routeIs('verification.notice'))
+            || request()->routeIs('verification.*'))
             {{ $slot }}
         @else
             <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">

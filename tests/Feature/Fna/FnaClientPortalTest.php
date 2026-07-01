@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Fna;
 
+use App\Mail\FnaClientPortalInviteMail;
 use App\Livewire\Fna\Client\FnaClientPortalGate;
 use App\Livewire\Fna\Client\FnaClientPortalReturn;
 use App\Livewire\Fna\Client\FnaClientPortalWizard;
@@ -9,14 +10,17 @@ use App\Livewire\Fna\FnaClientInvitePanel;
 use App\Models\FnaClientInvite;
 use App\Models\FnaRecord;
 use App\Models\Prospect;
+use App\Models\ProspectSharePermission;
 use App\Models\User;
 use App\Services\Fna\FnaClientInviteService;
+use App\Services\Prospects\ProspectShareService;
 use App\Support\FnaClientPortalSession;
 use Database\Seeders\ProspectFunnelSeeder;
 use Database\Seeders\ProspectLookupSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -82,7 +86,8 @@ class FnaClientPortalTest extends TestCase
             ->set('recipient_phone', '6045550100')
             ->call('sendInvite')
             ->assertHasNoErrors()
-            ->assertSet('createdSecurityCode', fn ($code) => strlen((string) $code) === 6);
+            ->assertSet('createdSecurityCode', fn ($code) => strlen((string) $code) === 6)
+            ->assertSee('Copy link', false);
 
         $this->assertDatabaseHas('fna_client_invites', [
             'sender_user_id' => $agent->id,
@@ -99,12 +104,99 @@ class FnaClientPortalTest extends TestCase
 
     public function test_unlicensed_agent_blocked_from_creating_invite(): void
     {
+        $cfm = User::factory()->create(['name' => 'CFM Coach']);
         $agent = $this->unlicensedAgent();
+        $agent->update(['mentor_id' => $cfm->id]);
         $prospect = $this->createProspect($agent);
 
         Livewire::actingAs($agent)
             ->test(FnaClientInvitePanel::class, ['prospect' => $prospect])
+            ->assertSee('Insurance license required', false)
+            ->assertSee('Share with CFM for FNA invite', false)
+            ->call('sendInvite')
             ->assertForbidden();
+    }
+
+    public function test_unlicensed_owner_can_share_prospect_with_cfm_for_fna_invite(): void
+    {
+        $cfm = User::factory()->create(['name' => 'CFM Coach']);
+        $agent = $this->unlicensedAgent();
+        $agent->update(['mentor_id' => $cfm->id]);
+        $prospect = $this->createProspect($agent);
+
+        Livewire::actingAs($agent)
+            ->test(FnaClientInvitePanel::class, ['prospect' => $prospect->fresh()])
+            ->call('grantCfmAccess')
+            ->assertHasNoErrors()
+            ->assertSee('Shared with CFM Coach', false);
+
+        $this->assertDatabaseHas('prospect_shares', [
+            'prospect_id' => $prospect->id,
+            'shared_with' => $cfm->id,
+            'status' => 'active',
+        ]);
+
+        $this->assertSame('cfm', $prospect->fresh()->visibility_preset);
+    }
+
+    public function test_cfm_can_create_invite_for_prospect_shared_by_unlicensed_trainee(): void
+    {
+        $cfm = $this->licensedAgent();
+        $cfm->assignRole('certified-field-mentor');
+
+        $trainee = $this->unlicensedAgent();
+        $trainee->update(['mentor_id' => $cfm->id]);
+        $prospect = $this->createProspect($trainee);
+
+        $permissionId = ProspectSharePermission::query()
+            ->where('key', 'full_collaboration')
+            ->value('id');
+
+        app(ProspectShareService::class)->applyVisibilityPreset(
+            $prospect,
+            $trainee,
+            'cfm',
+            null,
+            $permissionId,
+        );
+
+        Livewire::actingAs($cfm)
+            ->test(FnaClientInvitePanel::class, ['prospect' => $prospect->fresh()])
+            ->set('recipient_name', 'Portal Prospect')
+            ->set('recipient_email', 'portal.prospect@example.com')
+            ->call('sendInvite')
+            ->assertHasNoErrors()
+            ->assertSet('createdSecurityCode', fn ($code) => strlen((string) $code) === 6);
+
+        $this->assertDatabaseHas('fna_client_invites', [
+            'sender_user_id' => $cfm->id,
+            'prospect_id' => $prospect->id,
+        ]);
+    }
+
+    public function test_fna_invite_email_includes_confidentiality_notice(): void
+    {
+        Mail::fake();
+
+        $cfm = User::factory()->create(['name' => 'Licensed CFM']);
+        $agent = $this->licensedAgent();
+        $agent->update(['mentor_id' => $cfm->id]);
+        $prospect = $this->createProspect($agent);
+
+        Livewire::actingAs($agent)
+            ->test(FnaClientInvitePanel::class, ['prospect' => $prospect])
+            ->set('recipient_name', 'Portal Prospect')
+            ->set('recipient_email', 'portal.prospect@example.com')
+            ->call('sendInviteAndEmail')
+            ->assertHasNoErrors();
+
+        Mail::assertSent(FnaClientPortalInviteMail::class, function (FnaClientPortalInviteMail $mail): bool {
+            $html = $mail->render();
+
+            return str_contains($html, 'strictly confidential')
+                && str_contains($html, 'Licensed CFM')
+                && str_contains($html, 'No other agents');
+        });
     }
 
     public function test_security_code_verification_works(): void
@@ -319,5 +411,123 @@ class FnaClientPortalTest extends TestCase
         app(FnaClientInviteService::class)->createInvite($agent, $prospect, [
             'recipient_name' => 'Both',
         ], $member);
+    }
+
+    public function test_prospect_without_email_shows_warning_on_invite_panel(): void
+    {
+        $agent = $this->licensedAgent();
+        $prospect = $this->createProspect($agent);
+        $prospect->update(['email' => null]);
+
+        Livewire::actingAs($agent)
+            ->test(FnaClientInvitePanel::class, ['prospect' => $prospect->fresh()])
+            ->assertSee('No email on file for this prospect', false);
+    }
+
+    public function test_create_and_email_invite_sends_portal_email(): void
+    {
+        Mail::fake();
+
+        $agent = $this->licensedAgent();
+        $prospect = $this->createProspect($agent);
+
+        Livewire::actingAs($agent)
+            ->test(FnaClientInvitePanel::class, ['prospect' => $prospect])
+            ->set('recipient_name', 'Portal Prospect')
+            ->set('recipient_email', 'portal.prospect@example.com')
+            ->call('sendInviteAndEmail')
+            ->assertHasNoErrors();
+
+        Mail::assertSent(FnaClientPortalInviteMail::class, function (FnaClientPortalInviteMail $mail) use ($agent): bool {
+            return $mail->hasTo('portal.prospect@example.com')
+                && $mail->agent->is($agent);
+        });
+
+        $this->assertDatabaseHas('fna_client_invites', [
+            'prospect_id' => $prospect->id,
+            'recipient_email' => 'portal.prospect@example.com',
+        ]);
+
+        $invite = FnaClientInvite::query()->where('prospect_id', $prospect->id)->first();
+        $this->assertNotNull($invite->last_emailed_at);
+    }
+
+    public function test_create_and_email_invite_requires_email_when_prospect_has_none(): void
+    {
+        $agent = $this->licensedAgent();
+        $prospect = $this->createProspect($agent);
+        $prospect->update(['email' => null]);
+
+        Livewire::actingAs($agent)
+            ->test(FnaClientInvitePanel::class, ['prospect' => $prospect->fresh()])
+            ->set('recipient_name', 'Portal Prospect')
+            ->set('recipient_email', '')
+            ->call('sendInviteAndEmail')
+            ->assertHasErrors(['recipient_email']);
+    }
+
+    public function test_client_portal_step_one_uses_dropdown_fields(): void
+    {
+        $agent = $this->licensedAgent();
+        $prospect = $this->createProspect($agent);
+
+        $result = app(FnaClientInviteService::class)->createInvite($agent, $prospect, [
+            'recipient_name' => 'Portal Prospect',
+        ]);
+
+        FnaClientPortalSession::markVerified($result['invite']);
+
+        Livewire::test(FnaClientPortalWizard::class, ['token' => $result['invite']->token])
+            ->assertSee('Select gender', false)
+            ->assertSee('Select marital status', false)
+            ->assertSee('Select country', false)
+            ->assertSee('Select preferred contact', false)
+            ->assertSee('Select best contact time', false);
+    }
+
+    public function test_client_portal_requires_step_one_fields_before_advancing(): void
+    {
+        $agent = $this->licensedAgent();
+        $prospect = $this->createProspect($agent);
+
+        $result = app(FnaClientInviteService::class)->createInvite($agent, $prospect, [
+            'recipient_name' => 'Portal Prospect',
+        ]);
+
+        FnaClientPortalSession::markVerified($result['invite']);
+
+        Livewire::test(FnaClientPortalWizard::class, ['token' => $result['invite']->token])
+            ->set('client_email', '')
+            ->set('client_phone', '')
+            ->call('nextStep')
+            ->assertHasErrors()
+            ->assertSet('currentStep', 1);
+    }
+
+    public function test_client_portal_advances_from_step_one_with_required_fields(): void
+    {
+        $agent = $this->licensedAgent();
+        $prospect = $this->createProspect($agent);
+
+        $result = app(FnaClientInviteService::class)->createInvite($agent, $prospect, [
+            'recipient_name' => 'Portal Prospect',
+        ]);
+
+        FnaClientPortalSession::markVerified($result['invite']);
+
+        Livewire::test(FnaClientPortalWizard::class, ['token' => $result['invite']->token])
+            ->set('client_name', 'Portal Prospect')
+            ->set('client_email', 'portal.prospect@example.com')
+            ->set('client_phone', '6045550100')
+            ->set('date_of_birth', '1985-06-15')
+            ->set('gender', 'female')
+            ->set('marital_status', 'married')
+            ->set('country', 'Canada')
+            ->set('state_province', 'British Columbia')
+            ->set('preferred_contact_method', 'email')
+            ->set('best_contact_time', 'Morning (8am – 12pm)')
+            ->call('nextStep')
+            ->assertHasNoErrors()
+            ->assertSet('currentStep', 2);
     }
 }

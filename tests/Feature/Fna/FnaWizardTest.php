@@ -26,6 +26,8 @@ class FnaWizardTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(FnaWizard::class, ['fna' => $fna])
+            ->assertSee('Select gender', false)
+            ->assertSee('Select country', false)
             ->set('client_name', 'Updated Client')
             ->set('client_email', 'client@example.com')
             ->call('autosave')

@@ -11,7 +11,7 @@ use App\Models\CfmRankTier;
 use App\Models\MentorAssignment;
 use App\Models\TeamVisibilityPermission;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
 use App\Support\LocationOptions;
 use App\Support\MemberDisplayName;
 use Carbon\Carbon;
@@ -423,8 +423,8 @@ class CfmManagementService
             ->where('status', 'completed')
             ->count();
 
-        $overdueTasks = UserTask::query()
-            ->where('assigned_to_user_id', $cfm->id)
+        $overdueTasks = TaskUser::query()
+            ->where('assignee_id', $cfm->id)
             ->where('status', 'overdue')
             ->count();
 
@@ -883,9 +883,9 @@ class CfmManagementService
             $items[] = ['label' => 'Mentor session scheduled', 'time' => $lastBooking->starts_at?->diffForHumans() ?? '—'];
         }
 
-        $lastTask = UserTask::query()->where('assigned_to_user_id', $cfm->id)->latest()->first();
+        $lastTask = TaskUser::query()->where('assignee_id', $cfm->id)->latest()->first();
         if ($lastTask) {
-            $items[] = ['label' => 'Mentor task: '.$lastTask->title, 'time' => $lastTask->updated_at?->diffForHumans() ?? '—'];
+            $items[] = ['label' => 'Mentor task: '.$lastTask->displayTitle(), 'time' => $lastTask->updated_at?->diffForHumans() ?? '—'];
         }
 
         if ($cfm->cfmMentorProfile?->updated_at) {

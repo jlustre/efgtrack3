@@ -53,7 +53,8 @@ class DashboardNotificationsPanelTest extends TestCase
             ->assertSee('Notifications', false)
             ->assertSee('12 unread updates', false)
             ->assertSee('Agency alert 1', false)
-            ->assertSee('Agency alert 10', false)
-            ->assertDontSee('Agency alert 11', false);
+            ->assertSee('Agency alert 5', false)
+            ->assertSee('Agency alert 8', false)
+            ->assertDontSee('Agency alert 9', false);
     }
 }

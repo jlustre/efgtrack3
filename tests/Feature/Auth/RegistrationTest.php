@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\LocationOptions;
 use Database\Seeders\CountrySeeder;
 use Database\Seeders\EmailTemplateSeeder;
+use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\ProfileCompletionFieldSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -93,6 +94,7 @@ class RegistrationTest extends TestCase
             RankSeeder::class,
             RolePermissionSeeder::class,
             EmailTemplateSeeder::class,
+            NotificationConfigSeeder::class,
             CountrySeeder::class,
             StateProvinceSeeder::class,
             TimezoneSeeder::class,
@@ -126,7 +128,7 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'password',
         ]);
 
-        $this->assertAuthenticated();
+        $this->assertGuest();
 
         $newUser = User::where('email', 'test@example.com')->firstOrFail();
 
@@ -136,9 +138,10 @@ class RegistrationTest extends TestCase
         $this->assertSame('Test User', $newUser->name);
         $this->assertTrue($newUser->hasRole('member'));
         $this->assertNotNull($newUser->joined_at);
-        $this->assertNotNull($newUser->last_login_at);
-        $this->assertSame('127.0.0.1', $newUser->last_login_ip);
-        $this->assertTrue($newUser->is_online);
+        $this->assertNull($newUser->last_login_at);
+        $this->assertNull($newUser->last_login_ip);
+        $this->assertFalse($newUser->is_online);
+        $this->assertNull($newUser->email_verified_at);
         $this->assertSame('EFG-1001', $newUser->profile->efg_associate_id);
         $this->assertSame('Vancouver', $newUser->profile->city);
         $newUser->load('profile.countryRecord', 'profile.stateProvince', 'profile.timezoneRecord');
@@ -160,10 +163,36 @@ class RegistrationTest extends TestCase
         $this->assertNotNull($invitation->refresh()->revoked_at);
 
         $response
+            ->assertRedirect(route('login', absolute: false))
+            ->assertSessionHas('status');
+
+        $this->post('/login', [
+            'email' => 'test@example.com',
+            'password' => 'password',
+        ])
+            ->assertSessionHasErrors('email')
+            ->assertRedirect(route('verification.resend', ['email' => 'test@example.com'], false));
+
+        $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addHour(),
+            ['id' => $newUser->id, 'hash' => sha1($newUser->email)]
+        );
+
+        $this->get($verificationUrl)
+            ->assertRedirect(route('login', absolute: false))
+            ->assertSessionHas('status');
+
+        $this->assertNotNull($newUser->fresh()->email_verified_at);
+
+        $this->post('/login', [
+            'email' => 'test@example.com',
+            'password' => 'password',
+        ])
             ->assertRedirect(route('dashboard', absolute: false))
             ->assertSessionHas('show_profile_completion_modal', true);
 
-        $this->actingAs($newUser)
+        $this->actingAs($newUser->fresh())
             ->get(route('dashboard'))
             ->assertOk()
             ->assertViewHas('forceProfileCompletionModal', true)

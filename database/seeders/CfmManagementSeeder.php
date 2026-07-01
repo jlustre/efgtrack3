@@ -14,7 +14,8 @@ use App\Models\CfmRecommendationSuggestion;
 use App\Models\MentorAssignment;
 use App\Models\Rank;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
+use App\Support\TaskLibrary;
 use App\Support\LocationOptions;
 use App\Services\DownlineHierarchyService;
 use Carbon\Carbon;
@@ -524,14 +525,20 @@ class CfmManagementSeeder extends Seeder
 
     private function mentorTask(User $cfm, User $creator, string $title, string $status, Carbon $dueDate): void
     {
-        UserTask::updateOrCreate(
-            ['assigned_to_user_id' => $cfm->id, 'title' => $title],
+        $libraryTask = TaskLibrary::findOrCreate(
+            $title,
+            'CFM Mentorship',
+            'Seeded CFM mentorship task for management dashboard testing.',
+            $status === 'overdue' ? 'high' : 'medium',
+        );
+
+        TaskUser::updateOrCreate(
+            ['assignee_id' => $cfm->id, 'task_id' => $libraryTask->id],
             [
-                'created_by_user_id' => $creator->id,
-                'description' => 'Seeded CFM mentorship task for management dashboard testing.',
+                'task_category_id' => $libraryTask->task_category_id,
+                'assignor_id' => $creator->id,
                 'priority' => $status === 'overdue' ? 'high' : 'medium',
                 'status' => $status,
-                'category' => 'CFM Mentorship',
                 'related_module' => 'Training',
                 'due_date' => $dueDate->toDateString(),
                 'progress' => $status === 'overdue' ? 40 : 0,

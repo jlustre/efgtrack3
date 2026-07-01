@@ -29,6 +29,33 @@ return [
         'declined' => 'Declined',
     ],
 
+    'qualification_traits' => [
+        'age_25_plus' => '25+ years old',
+        'married' => 'Married',
+        'has_mortgage' => 'W/ mortgage',
+        'has_dependent_kids' => 'W/ dependent kids',
+        'legal_resident' => 'Legal resident',
+        'business_minded' => 'Business minded',
+        'employed_full_time' => 'Employed full-time',
+        'homeowner' => 'Homeowner',
+    ],
+
+    'genders' => [
+        'female' => 'Female',
+        'male' => 'Male',
+        'non_binary' => 'Non-binary',
+        'prefer_not_to_say' => 'Prefer not to say',
+    ],
+
+    'marital_statuses' => [
+        'single' => 'Single',
+        'married' => 'Married',
+        'common_law' => 'Common-law',
+        'separated' => 'Separated',
+        'divorced' => 'Divorced',
+        'widowed' => 'Widowed',
+    ],
+
     'activity_types' => [
         'phone_call' => 'Phone Call',
         'text_message' => 'Text Message',

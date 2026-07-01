@@ -55,6 +55,20 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_unverified_users_can_not_authenticate(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+            ->assertSessionHasErrors('email')
+            ->assertRedirect(route('verification.resend', ['email' => $user->email], false));
+
+        $this->assertGuest();
+    }
+
     public function test_login_prompts_profile_completion_modal_when_profile_is_incomplete(): void
     {
         $this->seed([

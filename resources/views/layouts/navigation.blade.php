@@ -98,7 +98,6 @@
             'label' => 'My Team',
             'items' => [
                 ['label' => 'Downline Dashboard', 'route' => 'team.index', 'permissions' => ['view own team']],
-                ['label' => 'Agency Production', 'route' => 'team.production', 'permissions' => ['view own team'], 'active' => ['team.production']],
                 ['label' => 'Genealogy Tree', 'route' => 'team.tree', 'permissions' => ['view team tree']],
                 ['label' => 'Hierarchy Table', 'route' => 'team.hierarchy', 'permissions' => ['view team tree']],
                 ['label' => 'Org Chart', 'route' => 'team.org-chart', 'permissions' => ['view org chart']],
@@ -146,6 +145,9 @@
                 ['label' => 'Ranks', 'route' => 'admin.management.resource.index', 'params' => ['ranks'], 'active_resource' => 'ranks', 'roles' => ['super-admin', 'admin']],
                 ['label' => 'Profile Completion Fields', 'route' => 'admin.management.resource.index', 'params' => ['profile-completion-fields'], 'active_resource' => 'profile-completion-fields', 'roles' => ['super-admin', 'admin']],
                 ['label' => 'Teams', 'route' => 'admin.management.resource.index', 'params' => ['teams'], 'active_resource' => 'teams', 'roles' => ['super-admin', 'admin']],
+                ['label' => 'Task Categories', 'route' => 'admin.management.resource.index', 'params' => ['task-categories'], 'active_resource' => 'task-categories', 'roles' => ['super-admin', 'admin']],
+                ['label' => 'Tasks', 'route' => 'admin.management.resource.index', 'params' => ['tasks'], 'active_resource' => 'tasks', 'roles' => ['super-admin', 'admin']],
+                ['label' => 'Task Assignments', 'route' => 'admin.management.resource.index', 'params' => ['task-users'], 'active_resource' => 'task-users', 'roles' => ['super-admin', 'admin']],
                 ['label' => 'Checklists', 'route' => 'admin.checklists.index', 'active' => ['admin.checklists.*'], 'active_resources' => ['checklist-types', 'checklist-instructions', 'checklists'], 'roles' => ['super-admin', 'admin', 'agency-owner', 'team-leader', 'certified-field-mentor', 'trainer']],
                 ['label' => 'Calendar Categories', 'route' => 'admin.management.resource.index', 'params' => ['calendar-categories'], 'active_resource' => 'calendar-categories', 'roles' => ['super-admin', 'admin', 'agency-owner']],
                 ['label' => 'Calendar Event Types', 'route' => 'admin.management.resource.index', 'params' => ['calendar-event-types'], 'active_resource' => 'calendar-event-types', 'roles' => ['super-admin', 'admin', 'agency-owner']],

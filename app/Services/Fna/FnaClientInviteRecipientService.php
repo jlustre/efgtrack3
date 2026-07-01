@@ -25,7 +25,11 @@ class FnaClientInviteRecipientService
         }
 
         if ($prospect !== null) {
-            return (int) $prospect->owner_id === $agent->id;
+            if ((int) $prospect->owner_id === $agent->id) {
+                return true;
+            }
+
+            return $this->hasActiveProspectShare($agent, $prospect);
         }
 
         return false;
@@ -113,6 +117,18 @@ class FnaClientInviteRecipientService
             ->where('mentor_id', $agent->id)
             ->where('apprentice_id', $member->id)
             ->where('status', 'active')
+            ->exists();
+    }
+
+    protected function hasActiveProspectShare(User $agent, Prospect $prospect): bool
+    {
+        return $prospect->shares()
+            ->where('shared_with', $agent->id)
+            ->where('status', 'active')
+            ->whereNull('revoked_at')
+            ->where(function ($query): void {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
             ->exists();
     }
 }

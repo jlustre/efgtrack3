@@ -1,6 +1,7 @@
 @php
     $user = auth()->user();
-    $dashboardNotifications = $user?->notifications()->latest()->limit(10)->get() ?? collect();
+    $notificationLimit = (int) ($limit ?? 5);
+    $dashboardNotifications = $user?->notifications()->latest()->limit($notificationLimit)->get() ?? collect();
     $dashboardUnreadNotificationCount = $user?->unreadNotifications()->count() ?? 0;
 
     $notificationTone = function (?string $category): string {

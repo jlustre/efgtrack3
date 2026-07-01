@@ -8,11 +8,11 @@ use App\Models\MemberProductionEntry;
 use App\Models\User;
 use App\Services\Communication\AnnouncementEventService;
 use App\Services\Communication\CampaignService;
-use Database\Seeders\AnnouncementCategorySeeder;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\AnnouncementTestFixtures;
 use Tests\TestCase;
 
 class CommunicationHubPhaseFiveTest extends TestCase
@@ -26,8 +26,9 @@ class CommunicationHubPhaseFiveTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             NotificationConfigSeeder::class,
-            AnnouncementCategorySeeder::class,
         ]);
+
+        AnnouncementTestFixtures::seedCategories();
     }
 
     public function test_campaign_center_lists_active_campaigns(): void

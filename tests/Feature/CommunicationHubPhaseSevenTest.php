@@ -7,13 +7,12 @@ use App\Models\User;
 use App\Services\Communication\CommunicationAiAssistantService;
 use App\Services\Communication\CommunicationHubService;
 use App\Services\Communication\NewsletterGeneratorService;
-use Database\Seeders\AnnouncementCategorySeeder;
-use Database\Seeders\AnnouncementTemplateSeeder;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
+use Tests\Support\AnnouncementTestFixtures;
 use Tests\TestCase;
 
 class CommunicationHubPhaseSevenTest extends TestCase
@@ -27,9 +26,9 @@ class CommunicationHubPhaseSevenTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             NotificationConfigSeeder::class,
-            AnnouncementCategorySeeder::class,
-            AnnouncementTemplateSeeder::class,
         ]);
+
+        AnnouncementTestFixtures::seedTemplates();
     }
 
     public function test_admin_can_access_newsletter_generator(): void

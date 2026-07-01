@@ -4,13 +4,14 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Services\Communication\CommunicationHubService;
+use App\Support\AnnouncementCategoryCatalog;
 use Illuminate\Database\Seeder;
 
 class CommunicationHubDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call(AnnouncementCategorySeeder::class);
+        AnnouncementCategoryCatalog::seed();
         $this->call(RecognitionBadgeSeeder::class);
 
         $author = User::query()->whereNull('deleted_at')->orderBy('id')->first();
@@ -27,52 +28,7 @@ class CommunicationHubDemoSeeder extends Seeder
         $recognition = app(\App\Services\Communication\RecognitionService::class);
 
         $samples = [
-            [
-                'category_code' => 'leadership',
-                'title' => 'Weekly leadership message: stay focused on field activity',
-                'summary' => 'Agency priorities for the week ahead — prospecting, FAP progress, and team recognition.',
-                'body' => "Team,\n\nThis week we are emphasizing consistent field activity and supporting every associate through licensing milestones. Check the Communication Hub for training updates and celebrate wins on the recognition board.\n\n— Leadership",
-                'priority' => 'important',
-                'audience_type' => 'all',
-                'is_pinned' => true,
-                'is_featured' => true,
-                'featured_sort' => 1,
-            ],
-            [
-                'category_code' => 'training',
-                'title' => 'New course available: Advanced Product Knowledge',
-                'summary' => 'A new training module is live in the Training Academy.',
-                'body' => 'The Advanced Product Knowledge course is now available for all associates. Complete the module by the end of the month to stay current with product updates.',
-                'priority' => 'important',
-                'audience_type' => 'all',
-            ],
-            [
-                'category_code' => 'compliance',
-                'title' => 'Compliance reminder: client documentation standards',
-                'summary' => 'Please review updated documentation requirements effective immediately.',
-                'body' => 'All associates must follow the updated client documentation checklist. Acknowledgement is required after reading the full policy update.',
-                'priority' => 'critical',
-                'audience_type' => 'all',
-                'requires_acknowledgement' => true,
-            ],
-            [
-                'category_code' => 'emergency',
-                'title' => 'Emergency: portal maintenance window tonight',
-                'summary' => 'The portal will be unavailable from 11 PM to 1 AM. Acknowledgement required.',
-                'body' => 'Emergency maintenance is scheduled tonight. Save your work and plan accordingly. Acknowledge once you have read this notice.',
-                'priority' => 'emergency',
-                'audience_type' => 'all',
-                'requires_acknowledgement' => true,
-            ],
-            [
-                'category_code' => 'recognition',
-                'title' => 'Congratulations to our newest licensed associates',
-                'summary' => 'Celebrate teammates who earned their license this month.',
-                'body' => 'Join us in recognizing associates who completed licensing this month. Their dedication to the process sets the standard for the team.',
-                'priority' => 'informational',
-                'audience_type' => 'all',
-                'is_featured' => true,
-            ],
+            
         ];
 
         foreach ($samples as $sample) {

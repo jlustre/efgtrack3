@@ -13,13 +13,15 @@ use App\Models\Notification;
 use App\Models\Prospect;
 use App\Models\ProspectFollowUp;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
+use App\Support\TaskUserAttributes;
 use App\Services\Notifications\NotificationDigestService;
 use App\Services\Notifications\NotificationEscalationService;
 use App\Services\Notifications\NotificationOrchestrator;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\ProspectLookupSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\TaskCategorySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -73,15 +75,15 @@ class NotificationPhaseFourTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('member');
 
-        UserTask::query()->create([
-            'assigned_to_user_id' => $user->id,
-            'created_by_user_id' => $user->id,
-            'title' => 'Overdue licensing follow-up',
+        $this->seed(TaskCategorySeeder::class);
+
+        TaskUser::query()->create(TaskUserAttributes::forCategoryTask('Licensing', [
+            'assignee_id' => $user->id,
+            'assignor_id' => $user->id,
             'priority' => 'high',
-            'status' => 'open',
-            'category' => 'Licensing',
+            'status' => 'to_do',
             'due_date' => now()->subDay()->toDateString(),
-        ]);
+        ]));
 
         app(NotificationEscalationService::class)->evaluateAll();
 

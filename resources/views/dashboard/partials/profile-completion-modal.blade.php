@@ -57,7 +57,7 @@
 
         <div class="flex min-h-0 flex-1 flex-col sm:flex-row">
             <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
-            <form id="profile-completion-form" method="post" action="{{ route('profile.update') }}" class="space-y-5" @submit="profileSaving = true">
+            <form id="profile-completion-form" method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-5" @submit="profileSaving = true">
                 @csrf
                 @method('patch')
                 <input type="hidden" name="redirect_to" value="dashboard">
@@ -158,6 +158,8 @@
                     ></textarea>
                     <x-input-error class="mt-2" :messages="$errors->get('bio')" />
                 </div>
+
+                @include('profile.partials.profile-completion-photo-field', ['user' => $user])
 
             </form>
             </div>

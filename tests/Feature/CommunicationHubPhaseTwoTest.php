@@ -4,11 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\Communication\CommunicationHubService;
-use Database\Seeders\AnnouncementCategorySeeder;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\AnnouncementTestFixtures;
 use Tests\TestCase;
 
 class CommunicationHubPhaseTwoTest extends TestCase
@@ -22,8 +22,9 @@ class CommunicationHubPhaseTwoTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             NotificationConfigSeeder::class,
-            AnnouncementCategorySeeder::class,
         ]);
+
+        AnnouncementTestFixtures::seedCategories();
     }
 
     public function test_search_filters_communication_hub_feed(): void
@@ -158,6 +159,39 @@ class CommunicationHubPhaseTwoTest extends TestCase
         $this->assertCount(1, $snapshot['featured']);
         $this->assertSame('Featured leadership update', $snapshot['featured'][0]['title']);
         $this->assertTrue($snapshot['announcements'][0]['is_unread']);
+    }
+
+    public function test_marking_announcement_notification_read_clears_unread_state(): void
+    {
+        $member = User::factory()->create();
+        $member->assignRole('member');
+
+        $author = User::factory()->create();
+        $author->assignRole('admin');
+
+        $hub = app(CommunicationHubService::class);
+        $announcement = $hub->createDraft([
+            'category_code' => 'general',
+            'title' => 'Notification read sync test',
+            'body' => 'This should clear unread when the notification is marked read.',
+            'audience_type' => 'all',
+        ], $author);
+        $hub->publish($announcement);
+
+        $notification = $member->notifications()->firstOrFail();
+
+        app(\App\Services\Notifications\NotificationInboxService::class)
+            ->markAsRead($member, $notification->id);
+
+        $this->assertDatabaseHas('message_center_announcement_reads', [
+            'announcement_id' => $announcement->id,
+            'user_id' => $member->id,
+        ]);
+
+        $snapshot = $hub->dashboardCommunicationsFor($member->fresh());
+
+        $this->assertSame(0, $snapshot['unread_count']);
+        $this->assertFalse($snapshot['announcements'][0]['is_unread']);
     }
 
     public function test_featured_and_pinned_sections_render_on_hub_home(): void

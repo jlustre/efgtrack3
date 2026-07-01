@@ -14,6 +14,8 @@ use App\Services\Fna\FnaReviewService;
 use App\Services\Fna\FnaWorkflowService;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\SystemTaskAssignorSeeder;
+use Database\Seeders\TaskCategorySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -72,7 +74,7 @@ class FnaReviewWorkflowTest extends TestCase
 
     public function test_full_submit_approve_workflow_with_notifications(): void
     {
-        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class]);
+        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class, TaskCategorySeeder::class, SystemTaskAssignorSeeder::class]);
 
         [$trainee, $cfm] = $this->createTraineeWithCfm();
 
@@ -113,15 +115,15 @@ class FnaReviewWorkflowTest extends TestCase
             'comment_type' => 'approval',
         ]);
 
-        $this->assertDatabaseHas('user_tasks', [
-            'related_fna_id' => $fna->id,
-            'category' => 'FNA',
-        ]);
+        $task = \App\Models\TaskUser::query()->where('related_fna_id', $fna->id)->first();
+        $this->assertNotNull($task);
+        $this->assertSame(\App\Support\SystemTaskAssignor::USER_ID, $task->assignor_id);
+        $this->assertSame('FNA', $task->taskCategory?->name);
     }
 
     public function test_cfm_can_request_revision_with_required_comment(): void
     {
-        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class]);
+        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class, TaskCategorySeeder::class, SystemTaskAssignorSeeder::class]);
 
         [$trainee, $cfm] = $this->createTraineeWithCfm();
 
@@ -171,7 +173,7 @@ class FnaReviewWorkflowTest extends TestCase
 
     public function test_cfm_review_panel_approves_via_livewire(): void
     {
-        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class]);
+        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class, TaskCategorySeeder::class, SystemTaskAssignorSeeder::class]);
 
         [$trainee, $cfm] = $this->createTraineeWithCfm();
 
@@ -192,7 +194,7 @@ class FnaReviewWorkflowTest extends TestCase
 
     public function test_status_history_records_full_workflow(): void
     {
-        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class]);
+        $this->seed([RolePermissionSeeder::class, NotificationConfigSeeder::class, TaskCategorySeeder::class, SystemTaskAssignorSeeder::class]);
 
         [$trainee, $cfm] = $this->createTraineeWithCfm();
 

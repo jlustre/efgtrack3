@@ -99,6 +99,19 @@
                     <option value="0" @selected(($filters['active'] ?? '') === '0')>Inactive</option>
                 </select>
             @endif
+            @if ($config['sortable'] ?? false)
+                <select name="sort" class="shrink-0 rounded-md border-slate-300 py-1.5 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                    @foreach (($config['sort_columns'] ?? ['sort_order', 'name']) as $sortColumn)
+                        <option value="{{ $sortColumn }}" @selected(($filters['sort'] ?: ($config['order_by'] ?? 'sort_order')) === $sortColumn)>
+                            Sort by {{ str($sortColumn)->replace('_', ' ')->title() }}
+                        </option>
+                    @endforeach
+                </select>
+                <select name="direction" class="shrink-0 rounded-md border-slate-300 py-1.5 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
+                    <option value="asc" @selected(($filters['direction'] ?: ($config['order_direction'] ?? 'asc')) === 'asc')>Ascending</option>
+                    <option value="desc" @selected(($filters['direction'] ?: ($config['order_direction'] ?? 'asc')) === 'desc')>Descending</option>
+                </select>
+            @endif
             <select name="trashed" class="shrink-0 rounded-md border-slate-300 py-1.5 text-sm shadow-sm focus:border-[#C8A24A] focus:ring-[#C8A24A]">
                 <option value="" @selected($filters['trashed'] === '')>Not archived</option>
                 <option value="with" @selected($filters['trashed'] === 'with')>With archived</option>
@@ -152,6 +165,11 @@
                                                 'filters' => $filters,
                                                 'embedded' => $embedded ?? false,
                                             ])
+                                            @if (($favorite->type ?? 'document') === 'document')
+                                                @include('admin.management.partials.resource-document-access-actions', [
+                                                    'record' => $favorite,
+                                                ])
+                                            @endif
                                             @if ($canManage)
                                                 <a
                                                     href="{{ route('admin.management.edit', ['resources', $favorite->id]) }}"
@@ -223,6 +241,15 @@
                                             <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                                                 {{ $checklistTypes->firstWhere('id', $value)?->name ?? 'N/A' }}
                                             </span>
+                                        @elseif ($column === 'task_category_id' && in_array($resource, ['tasks', 'task-users'], true))
+                                            <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                                                {{ $taskCategories->firstWhere('id', $value)?->name ?? 'N/A' }}
+                                            </span>
+                                        @elseif ($column === 'task_id' && $resource === 'task-users')
+                                            <span class="line-clamp-2">{{ $libraryTasks->firstWhere('id', $value)?->title ?? 'N/A' }}</span>
+                                        @elseif (in_array($column, ['assignee_id', 'assignor_id'], true) && $resource === 'task-users')
+                                            @php($member = $memberUsers->firstWhere('id', $value))
+                                            <span class="line-clamp-2">{{ $member ? $member->name.' ('.$member->email.')' : 'N/A' }}</span>
                                         @elseif ($column === 'prerequisites_label')
                                             <span class="line-clamp-2">{{ $value ?: '—' }}</span>
                                         @elseif ($column === 'title' && filled(data_get($record, 'description')))
@@ -269,46 +296,20 @@
                                                 <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">View</span>
                                             </a>
                                         @endif
-                                        @if ($resource === 'resources' && filled($record->file_path) && ! str_starts_with($record->file_path, 'http') && strtoupper($record->file_format ?? 'PDF') === 'PDF')
-                                            <a
-                                                href="{{ route('admin.management.resources.view-pdf', $record->id, absolute: false) }}"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                title="View PDF"
-                                                aria-label="View PDF"
-                                                class="group efg-icon-btn-danger"
-                                            >
-                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                                                    <path d="M14 2v6h6" />
-                                                    <path d="M10 13h4" />
-                                                    <path d="M10 17h4" />
-                                                    <path d="M10 9H8" />
-                                                </svg>
-                                                <span class="sr-only">View PDF</span>
-                                                <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">View PDF</span>
-                                            </a>
-                                        @elseif ($resource === 'resources' && filled($record->url) && str_ends_with(strtolower(parse_url(\App\Support\ResourceUrl::resolve($record->url) ?? '', PHP_URL_PATH) ?? ''), '.pdf'))
-                                            <a
-                                                href="{{ \App\Support\ResourceUrl::resolve($record->url) }}"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                title="View PDF"
-                                                aria-label="View PDF"
-                                                class="group efg-icon-btn-danger"
-                                            >
-                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                                                    <path d="M14 2v6h6" />
-                                                    <path d="M10 13h4" />
-                                                    <path d="M10 17h4" />
-                                                    <path d="M10 9H8" />
-                                                </svg>
-                                                <span class="sr-only">View PDF</span>
-                                                <span class="pointer-events-none absolute -top-9 right-0 z-10 whitespace-nowrap rounded-md bg-[#0B1F3A] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">View PDF</span>
-                                            </a>
+                                        @if ($resource === 'resources' && ($record->type ?? 'document') === 'document')
+                                            @include('admin.management.partials.resource-document-access-actions', [
+                                                'record' => $record,
+                                                'showView' => false,
+                                            ])
                                         @endif
                                         @if ($canManage)
+                                            @if (($config['sortable'] ?? false) && ! $record->deleted_at)
+                                                @include('admin.management.partials.resource-sort-actions', [
+                                                    'resource' => $resource,
+                                                    'recordId' => $record->id,
+                                                    'indexQueryParams' => $indexQueryParams ?? [],
+                                                ])
+                                            @endif
                                             @php($canEditRecord = $resource !== 'resources' || auth()->user()->canUpdateDocument($record))
                                             @if ($canEditRecord)
                                                 <a

@@ -7,6 +7,7 @@ use App\Mail\TemplatedMail;
 use App\Models\EmailTemplate;
 use App\Models\User;
 use App\Support\EmailTemplateTokens;
+use App\Support\EmailVerificationUrl;
 use App\Services\Notifications\NotificationOrchestrator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -35,15 +36,34 @@ class NewMemberRegistrationService
 
     private function sendWelcomeEmails(User $member, ?User $sponsor, ?User $agencyOwner): void
     {
-        $this->sendTemplatedEmail('new_member_welcome', $member->email, $this->tokens($member, $sponsor, $agencyOwner));
+        $tokens = $this->tokens($member, $sponsor, $agencyOwner);
+
+        $this->sendTemplatedEmail('new_member_welcome', $member->email, $tokens);
 
         if ($sponsor) {
-            $this->sendTemplatedEmail('sponsor_new_member_welcome', $sponsor->email, $this->tokens($member, $sponsor, $agencyOwner));
+            $this->sendTemplatedEmail('sponsor_new_member_welcome', $sponsor->email, $tokens);
         }
 
         if ($agencyOwner) {
-            $this->sendTemplatedEmail('agency_owner_new_member_welcome', $agencyOwner->email, $this->tokens($member, $sponsor, $agencyOwner));
+            $this->sendTemplatedEmail('agency_owner_new_member_welcome', $agencyOwner->email, $tokens);
         }
+    }
+
+    public function sendEmailVerificationEmail(User $member): void
+    {
+        if ($member->hasVerifiedEmail()) {
+            return;
+        }
+
+        $member->loadMissing(['sponsor', 'team', 'profile']);
+
+        $this->sendTemplatedEmail('new_member_email_verification', $member->email, array_merge(
+            $this->tokens($member, $member->sponsor, $this->memberUpline->agencyOwner($member)),
+            [
+                'verification_url' => EmailVerificationUrl::signedUrl($member),
+                'verification_expires_hours' => (string) EmailVerificationUrl::expiresInHours(),
+            ],
+        ));
     }
 
     private function sendCfmAssignmentNotifications(User $member, ?User $sponsor, ?User $agencyOwner): void

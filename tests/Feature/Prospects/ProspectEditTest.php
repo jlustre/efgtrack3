@@ -51,7 +51,7 @@ class ProspectEditTest extends TestCase
             'priority' => 'high',
             'referral_source_name' => 'Church event',
             'campaign_name' => 'Spring 2026',
-            'notes_summary' => 'Very interested in mortgage protection.',
+            'qualification_notes' => 'Very interested in mortgage protection.',
         ]);
 
         $this->actingAs($user)

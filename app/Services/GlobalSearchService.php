@@ -8,7 +8,7 @@ use App\Models\PortalResource;
 use App\Models\Prospect;
 use App\Models\TrainingModule;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
 use App\Services\Communication\AnnouncementAudienceResolver;
 use App\Support\MemberDisplayName;
 use App\Support\ResourceDocumentCategories;
@@ -284,22 +284,25 @@ class GlobalSearchService
     {
         $term = '%'.$query.'%';
 
-        return UserTask::query()
+        return TaskUser::query()
+            ->with(['taskCategory', 'task'])
             ->openForUser($user)
             ->where(function ($builder) use ($term): void {
-                $builder->where('title', 'like', $term)
-                    ->orWhere('description', 'like', $term)
-                    ->orWhere('category', 'like', $term)
-                    ->orWhere('related_person', 'like', $term);
+                $builder->where('additional_notes', 'like', $term)
+                    ->orWhere('related_person', 'like', $term)
+                    ->orWhereHas('task', fn ($taskQuery) => $taskQuery
+                        ->where('title', 'like', $term)
+                        ->orWhere('description', 'like', $term))
+                    ->orWhereHas('taskCategory', fn ($categoryQuery) => $categoryQuery->where('name', 'like', $term));
             })
             ->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 ELSE 4 END")
             ->orderBy('due_date')
             ->limit($limit)
             ->get()
-            ->map(fn (UserTask $task): array => [
-                'title' => $task->title,
-                'subtitle' => ($task->category ?? 'Task').' · '.$task->displayStatus(),
-                'url' => route('tasks.index', ['q' => $task->title]),
+            ->map(fn (TaskUser $task): array => [
+                'title' => $task->displayTitle(),
+                'subtitle' => ($task->categoryName() ?? 'Task').' · '.$task->displayStatus(),
+                'url' => route('tasks.index', ['q' => $task->displayTitle()]),
                 'meta' => $task->due_date?->format('M j, Y'),
             ])
             ->all();

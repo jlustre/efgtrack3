@@ -92,6 +92,22 @@ class TaskPageTest extends TestCase
         $this->actingAs($member)
             ->get(route('tasks.index'))
             ->assertOk()
-            ->assertSee('No open tasks');
+            ->assertSee('No tasks match your filters', false)
+            ->assertSee('Quick search', false)
+            ->assertSee('Previous', false)
+            ->assertSee('Rows Per Page', false);
+    }
+
+    public function test_tasks_page_accepts_search_query_from_url(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $member = User::factory()->create(['name' => 'Taylor Task Search']);
+        $member->assignRole('member');
+
+        $this->actingAs($member)
+            ->get(route('tasks.index', ['q' => 'Taylor']))
+            ->assertOk()
+            ->assertSee('Taylor Task Search', false);
     }
 }

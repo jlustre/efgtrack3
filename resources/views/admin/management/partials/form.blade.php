@@ -36,6 +36,8 @@
         'notification_type',
         'notification_trigger',
         'notification_template',
+        'task_category',
+        'task',
     ];
 @endphp
 
@@ -224,6 +226,8 @@
                     'notification_type' => 'notification_types',
                     'notification_trigger' => 'notification_triggers',
                     'notification_template' => 'notification_templates',
+                    'task_category' => 'task_categories',
+                    'task' => 'tasks',
                 };
             @endphp
             <select
@@ -241,7 +245,7 @@
             </select>
         @endif
 
-        @if (in_array($type, ['text', 'number', 'datetime-local', 'email', 'url'], true))
+        @if (in_array($type, ['text', 'number', 'datetime-local', 'email', 'url', 'date'], true))
             <input
                 id="{{ $fieldId }}"
                 name="{{ $field['name'] }}"
@@ -251,7 +255,7 @@
             >
         @endif
 
-        @if (! in_array($type, array_merge(['textarea', 'rich_text', 'json', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url', 'checklist_types'], $relationshipSelectTypes), true))
+        @if (! in_array($type, array_merge(['textarea', 'rich_text', 'json', 'boolean', 'select', 'responsible_parties', 'notified_parties', 'user', 'team', 'text', 'number', 'datetime-local', 'email', 'url', 'date', 'checklist_types'], $relationshipSelectTypes), true))
             <input
                 id="{{ $fieldId }}"
                 name="{{ $field['name'] }}"

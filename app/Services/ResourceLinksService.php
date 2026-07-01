@@ -77,6 +77,38 @@ class ResourceLinksService
         ];
     }
 
+    /**
+     * @return Collection<int, PortalResource>
+     */
+    public function dashboardLinks(int $limit = 6): Collection
+    {
+        $featured = (clone $this->publishedLinksQuery())
+            ->where('is_featured', true)
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->limit($limit)
+            ->get();
+
+        if ($featured->count() >= $limit) {
+            return $featured;
+        }
+
+        $remaining = $limit - $featured->count();
+
+        $additional = (clone $this->publishedLinksQuery())
+            ->when(
+                $featured->isNotEmpty(),
+                fn ($query) => $query->whereNotIn('id', $featured->pluck('id')),
+            )
+            ->orderByDesc('is_featured')
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->limit($remaining)
+            ->get();
+
+        return $featured->concat($additional);
+    }
+
     private function publishedLinksQuery()
     {
         return PortalResource::query()

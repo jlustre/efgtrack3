@@ -6,12 +6,11 @@ use App\Models\AnnouncementCategory;
 use App\Models\MessageCenterAnnouncement;
 use App\Models\User;
 use App\Services\Communication\CommunicationHubService;
-use Database\Seeders\AnnouncementCategorySeeder;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Tests\Support\AnnouncementTestFixtures;
 use Tests\TestCase;
 
 class CommunicationHubPhaseOneTest extends TestCase
@@ -25,8 +24,9 @@ class CommunicationHubPhaseOneTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             NotificationConfigSeeder::class,
-            AnnouncementCategorySeeder::class,
         ]);
+
+        AnnouncementTestFixtures::seedCategories();
     }
 
     public function test_member_can_view_communication_hub_feed(): void
@@ -152,7 +152,7 @@ class CommunicationHubPhaseOneTest extends TestCase
             ->assertRedirect('/communications');
     }
 
-    public function test_announcement_categories_are_seeded(): void
+    public function test_announcement_categories_can_be_seeded_for_tests(): void
     {
         $this->assertDatabaseCount('announcement_categories', 11);
         $this->assertDatabaseHas('announcement_categories', [

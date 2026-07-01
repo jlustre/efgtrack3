@@ -166,6 +166,21 @@
 
                         <div class="ml-auto flex items-center gap-2 sm:gap-3">
                             @auth
+                                <button
+                                    type="button"
+                                    class="efg-icon-btn-lg"
+                                    title="Assign a task"
+                                    onclick="Livewire.dispatch('open-assign-task-modal')"
+                                >
+                                    <span class="sr-only">Assign a task</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                        <path d="M12 11v6"></path>
+                                        <path d="M9 14h6"></path>
+                                    </svg>
+                                </button>
+
                                 <a
                                     href="{{ route('tasks.index') }}"
                                     class="efg-icon-btn-lg relative"
@@ -238,6 +253,7 @@
                 @auth
                     <livewire:notifications.critical-alert-banner />
                     <livewire:communication.communication-critical-banner />
+                    <livewire:tasks.assign-task-modal />
                 @endauth
 
                 <main class="flex-1 px-4 py-6 lg:px-8">

@@ -64,6 +64,7 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique('profiles', 'efg_invite_link')->ignore($profileId),
             ],
             'bio' => ['nullable', 'string', 'max:1000'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ];
     }
 
@@ -76,6 +77,9 @@ class ProfileUpdateRequest extends FormRequest
             'efg_invite_link.url' => 'Enter a valid Experior invite URL (including https://).',
             'efg_invite_link.unique' => 'This Experior invite link is already in use by another member.',
             'efg_associate_id.unique' => 'This EFG Associate ID is already in use by another member.',
+            'photo.image' => 'Please choose a valid profile photo (JPEG, PNG, or WebP, up to 2 MB).',
+            'photo.mimes' => 'Please choose a valid profile photo (JPEG, PNG, or WebP, up to 2 MB).',
+            'photo.max' => 'Profile photos must be 2 MB or smaller.',
         ];
     }
 

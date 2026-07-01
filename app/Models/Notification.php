@@ -74,5 +74,22 @@ class Notification extends DatabaseNotification
                 $notification->id = (string) Str::uuid();
             }
         });
+
+        static::updated(function (Notification $notification): void {
+            if (! $notification->wasChanged('read_at') || $notification->read_at === null) {
+                return;
+            }
+
+            if ($notification->notifiable_type !== User::class || ! $notification->notifiable_id) {
+                return;
+            }
+
+            $user = User::query()->find($notification->notifiable_id);
+
+            if ($user) {
+                app(\App\Services\Communication\AnnouncementReadSyncService::class)
+                    ->syncFromNotification($user, $notification);
+            }
+        });
     }
 }

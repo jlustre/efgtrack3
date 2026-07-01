@@ -38,6 +38,14 @@ class MemberProfileTabsService
     }
 
     /**
+     * @return list<array<string, mixed>>
+     */
+    public function checklistSummariesFor(User $user): array
+    {
+        return $this->checklistSummaries($user);
+    }
+
+    /**
      * @return list<array{
      *     code: string,
      *     name: string,

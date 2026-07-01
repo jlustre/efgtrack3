@@ -76,6 +76,20 @@ class ProspectActivityLogSummaryService
         ];
     }
 
+    public function totalForLast30Days(User $user): int
+    {
+        return $this->totalForPeriod(
+            $user,
+            now()->subDays(29)->startOfDay(),
+            now()->endOfDay(),
+        );
+    }
+
+    public function totalForPeriod(User $user, CarbonInterface $start, CarbonInterface $end): int
+    {
+        return (int) array_sum($this->summarize($user, $start, $end, 'daily')['totals']);
+    }
+
     /**
      * @return list<array{key: string, label: string, start: CarbonInterface, end: CarbonInterface}>
      */

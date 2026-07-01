@@ -7,11 +7,11 @@ use App\Models\User;
 use App\Services\Communication\AnnouncementAnalyticsService;
 use App\Services\Communication\BroadcastService;
 use App\Services\Communication\CommunicationHubService;
-use Database\Seeders\AnnouncementCategorySeeder;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\AnnouncementTestFixtures;
 use Tests\TestCase;
 
 class CommunicationHubPhaseSixTest extends TestCase
@@ -25,8 +25,9 @@ class CommunicationHubPhaseSixTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             NotificationConfigSeeder::class,
-            AnnouncementCategorySeeder::class,
         ]);
+
+        AnnouncementTestFixtures::seedCategories();
     }
 
     public function test_admin_communication_dashboard_shows_metrics(): void

@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 
 export default defineConfig({
+    base: process.env.NODE_ENV === 'production' ? '/stg/' : '/',
     plugins: [
         laravel({
             input: [
@@ -13,7 +14,7 @@ export default defineConfig({
         }),
     ],
     server: {
-        host: 'efgtrack.test',
+        host: process.env.VITE_HOST || '127.0.0.1',
         port: 5173,
     },
 });

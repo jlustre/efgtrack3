@@ -89,7 +89,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::patch('/licensing-progress/{progress}/review', [TrackerChecklistController::class, 'reviewLicensing'])->name('licensing.review');
     Route::view('/compliance', 'compliance.index')->name('compliance.index');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
-    Route::post('/tasks/{task}/comments', [TaskController::class, 'storeComment'])->name('tasks.comments.store');
+    Route::post('/tasks/{taskUser}/comments', [TaskController::class, 'storeComment'])->name('tasks.comments.store');
     Route::get('/field-apprenticeship', [TrackerChecklistController::class, 'apprenticeship'])->name('apprenticeship.index');
     Route::patch('/field-apprenticeship/{step}', [TrackerChecklistController::class, 'updateApprenticeship'])->name('apprenticeship.update');
     Route::patch('/field-apprenticeship-progress/{progress}/review', [TrackerChecklistController::class, 'reviewApprenticeship'])->name('apprenticeship.review');
@@ -377,6 +377,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
                 Route::get('/{resource}/{record}', [AdminManagementController::class, 'show'])->name('show');
                 Route::get('/{resource}/{record}/edit', [AdminManagementController::class, 'edit'])->name('edit');
                 Route::patch('/{resource}/{record}', [AdminManagementController::class, 'update'])->name('update');
+                Route::patch('/{resource}/{record}/reorder', [AdminManagementController::class, 'reorder'])->name('reorder');
                 Route::patch('/{resource}/{record}/status', [AdminManagementController::class, 'toggleStatus'])->name('status');
                 Route::delete('/{resource}/{record}', [AdminManagementController::class, 'destroy'])->name('destroy');
                 Route::patch('/{resource}/{record}/restore', [AdminManagementController::class, 'restore'])->name('restore');

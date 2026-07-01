@@ -11,9 +11,13 @@
                 + Create FNA
             </a>
         @endif
-        @can('create', \App\Models\FnaClientInvite::class)
+        @can('requestFnaClientPortal', $prospect)
             <button type="button" onclick="Livewire.dispatch('open-fna-client-invite-modal', { prospectId: '{{ $prospect->id }}' })" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-3 py-1.5 text-xs font-semibold text-[#0B1F3A]">
-                Send FNA Link
+                @can('create', \App\Models\FnaClientInvite::class)
+                    Send FNA Link
+                @else
+                    FNA via CFM
+                @endcan
             </button>
         @endcan
     </div>
@@ -57,7 +61,7 @@
         @endforelse
     </div>
 
-    @can('create', \App\Models\FnaClientInvite::class)
+    @can('requestFnaClientPortal', $prospect)
         <livewire:fna.fna-client-invite-panel :prospect="$prospect" :key="'prospect-fna-invites-'.$prospect->id" />
     @endcan
 </div>

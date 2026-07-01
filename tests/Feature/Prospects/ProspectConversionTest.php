@@ -8,6 +8,7 @@ use App\Models\RegistrationInvitation;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\Prospects\ProspectConversionService;
+use App\Support\LocationOptions;
 use Database\Seeders\CountrySeeder;
 use Database\Seeders\EmailTemplateSeeder;
 use Database\Seeders\NotificationConfigSeeder;
@@ -106,16 +107,16 @@ class ProspectConversionTest extends TestCase
             'email' => 'new.recruit@example.com',
             'efg_associate_id' => 'EFG-9001',
             'city' => 'Vancouver',
-            'province' => 'British Columbia',
-            'country' => 'Canada',
-            'timezone' => 'Canada Pacific Time',
+            'country_id' => LocationOptions::resolveCountryId('Canada'),
+            'state_province_id' => LocationOptions::resolveStateProvinceId('Canada', 'British Columbia'),
+            'timezone_id' => LocationOptions::resolveTimezoneId('Canada Pacific Time'),
             'sponsor_confirmed' => '1',
             'active_associate_confirmed' => '1',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('login', absolute: false));
 
         $newMember = User::where('email', 'new.recruit@example.com')->firstOrFail();
 

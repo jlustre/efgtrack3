@@ -23,6 +23,7 @@ class FnaClientInvite extends Model
             'last_saved_at' => 'datetime',
             'submitted_at' => 'datetime',
             'revoked_at' => 'datetime',
+            'last_emailed_at' => 'datetime',
         ];
     }
 

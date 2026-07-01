@@ -137,7 +137,7 @@ class FnaRecord extends Model
 
     public function tasks(): HasMany
     {
-        return $this->hasMany(UserTask::class, 'related_fna_id');
+        return $this->hasMany(TaskUser::class, 'related_fna_id');
     }
 
     public function statusLabel(): string

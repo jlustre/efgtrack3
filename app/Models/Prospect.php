@@ -22,6 +22,7 @@ class Prospect extends Model
     {
         return [
             'date_of_birth' => 'date',
+            'spouse_date_of_birth' => 'date',
             'next_follow_up_at' => 'datetime',
             'last_contacted_at' => 'datetime',
             'appointment_at' => 'datetime',
@@ -31,6 +32,8 @@ class Prospect extends Model
             'is_client' => 'boolean',
             'is_archived' => 'boolean',
             'engagement_score' => 'decimal:2',
+            'dependents' => 'array',
+            'qualification_traits' => 'array',
         ];
     }
 

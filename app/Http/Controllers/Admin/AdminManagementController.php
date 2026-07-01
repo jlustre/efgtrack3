@@ -141,7 +141,10 @@ class AdminManagementController extends Controller
                 $active === '0' && $this->hasColumn($config['table'], 'is_active'),
                 fn ($query) => $query->where('is_active', false),
             )
-            ->orderBy($config['order_by'] ?? 'id', $config['order_direction'] ?? 'asc')
+            ->orderBy(
+                $this->resolveResourceOrderBy($request, $config),
+                $this->resolveResourceOrderDirection($request, $config),
+            )
             ->paginate($resource === 'checklists' ? 25 : 12)
             ->withQueryString();
 
@@ -151,6 +154,18 @@ class AdminManagementController extends Controller
 
         $favoriteResourceIds = [];
         $favoriteRecords = collect();
+
+        $taskCategories = in_array($resource, ['tasks', 'task-users'], true)
+            ? DB::table('task_categories')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name'])
+            : collect();
+
+        $libraryTasks = $resource === 'task-users'
+            ? DB::table('tasks')->whereNull('deleted_at')->orderBy('title')->get(['id', 'title'])
+            : collect();
+
+        $memberUsers = $resource === 'task-users'
+            ? DB::table('users')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name', 'email'])
+            : collect();
 
         if ($resource === 'resources') {
             $favoriteResourceIds = $request->user()
@@ -177,6 +192,8 @@ class AdminManagementController extends Controller
                 'category' => $category,
                 'checklist_type' => $checklistType,
                 'active' => $active,
+                'sort' => $request->string('sort')->toString(),
+                'direction' => $request->string('direction')->toString(),
             ],
             'indexQueryParams' => $this->resourceIndexQueryParams($request, $resource),
             'checklistTypes' => $checklistTypes,
@@ -187,6 +204,9 @@ class AdminManagementController extends Controller
             'options' => ($config['use_inline_modals'] ?? true) ? $this->formOptionsFor($config) : [],
             'favoriteResourceIds' => $favoriteResourceIds,
             'favoriteRecords' => $favoriteRecords,
+            'taskCategories' => $taskCategories,
+            'libraryTasks' => $libraryTasks,
+            'memberUsers' => $memberUsers,
         ]);
     }
 
@@ -224,6 +244,14 @@ class AdminManagementController extends Controller
 
         if ($resource === 'notifications') {
             $validated = $this->normalizeNotificationStoreData($validated);
+        }
+
+        if ($resource === 'tasks') {
+            $validated = $this->normalizeTaskData($validated);
+        }
+
+        if ($resource === 'task-users') {
+            $validated = $this->normalizeTaskUserData($validated);
         }
 
         $validated = $this->normalizeJsonFieldValues($validated, $config);
@@ -329,6 +357,14 @@ class AdminManagementController extends Controller
 
         if ($resource === 'notifications') {
             $validated = $this->normalizeNotificationStoreData($validated);
+        }
+
+        if ($resource === 'tasks') {
+            $validated = $this->normalizeTaskData($validated);
+        }
+
+        if ($resource === 'task-users') {
+            $validated = $this->normalizeTaskUserData($validated);
         }
 
         $validated = $this->normalizeJsonFieldValues($validated, $config);
@@ -451,11 +487,57 @@ class AdminManagementController extends Controller
             'email-template-tokens' => File::put($this->seederPath($resource), $this->buildEmailTemplateTokenSeeder()),
             'checklists' => $this->writeChecklistSeeders($request),
             'checklist-types' => File::put($this->seederPath($resource), $this->buildChecklistTypeSeeder()),
+            'task-categories' => File::put($this->seederPath($resource), $this->buildTaskCategorySeeder()),
+            'tasks' => File::put($this->seederPath($resource), $this->buildTaskSeeder()),
         };
 
         return redirect()
             ->route('admin.management.resource.index', array_merge([$resource], $this->resourceIndexQueryParams($request, $resource)))
             ->with('status', 'seeder-updated');
+    }
+
+    public function reorder(Request $request, string $resource, string|int $record): RedirectResponse
+    {
+        $config = $this->resourceConfig($resource);
+        abort_unless($this->canManageResource($resource), 403);
+        abort_unless($config['sortable'] ?? false, 404);
+        abort_unless($this->hasColumn($config['table'], 'sort_order'), 404);
+
+        $move = $request->string('move')->toString();
+        abort_unless(in_array($move, ['up', 'down'], true), 422);
+
+        $records = DB::table($config['table'])
+            ->whereNull('deleted_at')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['id', 'sort_order']);
+
+        $index = $records->search(fn (object $row): bool => (int) $row->id === (int) $record);
+        abort_if($index === false, 404);
+
+        $neighborIndex = $move === 'up' ? $index - 1 : $index + 1;
+        if ($neighborIndex < 0 || $neighborIndex >= $records->count()) {
+            return redirect()
+                ->route('admin.management.resource.index', array_merge([$resource], $this->resourceIndexQueryParams($request, $resource)))
+                ->with('status', 'record-order-unchanged');
+        }
+
+        $current = $records[$index];
+        $neighbor = $records[$neighborIndex];
+
+        DB::table($config['table'])->where('id', $current->id)->update([
+            'sort_order' => $neighbor->sort_order,
+            'updated_at' => now(),
+        ]);
+
+        DB::table($config['table'])->where('id', $neighbor->id)->update([
+            'sort_order' => $current->sort_order,
+            'updated_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('admin.management.resource.index', array_merge([$resource], $this->resourceIndexQueryParams($request, $resource)))
+            ->with('status', 'record-order-updated');
     }
 
     public function destroy(string $resource, string|int $record): RedirectResponse
@@ -771,6 +853,10 @@ class AdminManagementController extends Controller
             'search' => $request->string('search')->toString() ?: null,
             'trashed' => $request->string('trashed')->toString() ?: null,
             'active' => $request->string('active')->toString() !== '' ? $request->string('active')->toString() : null,
+            'sort' => $request->string('sort')->toString() ?: null,
+            'direction' => in_array($request->string('direction')->toString(), ['asc', 'desc'], true)
+                ? $request->string('direction')->toString()
+                : null,
             'embedded' => $request->boolean('embedded') ? '1' : null,
             'page' => $request->input('page'),
         ], fn ($value) => $value !== null && $value !== '');
@@ -802,7 +888,7 @@ class AdminManagementController extends Controller
             in_array($key, ['booking-event-types', 'booking-links', 'bookings'], true) => 'booking',
             in_array($key, ['announcements', 'email-templates', 'email-template-tokens'], true) => 'communication',
             in_array($key, ['notification-types', 'notification-triggers', 'notification-templates', 'notifications', 'notification-escalation-rules'], true) => 'notifications',
-            in_array($key, ['teams', 'profile-completion-fields'], true) => 'organization',
+            in_array($key, ['teams', 'profile-completion-fields', 'task-categories', 'tasks', 'task-users'], true) => 'organization',
             $key === 'resources' => 'resources',
             default => 'other',
         };
@@ -905,7 +991,7 @@ class AdminManagementController extends Controller
 
     private function isSeederUpdatableResource(string $resource): bool
     {
-        return in_array($resource, ['email-templates', 'email-template-tokens', 'checklists', 'checklist-types'], true);
+        return in_array($resource, ['email-templates', 'email-template-tokens', 'checklists', 'checklist-types', 'task-categories', 'tasks'], true);
     }
 
     private function canUpdateSeeder(string $resource): bool
@@ -914,7 +1000,7 @@ class AdminManagementController extends Controller
             return false;
         }
 
-        if (in_array($resource, ['checklists', 'checklist-types'], true)) {
+        if (in_array($resource, ['checklists', 'checklist-types', 'task-categories', 'tasks'], true)) {
             return auth()->user()->hasAnyRole(['super-admin', 'admin']);
         }
 
@@ -937,6 +1023,8 @@ class AdminManagementController extends Controller
             'email-template-tokens' => database_path('seeders/EmailTemplateTokenSeeder.php'),
             'checklists' => database_path('seeders/ChecklistSeeder.php'),
             'checklist-types' => database_path('seeders/ChecklistTypeSeeder.php'),
+            'task-categories' => database_path('seeders/TaskCategorySeeder.php'),
+            'tasks' => database_path('seeders/TaskSeeder.php'),
         };
     }
 
@@ -1389,6 +1477,214 @@ class ChecklistTypeSeeder extends Seeder
 PHP;
     }
 
+    private function buildTaskCategorySeeder(): string
+    {
+        $categories = DB::table('task_categories')
+            ->whereNull('deleted_at')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get([
+                'name',
+                'slug',
+                'description',
+                'action_route',
+                'action_url',
+                'action_label',
+                'icon',
+                'accent_class',
+                'sort_order',
+                'is_active',
+            ]);
+
+        $exportedCategories = $this->exportPhpArray(
+            $categories->map(fn (object $category): array => [
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'description' => $category->description,
+                'action_route' => $category->action_route,
+                'action_url' => $category->action_url,
+                'action_label' => $category->action_label,
+                'icon' => $category->icon,
+                'accent_class' => $category->accent_class,
+                'sort_order' => (int) $category->sort_order,
+                'is_active' => (bool) $category->is_active,
+            ])->all(),
+            2,
+        );
+
+        return <<<PHP
+<?php
+
+namespace Database\\Seeders;
+
+use App\\Models\\TaskCategory;
+use Illuminate\\Database\\Seeder;
+use Illuminate\\Support\\Str;
+
+class TaskCategorySeeder extends Seeder
+{
+    public function run(): void
+    {
+        \$categories = {$exportedCategories};
+
+        foreach (\$categories as \$category) {
+            TaskCategory::query()->updateOrCreate(
+                ['slug' => \$category['slug'] ?? Str::slug(\$category['name'])],
+                [
+                    ...\$category,
+                    'slug' => \$category['slug'] ?? Str::slug(\$category['name']),
+                ],
+            );
+        }
+    }
+}
+
+PHP;
+    }
+
+    private function buildTaskSeeder(): string
+    {
+        $tasks = DB::table('tasks')
+            ->join('task_categories', 'tasks.task_category_id', '=', 'task_categories.id')
+            ->whereNull('tasks.deleted_at')
+            ->orderBy('tasks.sort_order')
+            ->orderBy('tasks.id')
+            ->get([
+                'task_categories.name as category_name',
+                'tasks.title',
+                'tasks.description',
+                'tasks.slug',
+                'tasks.default_priority',
+                'tasks.related_module',
+                'tasks.sort_order',
+                'tasks.is_active',
+            ]);
+
+        $exportedTasks = $this->exportPhpArray(
+            $tasks->map(fn (object $task): array => [
+                'category' => $task->category_name,
+                'title' => $task->title,
+                'description' => $task->description,
+                'priority' => $task->default_priority,
+                'module' => $task->related_module,
+                'slug' => $task->slug,
+                'sort_order' => (int) $task->sort_order,
+                'is_active' => (bool) $task->is_active,
+            ])->all(),
+            2,
+        );
+
+        return <<<PHP
+<?php
+
+namespace Database\\Seeders;
+
+use App\\Models\\Task;
+use App\\Models\\TaskCategory;
+use Illuminate\\Database\\Seeder;
+use Illuminate\\Support\\Str;
+
+class TaskSeeder extends Seeder
+{
+    public function run(): void
+    {
+        \$definitions = {$exportedTasks};
+
+        foreach (\$definitions as \$index => \$definition) {
+            \$category = TaskCategory::query()->where('name', \$definition['category'])->first();
+
+            if (! \$category) {
+                continue;
+            }
+
+            \$slug = \$definition['slug'] ?? Str::slug(\$definition['title']);
+
+            Task::query()->updateOrCreate(
+                ['slug' => \$slug],
+                [
+                    'task_category_id' => \$category->id,
+                    'title' => \$definition['title'],
+                    'description' => \$definition['description'] ?? null,
+                    'default_priority' => \$definition['priority'] ?? 'medium',
+                    'related_module' => \$definition['module'] ?? null,
+                    'sort_order' => \$definition['sort_order'] ?? ((\$index + 1) * 10),
+                    'is_active' => \$definition['is_active'] ?? true,
+                ],
+            );
+        }
+    }
+}
+
+PHP;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function normalizeTaskData(array $validated): array
+    {
+        if (array_key_exists('slug', $validated) && blank($validated['slug']) && filled($validated['title'] ?? null)) {
+            $validated['slug'] = Str::slug($validated['title']);
+        }
+
+        return $validated;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function normalizeTaskUserData(array $validated): array
+    {
+        if (! empty($validated['task_id'])) {
+            $categoryId = DB::table('tasks')->where('id', $validated['task_id'])->value('task_category_id');
+
+            if ($categoryId) {
+                $validated['task_category_id'] = $categoryId;
+            }
+        }
+
+        foreach (['due_date', 'completed_at', 'reminder', 'related_person', 'related_module', 'additional_notes'] as $nullableField) {
+            if (array_key_exists($nullableField, $validated) && blank($validated[$nullableField])) {
+                $validated[$nullableField] = null;
+            }
+        }
+
+        if (array_key_exists('progress', $validated)) {
+            $validated['progress'] = filled($validated['progress']) ? (int) $validated['progress'] : 0;
+        }
+
+        if (($validated['status'] ?? '') === 'completed' && empty($validated['completed_at'])) {
+            $validated['completed_at'] = now();
+        }
+
+        return $validated;
+    }
+
+    private function resolveResourceOrderBy(Request $request, array $config): string
+    {
+        if (! ($config['sortable'] ?? false)) {
+            return $config['order_by'] ?? 'id';
+        }
+
+        $sort = $request->string('sort')->toString();
+        $allowed = $config['sort_columns'] ?? ['sort_order', 'name'];
+
+        return in_array($sort, $allowed, true) ? $sort : ($config['order_by'] ?? 'sort_order');
+    }
+
+    private function resolveResourceOrderDirection(Request $request, array $config): string
+    {
+        if (! ($config['sortable'] ?? false)) {
+            return $config['order_direction'] ?? 'asc';
+        }
+
+        $direction = $request->string('direction')->toString();
+
+        return in_array($direction, ['asc', 'desc'], true) ? $direction : ($config['order_direction'] ?? 'asc');
+    }
+
     private function exportPhpArray(array $value, int $indent = 0): string
     {
         $export = var_export($value, true);
@@ -1472,6 +1768,14 @@ PHP;
 
         if ($needs('notification_template')) {
             $options['notification_templates'] = DB::table('notification_templates')->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']);
+        }
+
+        if ($needs('task_category')) {
+            $options['task_categories'] = DB::table('task_categories')->whereNull('deleted_at')->orderBy('sort_order')->orderBy('name')->get(['id', 'name']);
+        }
+
+        if ($needs('task')) {
+            $options['tasks'] = DB::table('tasks')->whereNull('deleted_at')->orderBy('sort_order')->orderBy('title')->get(['id', 'title', 'task_category_id']);
         }
 
         return $options;
@@ -1879,6 +2183,76 @@ PHP;
                     ['name' => 'slug', 'label' => 'Slug', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255'], 'unique' => true],
                     ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
                     ['name' => 'icon', 'label' => 'Icon', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:255']],
+                ],
+            ],
+            'task-categories' => [
+                'table' => 'task_categories',
+                'label' => 'Task Categories',
+                'description' => 'Manage task categories and the action links members use to complete work in each category.',
+                'order_by' => 'sort_order',
+                'order_direction' => 'asc',
+                'sortable' => true,
+                'sort_columns' => ['sort_order', 'name', 'slug', 'action_label'],
+                'search' => ['name', 'slug', 'description', 'action_route', 'action_label'],
+                'columns' => ['name', 'slug', 'action_route', 'action_label', 'sort_order', 'is_active'],
+                'fields' => [
+                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'help' => 'Displayed on tasks and in category filters.', 'rules' => ['required', 'string', 'max:255'], 'unique' => true],
+                    ['name' => 'slug', 'label' => 'Slug', 'type' => 'text', 'help' => 'Stable identifier (auto-style: lowercase with hyphens).', 'rules' => ['required', 'string', 'max:255'], 'unique' => true],
+                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
+                    ['name' => 'action_route', 'label' => 'Action Route', 'type' => 'text', 'help' => 'Laravel route name, e.g. team.prospects or training.index.', 'rules' => ['nullable', 'string', 'max:120']],
+                    ['name' => 'action_url', 'label' => 'Action URL', 'type' => 'text', 'help' => 'Optional explicit URL. Used when no route is set, or for external links.', 'rules' => ['nullable', 'string', 'max:500']],
+                    ['name' => 'action_label', 'label' => 'Action Label', 'type' => 'text', 'help' => 'Button text shown on tasks in this category.', 'rules' => ['required', 'string', 'max:80']],
+                    ['name' => 'icon', 'label' => 'Icon', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:60']],
+                    ['name' => 'accent_class', 'label' => 'Accent Classes', 'type' => 'text', 'help' => 'Tailwind classes for category badges.', 'rules' => ['nullable', 'string', 'max:120']],
+                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                ],
+            ],
+            'tasks' => [
+                'table' => 'tasks',
+                'label' => 'Tasks',
+                'description' => 'Manage reusable task templates in the task library used for assignments and workflows.',
+                'order_by' => 'sort_order',
+                'order_direction' => 'asc',
+                'sortable' => true,
+                'sort_columns' => ['sort_order', 'title', 'default_priority', 'task_category_id'],
+                'search' => ['title', 'description', 'slug', 'related_module'],
+                'columns' => ['task_category_id', 'title', 'default_priority', 'sort_order', 'is_active'],
+                'fields' => [
+                    ['name' => 'task_category_id', 'label' => 'Category', 'type' => 'task_category', 'rules' => ['required', 'integer', 'exists:task_categories,id']],
+                    ['name' => 'title', 'label' => 'Title', 'type' => 'text', 'rules' => ['required', 'string', 'max:255']],
+                    ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
+                    ['name' => 'slug', 'label' => 'Slug', 'type' => 'text', 'help' => 'Stable identifier (auto-generated from title when left blank).', 'rules' => ['nullable', 'string', 'max:255'], 'unique' => true],
+                    ['name' => 'default_priority', 'label' => 'Default Priority', 'type' => 'select', 'options' => ['low' => 'Low', 'medium' => 'Medium', 'high' => 'High', 'urgent' => 'Urgent'], 'rules' => ['required', 'in:low,medium,high,urgent']],
+                    ['name' => 'related_module', 'label' => 'Related Module', 'type' => 'text', 'help' => 'Optional module label such as Prospects, Training, or FNA.', 'rules' => ['nullable', 'string', 'max:60']],
+                    ['name' => 'sort_order', 'label' => 'Sort Order', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0']],
+                    ['name' => 'is_active', 'label' => 'Active', 'type' => 'boolean', 'rules' => ['required', 'boolean']],
+                ],
+            ],
+            'task-users' => [
+                'table' => 'task_users',
+                'label' => 'Task Assignments',
+                'description' => 'Review and manage task assignments across members, including status, due dates, and notes.',
+                'use_inline_modals' => false,
+                'order_by' => 'due_date',
+                'order_direction' => 'desc',
+                'sort_columns' => ['due_date', 'status', 'priority', 'created_at'],
+                'search' => ['additional_notes', 'status', 'priority', 'related_person', 'related_module'],
+                'columns' => ['assignee_id', 'assignor_id', 'task_id', 'status', 'priority', 'due_date'],
+                'fields' => [
+                    ['name' => 'assignee_id', 'label' => 'Assignee', 'type' => 'user', 'rules' => ['required', 'integer', 'exists:users,id']],
+                    ['name' => 'assignor_id', 'label' => 'Assignor', 'type' => 'user', 'rules' => ['required', 'integer', 'exists:users,id']],
+                    ['name' => 'task_id', 'label' => 'Task', 'type' => 'task', 'rules' => ['required', 'integer', 'exists:tasks,id']],
+                    ['name' => 'task_category_id', 'label' => 'Category', 'type' => 'task_category', 'help' => 'Auto-filled from the selected task when saved.', 'rules' => ['required', 'integer', 'exists:task_categories,id']],
+                    ['name' => 'priority', 'label' => 'Priority', 'type' => 'select', 'options' => ['low' => 'Low', 'medium' => 'Medium', 'high' => 'High', 'urgent' => 'Urgent'], 'rules' => ['required', 'in:low,medium,high,urgent']],
+                    ['name' => 'status', 'label' => 'Status', 'type' => 'select', 'options' => ['to_do' => 'To Do', 'in_progress' => 'In Progress', 'waiting' => 'Waiting', 'overdue' => 'Overdue', 'completed' => 'Completed', 'cancelled' => 'Cancelled'], 'rules' => ['required', 'in:to_do,in_progress,waiting,overdue,completed,cancelled']],
+                    ['name' => 'due_date', 'label' => 'Due Date', 'type' => 'date', 'rules' => ['nullable', 'date']],
+                    ['name' => 'progress', 'label' => 'Progress (%)', 'type' => 'number', 'rules' => ['nullable', 'integer', 'min:0', 'max:100']],
+                    ['name' => 'related_person', 'label' => 'Related Person', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:120']],
+                    ['name' => 'related_module', 'label' => 'Related Module', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:60']],
+                    ['name' => 'additional_notes', 'label' => 'Additional Notes', 'type' => 'textarea', 'rules' => ['nullable', 'string']],
+                    ['name' => 'reminder', 'label' => 'Reminder', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:40']],
+                    ['name' => 'completed_at', 'label' => 'Completed At', 'type' => 'datetime-local', 'rules' => ['nullable', 'date']],
                 ],
             ],
             'email-templates' => [

@@ -102,6 +102,28 @@ return [
         'main_financial_concern',
     ],
 
+    'preferred_contact_methods' => [
+        'phone' => 'Phone',
+        'email' => 'Email',
+        'text' => 'Text Message',
+        'video_call' => 'Video Call',
+    ],
+
+    'client_portal_step_required_fields' => [
+        1 => [
+            'client_name',
+            'client_email',
+            'client_phone',
+            'date_of_birth',
+            'gender',
+            'marital_status',
+            'country',
+            'state_province',
+            'preferred_contact_method',
+            'best_contact_time',
+        ],
+    ],
+
     'step_field_map' => [
         1 => ['client_name', 'client_email', 'client_phone', 'date_of_birth', 'occupation', 'city', 'state_province', 'country'],
         2 => ['spouse_partner_name', 'household_income', 'household_expenses', 'children_count'],

@@ -64,6 +64,7 @@ class EmailTemplateTokens
         if ($path === null) {
             foreach ([
                 'confirmation_url',
+                'verification_url',
                 'registration_link',
                 'profile_url',
                 'dashboard_url',

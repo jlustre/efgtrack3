@@ -11,7 +11,8 @@ use App\Models\MemberProductionEntry;
 use App\Models\Prospect;
 use App\Models\ProspectConversion;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
+use App\Support\SystemTaskAssignor;
 use App\Services\Fna\FnaRecordService;
 use App\Services\Fna\FnaReviewService;
 use App\Services\Prospects\ProspectConversionService;
@@ -25,6 +26,8 @@ use Database\Seeders\ProspectLookupSeeder;
 use Database\Seeders\RankSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StateProvinceSeeder;
+use Database\Seeders\SystemTaskAssignorSeeder;
+use Database\Seeders\TaskCategorySeeder;
 use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +49,8 @@ class RevenueBridgeTest extends TestCase
             ProspectFunnelSeeder::class,
             RankSeeder::class,
             GoalCategorySeeder::class,
+            TaskCategorySeeder::class,
+            SystemTaskAssignorSeeder::class,
             EmailTemplateSeeder::class,
             NotificationConfigSeeder::class,
             CountrySeeder::class,
@@ -85,9 +90,9 @@ class RevenueBridgeTest extends TestCase
             'activity_key' => 'recruits',
             'source' => 'bridge',
         ]);
-        $this->assertDatabaseHas('user_tasks', [
-            'assigned_to_user_id' => $this->owner->id,
-            'category' => 'Prospect Conversion',
+        $this->assertDatabaseHas('task_users', [
+            'assignee_id' => $this->owner->id,
+            'assignor_id' => SystemTaskAssignor::USER_ID,
             'related_prospect_id' => $prospect->id,
         ]);
     }
@@ -147,11 +152,10 @@ class RevenueBridgeTest extends TestCase
             'activity_key' => 'fnas',
             'source' => 'bridge',
         ]);
-        $this->assertDatabaseHas('user_tasks', [
-            'assigned_to_user_id' => $trainee->id,
-            'category' => 'FNA',
-            'related_fna_id' => $fna->id,
-        ]);
+        $task = TaskUser::query()->where('related_fna_id', $fna->id)->first();
+        $this->assertNotNull($task);
+        $this->assertSame(SystemTaskAssignor::USER_ID, $task->assignor_id);
+        $this->assertSame('FNA', $task->taskCategory?->name);
     }
 
     public function test_associate_invitation_initiated_syncs_invitation_metrics(): void

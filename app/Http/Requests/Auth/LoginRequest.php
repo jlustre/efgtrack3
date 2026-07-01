@@ -50,6 +50,18 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+
+        if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+            Auth::logout();
+
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Please verify your email address before signing in. Check your inbox for the verification link, or request a new one below.',
+            ])->redirectTo(route('verification.resend', ['email' => $this->string('email')->toString()], false));
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

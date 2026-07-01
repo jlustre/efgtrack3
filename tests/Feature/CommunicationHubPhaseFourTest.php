@@ -7,12 +7,12 @@ use App\Models\User;
 use App\Models\UserBadge;
 use App\Services\Communication\LeadershipDeskService;
 use App\Services\Communication\RecognitionService;
-use Database\Seeders\AnnouncementCategorySeeder;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RecognitionBadgeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\AnnouncementTestFixtures;
 use Tests\TestCase;
 
 class CommunicationHubPhaseFourTest extends TestCase
@@ -26,9 +26,10 @@ class CommunicationHubPhaseFourTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             NotificationConfigSeeder::class,
-            AnnouncementCategorySeeder::class,
             RecognitionBadgeSeeder::class,
         ]);
+
+        AnnouncementTestFixtures::seedCategories();
     }
 
     public function test_recognition_center_displays_recognition_posts(): void

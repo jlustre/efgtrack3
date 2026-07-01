@@ -4,7 +4,8 @@ namespace App\Services\Fna;
 
 use App\Models\FnaRecord;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
+use App\Support\TaskUserAttributes;
 use App\Services\Goals\GoalBridgeService;
 
 class FnaGoalsBridge
@@ -69,19 +70,21 @@ class FnaGoalsBridge
             return;
         }
 
-        UserTask::query()->create([
-            'assigned_to_user_id' => $owner->id,
-            'created_by_user_id' => $actor->id,
-            'title' => $title,
-            'description' => $template['description'] ?? null,
-            'priority' => $template['priority'] ?? 'high',
-            'status' => 'to_do',
-            'category' => 'FNA',
-            'related_module' => 'fna',
-            'related_person' => $fna->client_name,
-            'related_prospect_id' => $fna->prospect_id,
-            'related_fna_id' => $fna->id,
-            'due_date' => now()->addDays((int) ($template['offset_days'] ?? 2))->toDateString(),
-        ]);
+        TaskUser::query()->create(TaskUserAttributes::forSystemTask(
+            'FNA',
+            $title,
+            [
+                'assignee_id' => $owner->id,
+                'priority' => $template['priority'] ?? 'high',
+                'status' => 'to_do',
+                'related_module' => 'fna',
+                'related_person' => $fna->client_name,
+                'related_prospect_id' => $fna->prospect_id,
+                'related_fna_id' => $fna->id,
+                'due_date' => now()->addDays((int) ($template['offset_days'] ?? 2))->toDateString(),
+            ],
+            $template['description'] ?? null,
+            $template['priority'] ?? null,
+        ));
     }
 }

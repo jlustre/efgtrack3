@@ -109,13 +109,13 @@
 
                             <div class="grid gap-5 sm:grid-cols-2">
                                 <div>
-                                    <label for="first_name" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">First Name</label>
+                                    <label for="first_name" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">First Name <span class="text-red-400">*</span></label>
                                     <input id="first_name" name="first_name" type="text" value="{{ old('first_name') }}" required autofocus autocomplete="given-name" placeholder="James" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
                                     <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
                                 </div>
 
                                 <div>
-                                    <label for="last_name" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Last Name</label>
+                                    <label for="last_name" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Last Name <span class="text-red-400">*</span></label>
                                     <input id="last_name" name="last_name" type="text" value="{{ old('last_name') }}" required autocomplete="family-name" placeholder="Carter" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
                                     <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                                 </div>
@@ -123,13 +123,13 @@
 
                             <div class="grid gap-5 sm:grid-cols-2">
                                 <div>
-                                    <label for="email" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Email</label>
+                                    <label for="email" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Email <span class="text-red-400">*</span></label>
                                     <input id="email" name="email" type="email" value="{{ old('email', $invitation->email) }}" required autocomplete="username" placeholder="new.member@example.com" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
                                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
                                 </div>
 
                                 <div>
-                                    <label for="efg_associate_id" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">EFG Associate ID</label>
+                                    <label for="efg_associate_id" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">EFG Associate ID <span class="text-red-400">*</span></label>
                                     <input id="efg_associate_id" name="efg_associate_id" type="text" value="{{ old('efg_associate_id') }}" required autocomplete="off" placeholder="EFG-1001" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
                                     <p class="mt-2 text-xs text-slate-400">Only active Experior Financial Group associates may complete registration.</p>
                                     <x-input-error :messages="$errors->get('efg_associate_id')" class="mt-2" />
@@ -138,13 +138,13 @@
 
                             <div class="grid gap-5 sm:grid-cols-2">
                                 <div>
-                                    <label for="password" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Password</label>
+                                    <label for="password" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Password <span class="text-red-400">*</span></label>
                                     <x-password-input variant="guest" id="password" name="password" required autocomplete="new-password" placeholder="Create password" class="mt-2" />
                                     <x-input-error :messages="$errors->get('password')" class="mt-2" />
                                 </div>
 
                                 <div>
-                                    <label for="password_confirmation" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Confirm Password</label>
+                                    <label for="password_confirmation" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">Confirm Password <span class="text-red-400">*</span></label>
                                     <x-password-input variant="guest" id="password_confirmation" name="password_confirmation" required autocomplete="new-password" placeholder="Confirm password" class="mt-2" />
                                     <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                                 </div>
@@ -199,7 +199,7 @@
                                 </div>
 
                                 <div>
-                                    <label for="city" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">City</label>
+                                    <label for="city" class="block text-xs font-bold uppercase tracking-wide text-[#D4AF37]">City <span class="text-red-400">*</span></label>
                                     <input id="city" name="city" type="text" value="{{ old('city') }}" required autocomplete="address-level2" placeholder="Vancouver / Manila / Mexico City" class="mt-2 block w-full rounded-2xl border border-[#2a2a2e] bg-[#131316] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-[#D4AF37]">
                                     <x-input-error :messages="$errors->get('city')" class="mt-2" />
                                 </div>
@@ -208,13 +208,13 @@
                             <div class="space-y-3 rounded-2xl border border-[#D4AF37]/20 bg-[#131316] p-5">
                                 <label class="flex gap-3 text-sm leading-6 text-slate-300">
                                     <input type="checkbox" name="sponsor_confirmed" value="1" class="mt-1 rounded border-[#D4AF37]/40 bg-[#0a0a0c] text-[#D4AF37] focus:ring-[#D4AF37]" required @checked(old('sponsor_confirmed'))>
-                                    <span>I confirm that {{ $invitation->sponsor->name }} is the person sponsoring my EFGTrack registration.</span>
+                                    <span>I confirm that {{ $invitation->sponsor->name }} is the person sponsoring my EFGTrack registration. <span class="text-red-400">*</span></span>
                                 </label>
                                 <x-input-error :messages="$errors->get('sponsor_confirmed')" class="mt-2" />
 
                                 <label class="flex gap-3 text-sm leading-6 text-slate-300">
                                     <input type="checkbox" name="active_associate_confirmed" value="1" class="mt-1 rounded border-[#D4AF37]/40 bg-[#0a0a0c] text-[#D4AF37] focus:ring-[#D4AF37]" required @checked(old('active_associate_confirmed'))>
-                                    <span>I confirm that I am an active associate of Experior Financial Group.</span>
+                                    <span>I confirm that I am an active associate of Experior Financial Group. <span class="text-red-400">*</span></span>
                                 </label>
                                 <x-input-error :messages="$errors->get('active_associate_confirmed')" class="mt-2" />
                             </div>
@@ -227,6 +227,10 @@
                                 Already have an account?
                                 <a href="{{ route('login') }}" class="font-semibold text-[#D4AF37] hover:text-[#F3D572] hover:underline">Sign in</a>
                             </div>
+
+                            <p class="text-center text-xs text-slate-400">
+                                <span class="text-red-400">*</span> Required
+                            </p>
                         </form>
                     </main>
                 </div>

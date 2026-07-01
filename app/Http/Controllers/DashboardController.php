@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DashboardActivityService;
+use App\Services\DashboardHomeService;
 use App\Services\DashboardOverviewService;
 use App\Services\DashboardStatDetailsService;
 use App\Services\DashboardStatsService;
@@ -17,6 +19,8 @@ class DashboardController extends Controller
         private readonly DashboardStatsService $stats,
         private readonly DashboardStatDetailsService $statDetails,
         private readonly DashboardOverviewService $overview,
+        private readonly DashboardActivityService $activity,
+        private readonly DashboardHomeService $home,
     ) {}
 
     public function index(Request $request, ProfileCompletionService $profileCompletion): View
@@ -33,6 +37,8 @@ class DashboardController extends Controller
             'user' => $user,
             'statCards' => $this->stats->statCards($user),
             'overview' => $this->overview->forUser($user),
+            'home' => $this->home->forUser($user),
+            'activity' => $this->activity->panelsFor($user),
             'profileCompletion' => $profileCompletion->snapshot($user),
             'locationOptions' => LocationOptions::forPortal(),
             'forceProfileCompletionModal' => (bool) $request->session()->pull('show_profile_completion_modal', false),
@@ -41,10 +47,13 @@ class DashboardController extends Controller
 
     public function statDetails(Request $request, string $type): JsonResponse
     {
+        $context = $request->string('context', 'team')->toString();
+
         abort_unless($this->statDetails->isValidType($type), 404);
+        abort_unless($this->statDetails->isValidContext($type, $context), 404);
 
         return response()->json(
-            $this->statDetails->membersFor($request->user(), $type)
+            $this->statDetails->detailsFor($request->user(), $type, $context)
         );
     }
 }

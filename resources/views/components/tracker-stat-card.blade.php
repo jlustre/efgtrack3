@@ -4,6 +4,10 @@
     'subtitle' => null,
     'badge' => null,
     'theme' => 'gold',
+    'bar' => null,
+    'barTrack' => null,
+    'barFill' => null,
+    'reserveBarSpace' => false,
 ])
 
 @php
@@ -92,12 +96,18 @@
     ];
 
     $style = $themes[$theme] ?? $themes['gold'];
+    $uniformHeight = $reserveBarSpace || ! is_null($bar);
 @endphp
 
-<article {{ $attributes->merge(['class' => 'relative overflow-hidden rounded-lg border p-3 shadow-sm '.$style['article']]) }}>
+<article {{ $attributes->merge(['class' => 'relative overflow-hidden rounded-lg border p-3 shadow-sm '.$style['article'].($uniformHeight ? ' flex h-full min-h-[8.75rem] flex-col' : '')]) }}>
     {!! $style['decorations'] !!}
-    <div @class(['relative flex items-start justify-between gap-2' => filled($badge), 'relative' => ! filled($badge)])>
-        <div class="min-w-0">
+    <div @class([
+        'relative min-w-0' => ! $uniformHeight,
+        'relative flex min-h-0 flex-1 flex-col' => $uniformHeight && ! filled($badge),
+        'relative flex min-h-0 flex-1 items-start justify-between gap-2' => $uniformHeight && filled($badge),
+        'relative flex items-start justify-between gap-2' => ! $uniformHeight && filled($badge),
+    ])>
+        <div @class(['min-w-0', 'min-w-0 flex-1' => $uniformHeight])>
             <p class="text-[10px] font-bold uppercase tracking-wider {{ $style['label'] }}">{{ $label }}</p>
             <p class="mt-1 text-xl font-bold tabular-nums leading-none {{ $style['value'] }}">
                 @if (! is_null($value) && $value !== '')
@@ -107,11 +117,26 @@
                 @endif
             </p>
             @if ($subtitle)
-                <p class="mt-1 text-[11px] leading-tight {{ $style['subtitle'] }}">{{ $subtitle }}</p>
+                <p class="mt-1 line-clamp-2 text-[11px] leading-tight {{ $style['subtitle'] }}">{{ $subtitle }}</p>
+            @elseif ($reserveBarSpace)
+                <p class="mt-1 text-[11px] leading-tight opacity-0" aria-hidden="true">&nbsp;</p>
             @endif
         </div>
         @if ($badge)
             <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums {{ $style['badge'] }}">{{ $badge }}</span>
         @endif
     </div>
+
+    @if (! is_null($bar))
+        <div class="relative mt-3 shrink-0 pr-8">
+            <div @class(['h-2 rounded-full', $barTrack ?? 'bg-slate-200'])>
+                <div
+                    @class(['h-2 rounded-full transition-all duration-300', $barFill ?? 'bg-slate-600'])
+                    style="width: {{ max(0, min(100, (int) $bar)) }}%"
+                ></div>
+            </div>
+        </div>
+    @elseif ($reserveBarSpace)
+        <div class="relative mt-3 h-2 shrink-0 pr-8" aria-hidden="true"></div>
+    @endif
 </article>

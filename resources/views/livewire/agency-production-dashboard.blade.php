@@ -4,7 +4,7 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p class="text-sm font-semibold uppercase tracking-wide text-[#C8A24A]">Production Analytics</p>
-                    <h1 class="mt-2 text-2xl font-semibold">Production & Agency Dashboard</h1>
+                    <h1 class="mt-2 text-2xl font-semibold">Production Dashboard</h1>
                     <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-200">
                         @if ($dashboard['show_team_scope'])
                             Leadership visibility into posted production across your agency — personal totals, team rollups, top producers, and monthly trends.

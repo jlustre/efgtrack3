@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Prospect;
 use App\Models\Rank;
 use App\Models\User;
 use App\Services\DashboardStatsService;
@@ -19,11 +20,13 @@ use Database\Seeders\TimezoneSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\StartsChecklistTypes;
 use Tests\TestCase;
 
 class DashboardStatDetailsTest extends TestCase
 {
     use RefreshDatabase;
+    use StartsChecklistTypes;
 
     protected function setUp(): void
     {
@@ -53,6 +56,9 @@ class DashboardStatDetailsTest extends TestCase
 
         $this->seedOnboardingProgress($onboardingMember->id, completed: false);
         $this->seedOnboardingProgress($completeMember->id, completed: true);
+        $this->startChecklistType($onboardingMember, 'onboarding');
+        $this->startChecklistType($completeMember, 'onboarding');
+        $this->startChecklistType($owner, 'onboarding');
 
         app(DownlineHierarchyService::class)->rebuild();
 
@@ -60,13 +66,18 @@ class DashboardStatDetailsTest extends TestCase
             ->getJson(route('dashboard.stat-details', ['type' => 'onboarding']))
             ->assertOk()
             ->assertJsonPath('type', 'onboarding')
-            ->assertJsonPath('scope', 'full_downline');
+            ->assertJsonPath('scope', 'full_downline')
+            ->assertJsonPath('display', 'progress');
 
         $names = collect($response->json('members'))->pluck('name')->all();
 
         $this->assertContains('Onboarding Member', $names);
-        $this->assertNotContains('Complete Member', $names);
+        $this->assertContains('Complete Member', $names);
         $this->assertContains('Agency Owner', $names);
+
+        $completeRow = collect($response->json('members'))->firstWhere('name', 'Complete Member');
+        $this->assertSame(100, $completeRow['percent']);
+        $this->assertSame('Complete', $completeRow['status']);
     }
 
     public function test_agency_owner_does_not_see_members_outside_hierarchy(): void
@@ -152,7 +163,7 @@ class DashboardStatDetailsTest extends TestCase
             ->assertSee('Team CFM Training')
             ->assertSee('My Progress')
             ->assertSee('My Profile Completion')
-            ->assertSee('View', false);
+            ->assertSee('View Team Profile Completion details', false);
     }
 
     public function test_dashboard_hides_my_licensing_for_licensed_user(): void
@@ -176,6 +187,7 @@ class DashboardStatDetailsTest extends TestCase
         $rankId = Rank::where('code', 'FA')->value('id');
         $user = $this->createUser('onboarded.viewer@example.com', 'Onboarded Viewer', 'member', $teamId, $rankId);
 
+        $this->startChecklistType($user, 'onboarding');
         $this->seedOnboardingProgress($user->id, completed: true);
 
         $service = app(DashboardStatsService::class);
@@ -207,12 +219,12 @@ class DashboardStatDetailsTest extends TestCase
         $response = $this->actingAs($owner)
             ->getJson(route('dashboard.stat-details', ['type' => 'credentials']))
             ->assertOk()
-            ->assertJsonPath('title', 'Unlicensed Members');
+            ->assertJsonPath('title', 'Team Licensing');
 
         $names = collect($response->json('members'))->pluck('name')->all();
 
         $this->assertContains('Unlicensed Member', $names);
-        $this->assertNotContains('Licensed Member', $names);
+        $this->assertContains('Licensed Member', $names);
     }
 
     public function test_training_modal_excludes_members_who_have_not_started(): void
@@ -239,12 +251,49 @@ class DashboardStatDetailsTest extends TestCase
         $response = $this->actingAs($owner)
             ->getJson(route('dashboard.stat-details', ['type' => 'training']))
             ->assertOk()
-            ->assertJsonPath('title', 'CFM Training In Progress');
+            ->assertJsonPath('title', 'Team CFM Training');
 
         $names = collect($response->json('members'))->pluck('name')->all();
 
         $this->assertContains('Started Member', $names);
-        $this->assertNotContains('Not Started Member', $names);
+        $this->assertContains('Not Started Member', $names);
+    }
+
+    public function test_personal_prospects_details_return_list_payload(): void
+    {
+        $teamId = (int) DB::table('teams')->value('id');
+        $rankId = Rank::where('code', 'FA')->value('id');
+        $user = $this->createUser('prospects.viewer@example.com', 'Prospects Viewer', 'member', $teamId, $rankId);
+
+        Prospect::query()->create([
+            'owner_id' => $user->id,
+            'first_name' => 'Jamie',
+            'last_name' => 'Lead',
+            'status' => 'active',
+            'is_archived' => false,
+            'interest_level' => 'warm',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('dashboard.stat-details', ['type' => 'prospects', 'context' => 'personal']))
+            ->assertOk()
+            ->assertJsonPath('display', 'list')
+            ->assertJsonPath('title', 'My Prospects')
+            ->assertJsonFragment(['title' => 'Jamie Lead']);
+    }
+
+    public function test_personal_activities_details_return_metric_breakdown(): void
+    {
+        $teamId = (int) DB::table('teams')->value('id');
+        $rankId = Rank::where('code', 'FA')->value('id');
+        $user = $this->createUser('activities.viewer@example.com', 'Activities Viewer', 'member', $teamId, $rankId);
+
+        $this->actingAs($user)
+            ->getJson(route('dashboard.stat-details', ['type' => 'activities', 'context' => 'personal']))
+            ->assertOk()
+            ->assertJsonPath('display', 'list')
+            ->assertJsonPath('title', 'My Activities')
+            ->assertJsonFragment(['title' => 'Phone Calls Attempted']);
     }
 
     public function test_invalid_stat_type_returns_not_found(): void

@@ -6,12 +6,14 @@ use App\Models\PortalResource;
 use App\Models\Prospect;
 use App\Models\TrainingModule;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
+use App\Support\TaskUserAttributes;
 use Database\Seeders\ProspectFunnelSeeder;
 use Database\Seeders\ProspectLookupSeeder;
 use Database\Seeders\ResourceDocumentSeeder;
 use Database\Seeders\ResourceVideoSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\TaskCategorySeeder;
 use Database\Seeders\TrainingAcademySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,7 @@ class GlobalSearchTest extends TestCase
             ResourceDocumentSeeder::class,
             ResourceVideoSeeder::class,
             TrainingAcademySeeder::class,
+            TaskCategorySeeder::class,
         ]);
     }
 
@@ -65,14 +68,12 @@ class GlobalSearchTest extends TestCase
             'priority' => 'medium',
         ]);
 
-        UserTask::query()->create([
-            'assigned_to_user_id' => $user->id,
-            'created_by_user_id' => $user->id,
-            'title' => 'Searchable follow-up task',
+        TaskUser::query()->create(TaskUserAttributes::forTask('Prospect Follow-Up', 'Searchable follow-up task', [
+            'assignee_id' => $user->id,
+            'assignor_id' => $user->id,
             'status' => 'to_do',
             'priority' => 'medium',
-            'category' => 'Prospect Follow-Up',
-        ]);
+        ]));
 
         $this->actingAs($user)
             ->get(route('search.index', ['q' => 'Searchable']))

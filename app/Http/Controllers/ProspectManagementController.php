@@ -8,6 +8,7 @@ use App\Services\Prospects\ProspectExportService;
 use App\Services\Prospects\ProspectFunnelService;
 use App\Services\Prospects\ProspectShareService;
 use App\Services\Prospects\ProspectAnalyticsService;
+use App\Support\ProspectFormRules;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -436,7 +437,7 @@ class ProspectManagementController extends Controller
     {
         $this->authorize('update', $prospect);
 
-        $validated = $request->validate([
+        $validated = ProspectFormRules::normalizeProfileAttributes($request->validate(array_merge([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'preferred_name' => ['nullable', 'string', 'max:255'],
@@ -461,8 +462,7 @@ class ProspectManagementController extends Controller
             'referral_source_name' => ['nullable', 'string', 'max:255'],
             'campaign_name' => ['nullable', 'string', 'max:255'],
             'next_follow_up_at' => ['nullable', 'date'],
-            'notes_summary' => ['nullable', 'string'],
-        ]);
+        ], ProspectFormRules::profileRules())));
 
         try {
             $validated['prospect_funnel_id'] = $this->funnels->resolveFunnel(

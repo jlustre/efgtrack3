@@ -9,13 +9,11 @@ use App\Models\RegistrationInvitation;
 use App\Models\Profile;
 use App\Models\Rank;
 use App\Models\User;
-use App\Services\ProfileCompletionService;
 use App\Services\Prospects\ProspectConversionService;
 use App\Support\LocationOptions;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
@@ -65,7 +63,7 @@ class RegisteredUserController extends Controller
      *
      * @throws ValidationException
      */
-    public function store(Request $request, ProfileCompletionService $profileCompletion): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'registration_code' => ['required', 'string', 'exists:registration_invitations,code'],
@@ -134,9 +132,6 @@ class RegisteredUserController extends Controller
                 'sponsor_id' => $invitation->sponsor_id,
                 'is_active' => true,
                 'joined_at' => now(),
-                'last_login_at' => now(),
-                'last_login_ip' => $request->ip(),
-                'is_online' => true,
             ]);
 
             $locationIds = [
@@ -174,14 +169,8 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
         event(new NewMemberRegistered($user));
 
-        Auth::login($user);
-
-        $redirect = redirect(route('dashboard', absolute: false));
-
-        if (! $profileCompletion->isComplete($user)) {
-            $redirect->with('show_profile_completion_modal', true);
-        }
-
-        return $redirect;
+        return redirect()
+            ->route('login')
+            ->with('status', 'Your account was created successfully. Please check your email and verify your address before signing in.');
     }
 }

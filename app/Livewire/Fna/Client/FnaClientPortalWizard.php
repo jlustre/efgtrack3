@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Fna\Client;
 
+use App\Livewire\Concerns\InteractsWithFnaClientInfoFields;
 use App\Models\FnaClientInvite;
 use App\Models\FnaRecord;
 use App\Services\Fna\FnaClientInviteService;
@@ -13,6 +14,8 @@ use Livewire\Component;
 
 class FnaClientPortalWizard extends Component
 {
+    use InteractsWithFnaClientInfoFields;
+
     public string $token;
 
     public ?FnaClientInvite $invite = null;
@@ -133,6 +136,8 @@ class FnaClientPortalWizard extends Component
             return;
         }
 
+        $this->validateFnaWizardStep(clientPortal: true);
+
         $this->currentStep++;
         $this->autosave();
     }
@@ -165,6 +170,7 @@ class FnaClientPortalWizard extends Component
             return;
         }
 
+        $this->assertFnaClientPortalReadyToSubmit();
         $this->autosave();
         $invites->markSubmitted($this->invite->fresh());
         $this->submitted = true;
@@ -178,6 +184,7 @@ class FnaClientPortalWizard extends Component
             'steps' => config('fna.wizard_steps', []),
             'goalOptions' => config('fna.goal_options', []),
             'missingSections' => app(FnaCompletenessService::class)->missingSections($this->fna),
+            'clientInfoFieldOptions' => $this->fnaClientInfoFieldOptions(clientPortal: true),
         ])->layout('fna.client.portal', [
             'title' => 'Financial Needs Analysis',
             'invite' => $this->invite,

@@ -5,6 +5,8 @@ namespace App\Policies;
 use App\Models\Prospect;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesProspectAccess;
+use App\Services\Fna\FnaClientInviteRecipientService;
+use App\Services\Fna\FnaClientInviteService;
 
 class ProspectPolicy
 {
@@ -45,5 +47,20 @@ class ProspectPolicy
     public function convert(User $user, Prospect $prospect): bool
     {
         return (int) $prospect->owner_id === $user->id || $user->hasAnyRole(['super-admin', 'admin']);
+    }
+
+    public function requestFnaClientPortal(User $user, Prospect $prospect): bool
+    {
+        if (! $this->canAccessProspect($user, $prospect)) {
+            return false;
+        }
+
+        $inviteService = app(FnaClientInviteService::class);
+
+        if ($inviteService->agentCanSendInvites($user)) {
+            return app(FnaClientInviteRecipientService::class)->canInviteRecipient($user, $prospect, null);
+        }
+
+        return (int) $prospect->owner_id === $user->id;
     }
 }

@@ -39,6 +39,42 @@ class ChecklistSeeder extends Seeder
         $steps =         [
           0 => 
           [
+            'title' => 'Register to Experior Financial Group',
+            'description' => 'Ask your sponsor for an invite link so you will be able to register to Experior Financial Group. Complete the process and find your Experior Associate ID and your own Experior Invite link.',
+            'sort_order' => 1,
+            'nth_day' => 1,
+            'is_required' => true,
+            'country' => NULL,
+          ],
+          1 => 
+          [
+            'title' => 'Register to EFGTrack',
+            'description' => 'Using the EFGTrack invite link given by your sponsor, go to that link and complete your registration process to join EFGTrack',
+            'sort_order' => 3,
+            'nth_day' => 1,
+            'is_required' => true,
+            'country' => NULL,
+          ],
+          2 => 
+          [
+            'title' => 'Email Verified',
+            'description' => 'Check your email to find your EFGTrack verification link and click it.',
+            'sort_order' => 5,
+            'nth_day' => 1,
+            'is_required' => true,
+            'country' => NULL,
+          ],
+          3 => 
+          [
+            'title' => 'First EFGTrack Login Successful',
+            'description' => 'After email verification, try to login using your EFGTrack credentials (email and password) and check this item upon successful login.',
+            'sort_order' => 8,
+            'nth_day' => 1,
+            'is_required' => true,
+            'country' => NULL,
+          ],
+          4 => 
+          [
             'title' => 'Complete Member Profile',
             'description' => 'Add contact details, location, phone number, time zone, EFG Associate ID, and basic profile information.',
             'sort_order' => 10,
@@ -46,16 +82,16 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          1 => 
+          5 => 
           [
             'title' => 'Confirm Sponsor And Team Placement',
             'description' => 'Verify the sponsoring member, inherited team, starting FA rank, and first point of contact.',
-            'sort_order' => 20,
+            'sort_order' => 10,
             'nth_day' => 2,
             'is_required' => true,
             'country' => NULL,
           ],
-          2 => 
+          6 => 
           [
             'title' => 'Watch EFGTrack Welcome Orientation',
             'description' => 'Review the portal purpose, dashboard, trackers, resources, communications, and team visibility areas.',
@@ -64,7 +100,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          3 => 
+          7 => 
           [
             'title' => 'Join Primary Team Communication Channels',
             'description' => 'Join the team chat, announcement channel, email list, calendar, and recurring Zoom meeting links.',
@@ -73,7 +109,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          4 => 
+          8 => 
           [
             'title' => 'Schedule Sponsor Welcome Call',
             'description' => 'Book the first welcome call with the sponsor to review expectations, goals, availability, and next steps.',
@@ -82,7 +118,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          5 => 
+          9 => 
           [
             'title' => 'Receive Certified Field Mentor Assignment',
             'description' => 'Confirm the assigned Certified Field Mentor who will guide the Field Apprenticeship Program.',
@@ -91,7 +127,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          6 => 
+          10 => 
           [
             'title' => 'Complete Business Standards Review',
             'description' => 'Review conduct expectations, client-first standards, compliance awareness, and professional communication guidelines.',
@@ -100,7 +136,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          7 => 
+          11 => 
           [
             'title' => 'Review Licensing Roadmap',
             'description' => 'Understand licensing requirements, province or state expectations, study timeline, exam steps, and submission workflow.',
@@ -109,7 +145,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          8 => 
+          12 => 
           [
             'title' => 'Start Licensing Tracker',
             'description' => 'Open the licensing tracker, review required steps, and update the initial licensing status.',
@@ -118,7 +154,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          9 => 
+          13 => 
           [
             'title' => 'Complete Starter Training Module',
             'description' => 'Finish the first training module covering Experior basics, field expectations, products, and client conversations.',
@@ -127,7 +163,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          10 => 
+          14 => 
           [
             'title' => 'Review Resource Library',
             'description' => 'Open Documents, Videos, Recorded Webinars, and Zoom Links to understand where key support materials live.',
@@ -136,7 +172,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => false,
             'country' => NULL,
           ],
-          11 => 
+          15 => 
           [
             'title' => 'Begin Field Apprenticeship Program',
             'description' => 'Meet with the assigned CFM and review apprenticeship steps, mentor sessions, expectations, and approval workflow.',
@@ -145,7 +181,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          12 => 
+          16 => 
           [
             'title' => 'Set First 30-Day Activity Goals',
             'description' => 'Define initial prospecting, training, licensing, mentorship, and team meeting goals with the sponsor or leader.',
@@ -154,7 +190,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          13 => 
+          17 => 
           [
             'title' => 'Review Rank Advancement Path',
             'description' => 'Review FA through EP rank path, rank requirements, recognition milestones, and leadership development expectations.',
@@ -163,7 +199,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => false,
             'country' => NULL,
           ],
-          14 => 
+          18 => 
           [
             'title' => 'Attend First Team Event Or Training',
             'description' => 'Attend a live team event, webinar, huddle, or training session and record any follow-up tasks.',
@@ -172,7 +208,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => NULL,
           ],
-          15 => 
+          19 => 
           [
             'title' => 'Canada: Review Provincial Licensing Path',
             'description' => 'Confirm the applicable provincial licensing path, LLQP study expectations, provincial regulator, and exam scheduling requirements.',
@@ -181,7 +217,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => 'Canada',
           ],
-          16 => 
+          20 => 
           [
             'title' => 'United States: Review State Licensing Path',
             'description' => 'Confirm the applicable state licensing path, pre-licensing education requirements, state exam process, and carrier appointment expectations.',
@@ -190,7 +226,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => 'United States',
           ],
-          17 => 
+          21 => 
           [
             'title' => 'Philippines: Confirm Local Business Readiness',
             'description' => 'Review local market expectations, team communication rhythm, client conversation standards, and country-specific resource links.',
@@ -199,7 +235,7 @@ class ChecklistSeeder extends Seeder
             'is_required' => true,
             'country' => 'Philippines',
           ],
-          18 => 
+          22 => 
           [
             'title' => 'Mexico: Confirm Local Business Readiness',
             'description' => 'Review local market expectations, team communication rhythm, client conversation standards, and country-specific resource links.',
@@ -211,6 +247,10 @@ class ChecklistSeeder extends Seeder
         ];
 
         $responsibleParties =         [
+          'Register to Experior Financial Group' => 'Self',
+          'Register to EFGTrack' => 'Self',
+          'Email Verified' => 'Self',
+          'First EFGTrack Login Successful' => 'Self',
           'Complete Member Profile' => 'Self',
           'Confirm Sponsor And Team Placement' => 'SP, AO, TL',
           'Watch EFGTrack Welcome Orientation' => 'Self, SP',
@@ -233,6 +273,10 @@ class ChecklistSeeder extends Seeder
         ];
 
         $notifiedParties =         [
+          'Register to Experior Financial Group' => 'SP, AO',
+          'Register to EFGTrack' => 'SP, AO',
+          'Email Verified' => 'SP, TR',
+          'First EFGTrack Login Successful' => 'SP, TR',
           'Complete Member Profile' => 'SP',
           'Confirm Sponsor And Team Placement' => 'SP, AO, TL',
           'Watch EFGTrack Welcome Orientation' => 'SP',

@@ -22,7 +22,8 @@ class AnnouncementEngagementService
     {
         return MessageCenterAnnouncementRead::query()
             ->where('user_id', $user->id)
-            ->pluck('announcement_id');
+            ->pluck('announcement_id')
+            ->map(fn ($id) => (int) $id);
     }
 
     public function bookmarkIdsFor(User $user): Collection

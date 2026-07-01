@@ -40,14 +40,19 @@ class DashboardOverviewService
     }
 
     /**
-     * @return array{percent: int, completed: int, total: int, next_steps: list<array{title: string, status: string}>, route: string}
+     * @return array{
+     *     started: bool,
+     *     percent: int,
+     *     completed: int,
+     *     total: int,
+     *     next_steps: list<array{title: string, status: string}>,
+     *     preview_items: list<array{title: string, status: string, is_completed: bool}>,
+     *     has_more: bool,
+     *     route: string|null
+     * }
      */
     private function onboarding(User $user): array
     {
-        if (! $this->checklists->hasTypeStarted($user, 'onboarding')) {
-            return $this->inactiveChecklistOverview();
-        }
-
         $steps = Checklist::query()
             ->forTypeCode('onboarding')
             ->applicableToCountry($user->profile?->country)
@@ -55,6 +60,19 @@ class DashboardOverviewService
             ->orderBy('sort_order')
             ->orderBy('title')
             ->get(['id', 'title']);
+
+        if (! $this->checklists->hasTypeStarted($user, 'onboarding')) {
+            return [
+                'started' => false,
+                'percent' => 0,
+                'completed' => 0,
+                'total' => $steps->count(),
+                'next_steps' => [],
+                'preview_items' => $this->checklistPreviewItems($steps, collect()),
+                'has_more' => $steps->count() > 5,
+                'route' => 'onboarding.index',
+            ];
+        }
 
         return $this->checklistOverview(
             $user,
@@ -367,7 +385,16 @@ class DashboardOverviewService
 
     /**
      * @param  Collection<int, object>|iterable<int, object>  $steps
-     * @return array{percent: int, completed: int, total: int, next_steps: list<array{title: string, status: string}>, route: string}
+     * @return array{
+     *     started: true,
+     *     percent: int,
+     *     completed: int,
+     *     total: int,
+     *     next_steps: list<array{title: string, status: string}>,
+     *     preview_items: list<array{title: string, status: string, is_completed: bool}>,
+     *     has_more: bool,
+     *     route: string
+     * }
      */
     private function checklistOverview(
         User $user,
@@ -407,8 +434,28 @@ class DashboardOverviewService
             'completed' => $completed,
             'total' => $steps->count(),
             'next_steps' => $nextSteps,
+            'preview_items' => $this->checklistPreviewItems($steps, $progress),
+            'has_more' => $steps->count() > 5,
             'route' => $route,
         ];
+    }
+
+    /**
+     * @param  Collection<int, object>  $steps
+     * @param  Collection<int|string, ChecklistProgress|object>  $progress
+     * @return list<array{title: string, status: string, is_completed: bool}>
+     */
+    private function checklistPreviewItems(Collection $steps, Collection $progress): array
+    {
+        return $steps
+            ->take(5)
+            ->map(fn (object $step): array => [
+                'title' => $step->title,
+                'status' => $this->statusLabel($progress->get($step->id)?->status),
+                'is_completed' => ($progress->get($step->id)?->status ?? 'not_started') === 'completed',
+            ])
+            ->values()
+            ->all();
     }
 
     /**

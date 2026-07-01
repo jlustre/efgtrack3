@@ -27,20 +27,22 @@ class DatabaseSeeder extends Seeder
         ProspectLookupSeeder::class,
         ProspectFunnelSeeder::class,
         UsersSeeder::class,
+        SystemTaskAssignorSeeder::class,
         ProfileCompletionFieldSeeder::class,
         GoalCategorySeeder::class,
+        TaskCategorySeeder::class,
+        TaskSeeder::class,
         GoalTemplateSeeder::class,
         GoalBadgeSeeder::class,
         CfmEffectivenessSeeder::class,
         ComplianceLifecycleSeeder::class,
         SupportModuleSeeder::class,
         NotificationConfigSeeder::class,
-        AnnouncementCategorySeeder::class,
-        AnnouncementTemplateSeeder::class,
         RecognitionBadgeSeeder::class,
         ResourceDocumentSeeder::class,
         ResourceVideoSeeder::class,
         TrainingAcademySeeder::class,
+        DailyQuoteSeeder::class,
     ];
 
     /**
@@ -59,7 +61,7 @@ class DatabaseSeeder extends Seeder
         UserCalendarPreferenceSeeder::class,
         BookingSchedulingSeeder::class,
         NotificationsSeeder::class,
-        CommunicationHubDemoSeeder::class,
+        // CommunicationHubDemoSeeder::class,
     ];
 
     public function run(): void
@@ -67,7 +69,7 @@ class DatabaseSeeder extends Seeder
         $this->call($this->requiredSeeders);
 
         if ($this->shouldSeedTransactionalData() && $this->transactionalSeeders !== []) {
-            // $this->call($this->transactionalSeeders);
+            $this->call($this->transactionalSeeders);
         }
     }
 

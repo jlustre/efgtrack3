@@ -10,7 +10,8 @@ use App\Models\MessageRead;
 use App\Models\MessageReaction;
 use App\Models\MessageTemplate;
 use App\Models\User;
-use App\Models\UserTask;
+use App\Models\TaskUser;
+use App\Support\TaskUserAttributes;
 use App\Services\ChecklistService;
 use App\Services\Notifications\NotificationOrchestrator;
 use App\Services\Notifications\NotificationRecipientResolver;
@@ -400,25 +401,34 @@ class MessagingService
         ];
     }
 
-    public function createTaskFromMessage(User $creator, Message $message, array $data): UserTask
+    public function createTaskFromMessage(User $creator, Message $message, array $data): TaskUser
     {
         $this->ensureMember($creator, $message->conversation);
 
-        $task = UserTask::create([
-            'assigned_to_user_id' => $data['assigned_to_user_id'] ?? $creator->id,
-            'created_by_user_id' => $creator->id,
-            'title' => $data['title'],
-            'description' => $data['description'] ?? Str::limit($message->body, 500),
-            'priority' => $data['priority'] ?? 'normal',
-            'status' => 'open',
-            'category' => $data['category'] ?? 'CFM Mentorship',
-            'related_module' => 'messages',
-            'due_date' => $data['due_date'] ?? null,
-        ]);
+        $priority = $data['priority'] ?? 'medium';
+        if ($priority === 'normal') {
+            $priority = 'medium';
+        }
+
+        $task = TaskUser::create(TaskUserAttributes::forTask(
+            $data['category'] ?? 'CFM Mentorship',
+            $data['title'],
+            [
+                'assignee_id' => $data['assigned_to_user_id'] ?? $data['assignee_id'] ?? $creator->id,
+                'assignor_id' => $creator->id,
+                'additional_notes' => $data['additional_notes'] ?? null,
+                'priority' => $priority,
+                'status' => 'to_do',
+                'related_module' => 'messages',
+                'due_date' => $data['due_date'] ?? null,
+            ],
+            $data['description'] ?? Str::limit($message->body, 500),
+            $priority,
+        ));
 
         DB::table('message_tasks')->insert([
             'message_id' => $message->id,
-            'user_task_id' => $task->id,
+            'task_user_id' => $task->id,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

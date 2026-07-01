@@ -589,6 +589,7 @@ class AdminResourceDocumentTest extends TestCase
             'category' => 'onboarding',
             'sort_order' => 1,
             'is_published' => true,
+            'content' => '<p>Handbook content</p>',
         ]);
 
         PortalResource::query()->create([
@@ -606,7 +607,8 @@ class AdminResourceDocumentTest extends TestCase
             ->assertOk()
             ->assertSee('My Favorites', false)
             ->assertSee('Starred Handbook', false)
-            ->assertSee('aria-label="Remove from My Favorites"', false);
+            ->assertSee('aria-label="Remove from My Favorites"', false)
+            ->assertSee('aria-label="View record"', false);
     }
 
     public function test_cannot_favorite_non_document_resource(): void

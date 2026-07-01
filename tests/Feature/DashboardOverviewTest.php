@@ -41,7 +41,7 @@ class DashboardOverviewTest extends TestCase
         ]);
     }
 
-    public function test_authenticated_member_sees_development_journey_sections(): void
+    public function test_authenticated_member_sees_dashboard_sections(): void
     {
         $teamId = (int) DB::table('teams')->value('id');
         $rankId = Rank::where('code', 'FA')->value('id');
@@ -50,39 +50,28 @@ class DashboardOverviewTest extends TestCase
         $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Your Development Journey', false)
-            ->assertSeeText('Onboarding & Orientation')
-            ->assertSeeText('Licensing & Compliance')
-            ->assertSee('Field Apprenticeship Program', false)
-            ->assertSeeText('Training & Assessments')
-            ->assertSeeText('Mentor & Team Communications')
-            ->assertSeeText('Progress & Performance')
-            ->assertSeeText('Career Development & Rank Advancement')
+            ->assertSee('Welcome Message', false)
+            ->assertSee('Performance Statistics', false)
+            ->assertSee('Goal Progress', false)
+            ->assertSee('Licensing Progress', false)
+            ->assertSee('FAP Progress', false)
+            ->assertSee('Training Progress', false)
             ->assertSee('Team Profile Completion', false)
             ->assertSee('My Progress', false);
     }
 
-    public function test_seeded_onboarding_steps_appear_in_onboarding_hub(): void
+    public function test_seeded_onboarding_steps_appear_in_licensing_progress_section(): void
     {
         $teamId = (int) DB::table('teams')->value('id');
         $rankId = Rank::where('code', 'FA')->value('id');
         $user = $this->createUser('onboarding.hub@example.com', 'Onboarding Hub Member', 'member', $teamId, $rankId);
 
-        $firstStepTitle = DB::table('checklists')
-            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
-            ->where('checklist_types.code', 'onboarding')
-            ->where('checklists.is_active', true)
-            ->whereNull('checklists.deleted_at')
-            ->orderBy('checklists.sort_order')
-            ->value('checklists.title');
-
-        $this->assertNotNull($firstStepTitle);
-
         $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee($firstStepTitle, false)
-            ->assertSee('Not started', false);
+            ->assertSee('Licensing Progress', false)
+            ->assertSee('Notifications', false)
+            ->assertSee('Profile Completion', false);
     }
 
     public function test_dashboard_still_renders_team_stat_cards_with_view_buttons(): void

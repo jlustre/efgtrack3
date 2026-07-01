@@ -5,6 +5,14 @@ declare(strict_types=1);
 return [
     'modules' => [
         [
+            'module' => 'EFGTrack Application',
+            'summary' => 'Complete application overview — navigation, menus, workflows, and links to module guides.',
+            'slug' => 'application',
+            'file' => 'EFGTRACK_APPLICATION_USER_GUIDE.md',
+            'app_route' => 'dashboard',
+            'app_label' => 'Open Dashboard',
+        ],
+        [
             'module' => 'Dashboard',
             'summary' => 'Your stats, team overview, journey hub, and profile completion.',
             'app_route' => 'dashboard',

@@ -2,6 +2,7 @@
 
 namespace App\Services\Fna;
 
+use App\Mail\FnaClientPortalInviteMail;
 use App\Models\FnaClientInvite;
 use App\Models\FnaRecord;
 use App\Models\Prospect;
@@ -9,6 +10,7 @@ use App\Models\User;
 use App\Services\Notifications\NotificationOrchestrator;
 use App\Support\FnaClientPortalHasher;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class FnaClientInviteService
@@ -92,6 +94,21 @@ class FnaClientInviteService
                 'security_code' => $securityCode,
             ];
         });
+    }
+
+    public function sendInviteEmail(FnaClientInvite $invite, User $agent, string $securityCode): void
+    {
+        $email = trim((string) $invite->recipient_email);
+
+        if ($email === '') {
+            throw ValidationException::withMessages([
+                'recipient_email' => 'An email address is required to send the invite.',
+            ]);
+        }
+
+        Mail::to($email)->send(new FnaClientPortalInviteMail($invite, $agent, $securityCode));
+
+        $invite->update(['last_emailed_at' => now()]);
     }
 
     public function findByToken(string $token): ?FnaClientInvite

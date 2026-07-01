@@ -21,8 +21,12 @@
                     @can('share', $prospect)
                         <button type="button" onclick="Livewire.dispatch('open-prospect-share-modal', { prospectId: '{{ $prospect->id }}' })" class="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Share</button>
                     @endcan
-                    @can('create', \App\Models\FnaClientInvite::class)
-                        <button type="button" onclick="Livewire.dispatch('open-fna-client-invite-modal', { prospectId: '{{ $prospect->id }}' })" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Send FNA Link</button>
+                    @can('requestFnaClientPortal', $prospect)
+                        @can('create', \App\Models\FnaClientInvite::class)
+                            <button type="button" onclick="Livewire.dispatch('open-fna-client-invite-modal', { prospectId: '{{ $prospect->id }}' })" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Send FNA Link</button>
+                        @else
+                            <button type="button" onclick="Livewire.dispatch('open-fna-client-invite-modal', { prospectId: '{{ $prospect->id }}' })" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">FNA via CFM</button>
+                        @endcan
                     @endcan
                     <a href="{{ route('team.prospects.records.edit', $prospect) }}" class="rounded-lg border border-[#C8A24A] bg-[#C8A24A] px-4 py-2 text-sm font-semibold text-[#0B1F3A]">Edit</a>
                     <a href="{{ route('team.prospects.records.activity', $prospect) }}" class="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Activity</a>
@@ -64,7 +68,7 @@
             <livewire:prospects.prospect-convert-modal />
         @endcan
 
-        @can('create', \App\Models\FnaClientInvite::class)
+        @can('requestFnaClientPortal', $prospect)
             <livewire:fna.fna-client-invite-modal />
         @endcan
 

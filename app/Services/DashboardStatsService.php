@@ -11,6 +11,7 @@ use App\Models\Prospect;
 use App\Models\Rank;
 use App\Models\User;
 use App\Services\Fna\FnaAnalyticsService;
+use App\Services\Prospects\ProspectActivityLogSummaryService;
 use App\Services\Prospects\ProspectAnalyticsService;
 
 use Illuminate\Support\Collection;
@@ -32,6 +33,8 @@ class DashboardStatsService
         private readonly MemberProfileTabsService $memberProfileTabs,
 
         private readonly ProspectAnalyticsService $prospectAnalytics,
+
+        private readonly ProspectActivityLogSummaryService $activityLogSummary,
 
         private readonly FnaAnalyticsService $fnaAnalytics,
 
@@ -195,6 +198,13 @@ class DashboardStatsService
 
         $cards[] = $this->countCard('followups_due', 'Follow-Ups Due', $this->followupsDueCount($viewer), route('team.prospects.follow-ups'));
 
+        $cards[] = $this->countCard(
+            'activities',
+            'My Activities',
+            $this->activityCount($viewer),
+            route('team.prospects'),
+        );
+
         $cards[] = $this->countCard('prospect_conversion', 'Prospect Conversion', $this->prospectConversionRate($viewer).'%', $analyticsUrl);
 
         $cards[] = $this->countCard('recruits', 'My Recruits', $this->recruitCount($viewer));
@@ -243,6 +253,11 @@ class DashboardStatsService
     public function followupsDueCount(User $viewer): int
     {
         return $this->prospectAnalytics->followupsDueCount($viewer);
+    }
+
+    public function activityCount(User $viewer): int
+    {
+        return $this->activityLogSummary->totalForLast30Days($viewer);
     }
 
     public function prospectConversionRate(User $viewer): int

@@ -11,6 +11,7 @@
                 'prospects' => 'cyan',
                 'hot_prospects' => 'red',
                 'followups_due' => 'amber',
+                'activities' => 'violet',
                 'prospect_conversion' => 'emerald',
                 'recruits' => 'emerald',
                 'production' => 'gold',

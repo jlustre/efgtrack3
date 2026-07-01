@@ -5,11 +5,11 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\Communication\AnnouncementAcknowledgementService;
 use App\Services\Communication\CommunicationHubService;
-use Database\Seeders\AnnouncementCategorySeeder;
 use Database\Seeders\NotificationConfigSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\AnnouncementTestFixtures;
 use Tests\TestCase;
 
 class CommunicationHubPhaseThreeTest extends TestCase
@@ -23,8 +23,9 @@ class CommunicationHubPhaseThreeTest extends TestCase
         $this->seed([
             RolePermissionSeeder::class,
             NotificationConfigSeeder::class,
-            AnnouncementCategorySeeder::class,
         ]);
+
+        AnnouncementTestFixtures::seedCategories();
     }
 
     public function test_user_can_react_to_announcement(): void

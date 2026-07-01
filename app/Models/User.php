@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\NewMemberRegistrationService;
 use App\Support\UserAvatar;
 use App\Support\UserRankRoleLabel;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,14 +13,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory;
     use HasRoles;
+    use MustVerifyEmailTrait;
     use Notifiable;
     use SoftDeletes;
 
@@ -318,5 +322,10 @@ class User extends Authenticatable
     public function notifications(): MorphMany
     {
         return $this->morphMany(Notification::class, 'notifiable')->latest();
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        app(NewMemberRegistrationService::class)->sendEmailVerificationEmail($this);
     }
 }

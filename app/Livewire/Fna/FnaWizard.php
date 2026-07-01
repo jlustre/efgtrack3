@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Fna;
 
+use App\Livewire\Concerns\InteractsWithFnaClientInfoFields;
 use App\Models\FnaRecord;
 use App\Services\Fna\DimeCalculatorService;
 use App\Services\Fna\FnaAiAssistantService;
@@ -13,6 +14,8 @@ use Livewire\Component;
 
 class FnaWizard extends Component
 {
+    use InteractsWithFnaClientInfoFields;
+
     public FnaRecord $fna;
 
     public int $currentStep = 1;
@@ -208,6 +211,7 @@ class FnaWizard extends Component
             'missingSections' => app(FnaCompletenessService::class)->missingSections($this->fna),
             'gapSummary' => $gapSummary,
             'complianceNotice' => $complianceNotice,
+            'clientInfoFieldOptions' => $this->fnaClientInfoFieldOptions(clientPortal: false),
         ]);
     }
 
