@@ -24,11 +24,7 @@ class TaskController extends Controller
 
     public function openTaskCountFor(User $user): int
     {
-        return $this->confirmationTasksFor($user)->count()
-            + $this->cfmAssignmentTasksFor($user)->count()
-            + $this->emailTasksFor($user)->count()
-            + $this->promotionTasksFor($user)->count()
-            + TaskUser::query()->openForUser($user)->count();
+        return $this->workflowTasksFor($user)->count();
     }
 
     /**
@@ -36,23 +32,10 @@ class TaskController extends Controller
      */
     public function openTasksByPriorityFor(User $user): array
     {
-        $workflowItems = collect()
-            ->merge($this->confirmationTasksFor($user))
-            ->merge($this->cfmAssignmentTasksFor($user))
-            ->merge($this->emailTasksFor($user))
-            ->merge($this->promotionTasksFor($user))
+        $workflowItems = $this->workflowTasksFor($user)
             ->map(fn (array $task): array => $this->mapWorkflowTaskForModal($task));
 
-        $storedItems = TaskUser::query()
-            ->with(['taskCategory', 'task'])
-            ->openForUser($user)
-            ->orderByRaw("case when status = 'overdue' then 0 when status = 'in_progress' then 1 when status = 'waiting' then 2 when status = 'to_do' then 3 else 4 end")
-            ->orderBy('due_date')
-            ->get()
-            ->map(fn (TaskUser $task): array => $this->mapTaskUserForModal($task));
-
         $items = $workflowItems
-            ->concat($storedItems)
             ->sortBy([
                 ['priority_order', 'asc'],
                 ['sort_date', 'asc'],
@@ -69,11 +52,7 @@ class TaskController extends Controller
 
     public function previewForDashboard(User $user, int $limit = 5): array
     {
-        $workflowTasks = collect()
-            ->merge($this->confirmationTasksFor($user))
-            ->merge($this->cfmAssignmentTasksFor($user))
-            ->merge($this->emailTasksFor($user))
-            ->merge($this->promotionTasksFor($user))
+        $workflowTasks = $this->workflowTasksFor($user)
             ->sortBy([
                 ['priority_order', 'asc'],
                 ['created_at', 'asc'],
@@ -89,29 +68,9 @@ class TaskController extends Controller
             ])
             ->values();
 
-        $remaining = max(0, $limit - $workflowTasks->count());
-
-        $storedTasks = $remaining > 0
-            ? TaskUser::query()
-                ->with('taskCategory')
-                ->openForUser($user)
-                ->orderByRaw("case when status = 'overdue' then 0 when status = 'in_progress' then 1 when status = 'waiting' then 2 when status = 'to_do' then 3 else 4 end")
-                ->orderBy('due_date')
-                ->limit($remaining)
-                ->get()
-                ->map(fn (TaskUser $task): array => [
-                    'title' => $task->displayTitle(),
-                    'subtitle' => $task->categoryName(),
-                    'meta' => $task->due_date?->format('M j, Y') ?? 'No due date',
-                    'url' => route('tasks.index'),
-                    'badge' => $task->displayPriority(),
-                    'highlight' => $task->status === 'overdue',
-                ])
-            : collect();
-
         return [
             'count' => $this->openTaskCountFor($user),
-            'items' => $workflowTasks->merge($storedTasks)->values()->all(),
+            'items' => $workflowTasks->values()->all(),
         ];
     }
 
@@ -120,13 +79,7 @@ class TaskController extends Controller
      */
     public function previewDueTodayForDashboard(User $user, int $limit = 5): array
     {
-        $today = now()->startOfDay();
-
-        $workflowTasks = collect()
-            ->merge($this->confirmationTasksFor($user))
-            ->merge($this->cfmAssignmentTasksFor($user))
-            ->merge($this->emailTasksFor($user))
-            ->merge($this->promotionTasksFor($user))
+        $workflowTasks = $this->workflowTasksFor($user)
             ->filter(fn (array $task): bool => $this->isDueToday($task))
             ->sortBy([
                 ['priority_order', 'asc'],
@@ -142,32 +95,10 @@ class TaskController extends Controller
             ])
             ->values();
 
-        $storedTasks = TaskUser::query()
-            ->with('taskCategory')
-            ->openForUser($user)
-            ->where(function ($query) use ($today): void {
-                $query->whereDate('due_date', $today)
-                    ->orWhere('status', 'overdue');
-            })
-            ->orderByRaw("case when status = 'overdue' then 0 when status = 'in_progress' then 1 else 2 end")
-            ->orderBy('due_date')
-            ->get()
-            ->map(fn (TaskUser $task): array => [
-                'title' => $task->displayTitle(),
-                'subtitle' => $task->categoryName(),
-                'meta' => $task->status === 'overdue'
-                    ? 'Overdue · '.($task->due_date?->format('M j, Y') ?? 'No due date')
-                    : 'Due today',
-                'url' => route('tasks.index'),
-                'badge' => $task->status === 'overdue' ? 'Overdue' : 'Today',
-                'highlight' => $task->status === 'overdue',
-            ]);
-
-        $items = $workflowTasks->merge($storedTasks)->take($limit)->values()->all();
-        $count = $workflowTasks->count() + $storedTasks->count();
+        $items = $workflowTasks->take($limit)->values()->all();
 
         return [
-            'count' => $count,
+            'count' => $workflowTasks->count(),
             'items' => $items,
         ];
     }
@@ -334,27 +265,19 @@ class TaskController extends Controller
         return $user->hasAnyRole(['super-admin', 'admin', 'agency-owner', 'team-leader']);
     }
 
+    private function workflowTasksFor(User $user): Collection
+    {
+        return collect()
+            ->merge($this->confirmationTasksFor($user))
+            ->merge($this->cfmAssignmentTasksFor($user))
+            ->merge($this->emailTasksFor($user))
+            ->merge($this->promotionTasksFor($user))
+            ->values();
+    }
+
     private function storedTasksFor(User $user): Collection
     {
-        return TaskUser::query()
-            ->with([
-                'assignee:id,name',
-                'assignor:id,name',
-                'task',
-                'taskCategory',
-                'checklistItems',
-                'comments.author:id,name',
-            ])
-            ->where(function ($query) use ($user): void {
-                $query->where('assignee_id', $user->id);
-
-                if ($user->team_id) {
-                    $query->orWhereHas('assignee', fn ($assigneeQuery) => $assigneeQuery->where('team_id', $user->team_id));
-                }
-            })
-            ->orderByRaw("case when status = 'overdue' then 0 when status = 'in_progress' then 1 when status = 'waiting' then 2 when status = 'to_do' then 3 else 4 end")
-            ->orderBy('due_date')
-            ->get();
+        return collect();
     }
 
     private function formatStoredTaskForUi(TaskUser $task): array

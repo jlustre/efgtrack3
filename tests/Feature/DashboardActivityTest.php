@@ -190,35 +190,24 @@ class DashboardActivityTest extends TestCase
 
     public function test_open_tasks_by_priority_returns_highest_priority_first(): void
     {
-        $this->seed(\Database\Seeders\TaskCategorySeeder::class);
+        $this->seed([
+            \Database\Seeders\RankSeeder::class,
+            \Database\Seeders\RolePermissionSeeder::class,
+            \Database\Seeders\TeamSeeder::class,
+            \Database\Seeders\ChecklistTypeSeeder::class,
+            \Database\Seeders\ChecklistSeeder::class,
+            \Database\Seeders\TaskScenarioSeeder::class,
+        ]);
 
-        $user = $this->createMember('priority.tasks@example.com');
+        $agencyOwner = User::where('email', 'agency-owner@efgtrack.com')->firstOrFail();
 
-        \App\Models\TaskUser::query()->create(TaskUserAttributes::forTask('Personal', 'Low priority follow-up', [
-            'assignee_id' => $user->id,
-            'assignor_id' => $user->id,
-            'priority' => 'low',
-            'status' => 'to_do',
-            'due_date' => now()->addWeek(),
-        ]));
+        $payload = app(\App\Http\Controllers\TaskController::class)->openTasksByPriorityFor($agencyOwner);
 
-        \App\Models\TaskUser::query()->create(TaskUserAttributes::forTask('Licensing', 'Urgent licensing task', [
-            'assignee_id' => $user->id,
-            'assignor_id' => $user->id,
-            'priority' => 'urgent',
-            'status' => 'in_progress',
-            'due_date' => now()->addDay(),
-        ]));
+        $this->assertNotEmpty($payload['items']);
 
-        $payload = app(\App\Http\Controllers\TaskController::class)->openTasksByPriorityFor($user);
-        $titles = collect($payload['items'])->pluck('title');
+        $orders = collect($payload['items'])->pluck('priority_order');
 
-        $this->assertNotFalse($titles->search('Urgent licensing task'));
-        $this->assertNotFalse($titles->search('Low priority follow-up'));
-        $this->assertLessThan(
-            $titles->search('Low priority follow-up'),
-            $titles->search('Urgent licensing task'),
-        );
+        $this->assertSame($orders->sort()->values()->all(), $orders->values()->all());
     }
 
     public function test_log_activity_quick_action_opens_picker_and_quick_log_modal(): void

@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\TaskCategory;
-use App\Models\TaskUser;
 use App\Models\User;
 use App\Services\TaskCategoryService;
-use App\Support\TaskUserAttributes;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\ChecklistTypeSeeder;
 use Database\Seeders\CountrySeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\TaskCategorySeeder;
@@ -196,28 +196,42 @@ class TaskCategoryTest extends TestCase
         $this->assertNotNull(DB::table('task_categories')->where('id', $categoryId)->value('deleted_at'));
     }
 
-    public function test_stored_task_modal_item_uses_category_action_link(): void
+    public function test_workflow_task_modal_item_uses_category_action_link(): void
     {
         $this->seed([
             RolePermissionSeeder::class,
             TaskCategorySeeder::class,
+            ChecklistTypeSeeder::class,
+            ChecklistSeeder::class,
         ]);
 
-        $user = User::factory()->create();
-        $user->assignRole('member');
+        $agencyOwner = User::factory()->create();
+        $agencyOwner->assignRole('agency-owner');
 
-        $categoryId = TaskCategory::query()->where('name', 'Licensing')->value('id');
+        $member = User::factory()->create([
+            'sponsor_id' => $agencyOwner->id,
+            'mentor_id' => null,
+        ]);
+        $member->assignRole('member');
 
-        TaskUser::query()->create(TaskUserAttributes::forTask('Licensing', 'Review licensing documents', [
-            'assignee_id' => $user->id,
-            'assignor_id' => $user->id,
-            'priority' => 'high',
-            'status' => 'to_do',
-            'due_date' => now()->addDay(),
-        ]));
+        $stepId = DB::table('checklists')
+            ->join('checklist_types', 'checklist_types.id', '=', 'checklists.checklist_type_id')
+            ->where('checklist_types.code', 'licensing')
+            ->value('checklists.id');
 
-        $payload = app(\App\Http\Controllers\TaskController::class)->openTasksByPriorityFor($user);
-        $task = collect($payload['items'])->firstWhere('title', 'Review licensing documents');
+        DB::table('checklist_progress')->insert([
+            'user_id' => $member->id,
+            'checklist_id' => $stepId,
+            'mentor_assignment_id' => null,
+            'status' => 'pending_confirmation',
+            'submitted_at' => now()->subDay(),
+            'completed_at' => null,
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $payload = app(\App\Http\Controllers\TaskController::class)->openTasksByPriorityFor($agencyOwner);
+        $task = collect($payload['items'])->firstWhere('type', 'Confirmation');
 
         $this->assertNotNull($task);
         $this->assertSame('Licensing', $task['category']);
